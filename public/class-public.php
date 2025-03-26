@@ -461,7 +461,6 @@ private function get_or_create_cart() {
     $lead_id = null;
     $event_id = null;
     
-    // Verificar si el usuario es admin o ejecutivo de ventas
     $is_privileged_user = current_user_can('administrator') || current_user_can('ejecutivo_de_ventas');
     
     // Si hay un contexto activo en la sesión, usarlo
@@ -483,7 +482,6 @@ private function get_or_create_cart() {
             
             // Si existe un carrito específico, usarlo
             if ($exact_cart) {
-                // Guardar el ID del carrito activo en user meta para referencia global
                 update_user_meta($user_id, 'eq_active_cart_id', $exact_cart);
                 return $exact_cart;
             }
@@ -512,9 +510,7 @@ private function get_or_create_cart() {
             return $new_cart_id;
         }
     }
-    
-    // Para usuarios normales o si no hay contexto específico
-    
+        
     // Verificar si hay un carrito activo guardado en user meta
     $active_cart_id = get_user_meta($user_id, 'eq_active_cart_id', true);
     if ($active_cart_id) {
@@ -539,7 +535,6 @@ private function get_or_create_cart() {
     ));
     
     if ($cart_id) {
-        // Guardar este carrito como activo
         update_user_meta($user_id, 'eq_active_cart_id', $cart_id);
         return $cart_id;
     }
@@ -552,7 +547,6 @@ private function get_or_create_cart() {
         'updated_at' => current_time('mysql')
     );
     
-    // Añadir lead_id y event_id si están disponibles
     if ($lead_id !== null) {
         $cart_data['lead_id'] = $lead_id;
     }
@@ -569,7 +563,6 @@ private function get_or_create_cart() {
     
     $new_cart_id = $wpdb->insert_id;
     
-    // Guardar el ID del carrito activo en user meta
     update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
     
     return $new_cart_id;

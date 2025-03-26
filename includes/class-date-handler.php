@@ -14,21 +14,13 @@ public function check_listing_availability($listing_id, $date) {
     // Convertir fecha a formato Y-m-d para normalizar
     $check_date = date('Y-m-d', strtotime($date));
     
-    // Log para depuración
-    error_log("Checking availability for listing {$listing_id} on date {$date} (normalized to {$check_date})");
-    
     // Obtener reservas existentes
     $blocked_dates = $this->get_listing_reservations($listing_id);
     
-    // Log para depuración
-    error_log("Blocked dates for listing {$listing_id}: " . implode(', ', $blocked_dates));
     
     // Verificar si la fecha está bloqueada por una reserva
     $is_available = !in_array($check_date, $blocked_dates);
-    
-    // Log para depuración
-    error_log("Availability result for listing {$listing_id} on date {$check_date}: " . ($is_available ? 'Available' : 'Not available'));
-    
+        
     return $is_available;
 }
 	

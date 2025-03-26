@@ -113,7 +113,7 @@ defined('ABSPATH') || exit;
         <!-- Total del carrito -->
         <div class="eq-cart-total">
             <div class="eq-total-row">
-                <span class="eq-total-label">Total (incl. taxes)</span>
+            <span class="eq-total-label"><?php esc_html_e('Total (incl. taxes)', 'event-quote-cart'); ?></span>
                 <span class="eq-cart-total-amount">MXN $0.00</span>
             </div>
         </div>
@@ -123,13 +123,13 @@ defined('ABSPATH') || exit;
             <button type="button" 
                     class="eq-view-quote-button" 
                     disabled>
-                View Complete Quote
+                    <?php esc_html_e('View Complete Quote', 'event-quote-cart'); ?>                
             </button>
         </div>
 
         <!-- Indicador de items -->
         <div class="eq-cart-summary">
-            <span class="eq-cart-items-count">0</span> items in quote
+            <span class="eq-cart-items-count">0</span> <?php esc_html_e('items in quote', 'event-quote-cart'); ?>
         </div>
     </div>
 </div>

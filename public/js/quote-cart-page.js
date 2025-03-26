@@ -3,7 +3,6 @@
 
     class QuoteCartPage {
         constructor() {
-			        console.log('eqCartData disponible en quote-cart-page:', eqCartData);
 
             this.init();
             this.bindEvents();
@@ -69,11 +68,6 @@
         }
 
        openEditModal(itemData) {
-    console.log('Edit modal quantity values:', {
-    min: parseInt(itemData.listing_data.min_quantity),
-    max: parseInt(itemData.listing_data.max_quantity),
-    shouldHide: (parseInt(itemData.listing_data.min_quantity) === 1 && parseInt(itemData.listing_data.max_quantity) === 1)
-});
     
     // Asegurar que los datos del listing estén presentes
     if (!itemData.listing_data) {
@@ -245,7 +239,6 @@ calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElemen
     
     // Calcular impuestos - asegurarse de que taxRate sea correcto
     const taxRate = (eqCartData && eqCartData.taxRate) ? parseFloat(eqCartData.taxRate) : 16;
-	console.log('Tax rate used in modal:', taxRate);
 
     const taxAmount = subtotal * (taxRate / 100);
     const total = subtotal + taxAmount;
@@ -302,8 +295,6 @@ formatPrice(amount) {
         });
     }
     
-    console.log('Extras disponibles:', availableExtras);
-    console.log('Extras seleccionados:', selectedExtras);
     
     return `
         <div class="eq-form-group">
@@ -312,14 +303,6 @@ formatPrice(amount) {
                 ${availableExtras.map(extra => {
                     const isSelected = selectedExtrasMap[extra.id] ? true : false;
                     
-                    // Log de cada extra para diagnóstico
-                    console.log('Renderizando extra:', {
-                        id: extra.id,
-                        name: extra.name,
-                        price: extra.price,
-                        type: extra.type,
-                        isSelected: isSelected
-                    });
                     
                     if (extra.type === 'variable_quantity') {
                         const quantity = selectedExtrasMap[extra.id] ? selectedExtrasMap[extra.id].quantity : 0;
@@ -409,8 +392,6 @@ formatPrice(amount) {
             const originalText = submitButton.text();
             submitButton.prop('disabled', true).text('Updating...');
             
-            // Log para debug
-            console.log('Sending formattedExtras:', JSON.stringify(formattedExtras));
             
             // Enviar datos por AJAX
             $.ajax({
@@ -426,7 +407,6 @@ formatPrice(amount) {
                     extras_data: JSON.stringify(formattedExtras)  // ¡Importante! Enviamos como JSON string
                 },
                 success: (response) => {
-                    console.log('Update response:', response);
                     if (response.success) {
                         this.showNotification('Item updated successfully', 'success');
                         
@@ -540,7 +520,6 @@ formatPrice(amount) {
                     window.updateHeaderCartCount(response.data.itemCount);
                 }
                 
-                console.log('Cart totals updated successfully');
             } else {
                 console.error('Error updating cart totals:', response.data);
             }

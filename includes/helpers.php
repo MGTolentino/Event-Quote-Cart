@@ -35,7 +35,6 @@ if (!$has_active_context) {
                      
     // Si la sesión ha terminado y es usuario privilegiado, buscar un carrito personal
     if ($session_ended && $is_privileged) {
-        error_log('eq_get_cart_items: No active context AND session ended flag found, looking for personal cart');
         
         // Buscar un carrito sin lead_id o event_id
         $personal_cart_id = $wpdb->get_var($wpdb->prepare(
@@ -49,7 +48,6 @@ if (!$has_active_context) {
         ));
         
         if ($personal_cart_id) {
-            error_log('eq_get_cart_items: Found personal cart ID ' . $personal_cart_id);
             update_user_meta($user_id, 'eq_active_cart_id', $personal_cart_id);
             
             // Obtener items de este carrito personal
@@ -95,13 +93,9 @@ if (!$has_active_context) {
         
         // Verificar que el contexto pertenezca al usuario actual
         if ($context_user_id !== null && $context_user_id !== $user_id) {
-            error_log('eq_get_cart_items: Context in session belongs to different user, ignoring. Session user: ' . 
-                $context_user_id . ', Current user: ' . $user_id);
             $context_lead_id = null;
             $context_event_id = null;
         } else if ($context_lead_id && $context_event_id) {
-            error_log('eq_get_cart_items: Using context from session - lead_id: ' . 
-                $context_lead_id . ', event_id: ' . $context_event_id);
             $has_valid_context = true;
         }
     }
@@ -120,8 +114,6 @@ if (!$has_active_context) {
             $context_event_id = $session->event_id;
             $has_valid_context = true;
             
-            error_log('eq_get_cart_items: Using context from database - lead_id: ' . 
-                $context_lead_id . ', event_id: ' . $context_event_id);
             
             // Actualizar la sesión PHP para mantener consistencia
             $_SESSION['eq_quote_context'] = array(
@@ -143,8 +135,6 @@ if (!$has_active_context) {
         ));
         
         if ($context_cart_id) {
-            error_log('eq_get_cart_items: Found cart ID ' . $context_cart_id . 
-                ' for context lead_id: ' . $context_lead_id . ', event_id: ' . $context_event_id);
                 
             // Actualizar meta de usuario para consistencia
             update_user_meta($user_id, 'eq_active_cart_id', $context_cart_id);
@@ -152,10 +142,7 @@ if (!$has_active_context) {
             // Usar este carrito específico
             $active_cart_id = $context_cart_id;
         } else {
-            error_log('eq_get_cart_items: No cart found for current context');
             
-            // Si no existe carrito para este contexto, no mostrar nada para usuarios privilegiados
-            // pero buscar carrito personal para usuarios normales
             if ($is_privileged) {
                 return array();
             }
@@ -175,8 +162,6 @@ if (!$has_active_context) {
                 $user_id
             ));
             
-            error_log('eq_get_cart_items: Looking for personal cart for privileged user: ' . 
-                ($active_cart_id ? 'Found ID ' . $active_cart_id : 'Not found'));
         } 
         // Para usuarios normales, buscar cualquier carrito activo
         else {
@@ -195,8 +180,6 @@ if (!$has_active_context) {
                 }
             }
             
-            error_log('eq_get_cart_items: Looking for any cart for normal user: ' . 
-                ($active_cart_id ? 'Found ID ' . $active_cart_id : 'Not found'));
         }
         
         // Si aún no hay carrito activo, no hay items
@@ -205,10 +188,6 @@ if (!$has_active_context) {
         }
     }
     
-    // Para depuración - registra el carrito que se está usando
-    error_log('eq_get_cart_items using cart ID: ' . $active_cart_id);
-    
-    // Get items
     $items = $wpdb->get_results($wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}eq_cart_items 
         WHERE cart_id = %d AND status = 'active'
@@ -216,7 +195,6 @@ if (!$has_active_context) {
         $active_cart_id
     ));
     
-    // Process items
     foreach ($items as &$item) {
         $listing = get_post($item->listing_id);
         if (!$listing) {
@@ -273,12 +251,10 @@ function eq_get_active_context() {
     global $wpdb;
     $user_id = get_current_user_id();
     
-    // PASO 1: Verificar si existe la señal de "no restaurar"
     if (isset($_SESSION['eq_context_no_restore']) && $_SESSION['eq_context_no_restore'] === true) {
         return null;
     }
     
-    // PASO 2: Verificar si hay contexto en la sesión
     if (isset($_SESSION['eq_quote_context']) && 
         !empty($_SESSION['eq_quote_context']['lead_id']) && 
         !empty($_SESSION['eq_quote_context']['event_id'])) {
@@ -357,12 +333,10 @@ function eq_get_active_context() {
         }
     }
     
-    // PASO 3: No reconstruir automáticamente desde el carrito si hay señal de "sesión finalizada"
     if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
         return null;
     }
     
-    // PASO 4: Si no hay contexto en sesión, solo para usuarios privilegiados verificar el carrito
     $user = wp_get_current_user();
     $is_privileged = in_array('administrator', $user->roles) || in_array('ejecutivo_de_ventas', $user->roles);
     
@@ -370,7 +344,6 @@ function eq_get_active_context() {
         return null;
     }
     
-    // PASO 5: Para usuarios privilegiados, intentar reconstruir desde el carrito
     $active_cart_id = get_user_meta($user_id, 'eq_active_cart_id', true);
     
     if (!$active_cart_id) {
@@ -529,4 +502,63 @@ function eq_get_active_cart() {
         ORDER BY created_at DESC LIMIT 1",
         $user_id
     ));
+}
+
+/**
+ * Obtiene traducciones para JavaScript
+ * 
+ * @param string $context Contexto de las traducciones ('main' o 'single')
+ * @return array Array con traducciones
+ */
+function eq_get_js_translations($context = 'main') {
+    $translations = array(
+        'addedToCart' => __('Added to quote cart', 'event-quote-cart'),
+        'errorAdding' => __('Error adding to quote cart', 'event-quote-cart'),
+        'removedFromCart' => __('Removed from quote cart', 'event-quote-cart'),
+        'errorRemoving' => __('Error removing from quote cart', 'event-quote-cart'),
+        'dateRequired' => __('Please select a date', 'event-quote-cart'),
+        'dateNotAvailable' => __('Selected date is not available', 'event-quote-cart'),
+        'dateAvailable' => __('Date is available', 'event-quote-cart'),
+        'errorValidating' => __('Error validating date', 'event-quote-cart'),
+        'adding' => __('Adding...', 'event-quote-cart'),
+        'updating' => __('Updating...', 'event-quote-cart'),
+        'checking' => __('Checking availability...', 'event-quote-cart'),
+        'selectDate' => __('Select date', 'event-quote-cart'),
+        'editDate' => __('Edit date', 'event-quote-cart'),
+        'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
+        'dateConflict' => __('This date conflicts with another booking', 'event-quote-cart'),
+        'quantityRequired' => __('Please enter a valid quantity', 'event-quote-cart'),
+        'invalidQuantity' => __('Quantity must be between %d and %d', 'event-quote-cart'),
+        'dateOutOfRange' => __('Selected date is outside the allowed booking window', 'event-quote-cart'),
+        'loadingError' => __('Error loading data', 'event-quote-cart'),
+        'checkingAvailability' => __('Checking availability...', 'event-quote-cart'),
+        'dateAvailable' => __('This date is available', 'event-quote-cart'),
+        'dateNotAvailable' => __('This date is not available', 'event-quote-cart'),
+        'errorChecking' => __('Error checking availability', 'event-quote-cart')
+    );
+
+    if ($context === 'main') {
+        $translations = array_merge($translations, array(
+            'seeDetails' => __('See Details', 'event-quote-cart'),
+            'hideDetails' => __('Hide Details', 'event-quote-cart'),
+            'noItems' => __('No items in quote cart', 'event-quote-cart'),
+            'basePrice' => __('Base Price:', 'event-quote-cart'),
+            'totalWithTaxes' => __('Total (incl. taxes):', 'event-quote-cart'),
+            'updateQuote' => __('Update Quote', 'event-quote-cart'),
+            'includeInQuote' => __('Include in Quote', 'event-quote-cart'),
+            'editingReservation' => __('Editing existing reservation', 'event-quote-cart'),
+            'date' => __('Date', 'event-quote-cart'),
+            'quantity' => __('Quantity', 'event-quote-cart'),
+            'extras' => __('Extras', 'event-quote-cart'),
+            'extras2' => __('Extras:', 'event-quote-cart'),
+            'notAvailable' => __('Not available for selected date', 'event-quote-cart'),
+            'itemUpdated' => __('Item updated successfully', 'event-quote-cart'),
+            'itemAdded' => __('Item added to quote successfully', 'event-quote-cart'),
+            'dateConflictItems' => __('This date affects %s item(s) in your cart that are not available on this date: %s. Would you like to remove these items and update the date for the rest?', 'event-quote-cart'),
+            'dateConflictUpdate' => __('You already have %s item(s) in your cart with a different date. Would you like to update all to the date %s?', 'event-quote-cart'),
+            'errorUpdatingDate' => __('Error updating cart date', 'event-quote-cart')
+        ));
+    }
+
+    return $translations;
 }

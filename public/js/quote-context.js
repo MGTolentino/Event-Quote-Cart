@@ -22,13 +22,6 @@
 
         
 init: function() {
-	// Agregar logs aquí
-    console.log('DIAGNÓSTICO: Iniciando panel de contexto');
-    console.log('DIAGNÓSTICO: localStorage al inicio:', {
-        eq_panel_selected_date: localStorage.getItem('eq_panel_selected_date'),
-        eq_selected_date: localStorage.getItem('eq_selected_date'),
-        eq_date_source: localStorage.getItem('eq_date_source')
-    });
 	
     // Verificar si el usuario puede usar el panel
     if (typeof eqContextData === 'undefined' || !eqContextData.canUseContextPanel) {
@@ -39,7 +32,6 @@ init: function() {
     this.initTabsSynchronization();
     
     // IMPORTANTE: NO renderizar nada hasta verificar con el servidor
-    console.log('Context Panel: Checking server status before rendering anything');
     
     var self = this;
     
@@ -49,18 +41,9 @@ init: function() {
     // Verificar con el servidor si hay un contexto activo
     this.checkServerContext(function(response) {
         if (response.success) {
-			        console.log('DIAGNÓSTICO: Respuesta del servidor:', response.data);
 
             // Si el servidor dice que hay un contexto activo
             if (response.data.isActive) {
-				
-				            console.log('DIAGNÓSTICO: Fecha del evento desde servidor:', response.data.eventDate, typeof response.data.eventDate);
-
-                console.log('Server confirms active session - Lead:', 
-                    response.data.leadId, 'Event:', response.data.eventId);
-				
-				    console.log('Server response eventDate:', response.data.eventDate, typeof response.data.eventDate);
-
                 
                 // Actualizar datos locales con los del servidor
                 self.data.isActive = true;
@@ -69,8 +52,6 @@ init: function() {
                 self.data.eventId = response.data.eventId;
                 self.data.eventDate = response.data.eventDate;
                 self.data.eventType = response.data.eventType;
-				    console.log('After assigning eventDate:', self.data.eventDate, typeof self.data.eventDate);
-
 
                 if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
                 
@@ -85,13 +66,11 @@ init: function() {
                     
                     // Mostrar el panel (quitar clase de carga y eliminar display:none inline)
                     $('.eq-context-panel').removeClass('eq-loading').css('display', '');
-                    console.log('Showing existing context panel with updated data');
                 } else {
                     // Renderizar nuevo panel
                     self.renderPanel();
                 }
             } else {
-                console.log('Server confirms NO active session');
                 
                 // Limpiar datos locales
                 self.data.isActive = false;
@@ -117,7 +96,6 @@ init: function() {
                 
                 // Verificar una última vez que no hay panel visible
                 if ($('.eq-context-panel').length > 0) {
-                    console.log('Context panel still exists after removal, forcing removal again');
                     setTimeout(function() {
                         $('.eq-context-panel').remove();
                     }, 100);
@@ -147,11 +125,9 @@ init: function() {
 initTabsSynchronization: function() {
     var self = this;
     
-    console.log('Initializing tabs synchronization (with filtered events)');
     
     // Verificar bandera global de sesión finalizada al inicio
     if (localStorage.getItem('eq_context_session_ended')) {
-        console.log('Found global session end flag, clearing local state');
         this.data.isActive = false;
         
         // Limpiar estado local
@@ -168,7 +144,6 @@ initTabsSynchronization: function() {
             return;
         }
         
-        console.log('Valid session end event detected in another tab');
         
         // Limpiar estado local sin recargar
         self.data.isActive = false;
@@ -227,7 +202,6 @@ startSessionPolling: function() {
     // Verificar con menos frecuencia (2 minutos en lugar de 30 segundos)
     this.pollingInterval = setInterval(function() {
         if (self.data.isActive && self.data.sessionToken) {
-            console.log('Periodic session verification (not causing reload)');
             
             // Verificar sesión sin recargar automáticamente
             $.ajax({
@@ -242,7 +216,6 @@ startSessionPolling: function() {
                 success: function(response) {
                     if (response.success) {
                         if (!response.data.isActive && self.data.isActive) {
-                            console.log('Session appears to be inactive on server, but not forcing reload');
                             self.showNotification('La sesión ha cambiado. Actualice la página si ve inconsistencias.', 'warning');
                         }
                     }
@@ -254,11 +227,8 @@ startSessionPolling: function() {
 
 verifySessionToken: function(token) {
     var self = this;
-    
-    // Log para debug pero sin hacer nada más
-    console.log('Session token verification disabled to prevent unnecessary reloads');
-    
-    /* Versión de respaldo si necesitas volver a habilitarla:
+        
+    /* Versión de respaldo
     $.ajax({
         url: eqCartData.ajaxurl,
         type: 'POST',
@@ -281,7 +251,6 @@ verifySessionToken: function(token) {
 },
 
 clearLocalState: function() {
-    console.log('Clearing local state (without reload)');
     
     // Limpiar objeto de datos
     this.data = {
@@ -327,7 +296,6 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
-    console.log('Checking context status with server');
     
     $.ajax({
         url: eqCartData.ajaxurl,
@@ -339,7 +307,6 @@ checkServerContext: function(callback) {
             timestamp: Date.now() // Evitar caché
         },
         success: function(response) {
-            console.log('Server response for context status:', response);
             if (typeof callback === 'function') {
                 callback(response);
             }
@@ -382,7 +349,6 @@ checkServerContext: function(callback) {
   renderPanel: function() {
       // Verificación más rigurosa antes de mostrar el panel
     if (!this.data.isActive) {
-        console.log('Panel not active, showing toggle button instead');
         this.renderToggleButton();
         return;
     }
@@ -396,7 +362,6 @@ checkServerContext: function(callback) {
         return;
     }
     
-    console.log('Rendering new context panel - Lead ID:', this.data.leadId, 'Event ID:', this.data.eventId);
     
     
     // Crear HTML del panel
@@ -463,7 +428,6 @@ checkServerContext: function(callback) {
 },
 		
 		activatePanel: function() {
-    console.log('Activating context panel - clearing all session ended indicators');
     
     // Limpiar todas las señales de sesión finalizada
     document.cookie = 'eq_session_ended=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
@@ -499,7 +463,6 @@ checkServerContext: function(callback) {
 formatFriendlyDate: function(date) {
     if (!date) return '';
     
-    console.log('formatFriendlyDate - input:', date, typeof date);
     
     let dateObj;
     
@@ -508,7 +471,6 @@ formatFriendlyDate: function(date) {
         (typeof date === 'string' && !isNaN(parseInt(date)) && 
          !date.includes('-') && date.length > 8)) {
         
-        console.log('Tratando como timestamp:', date);
         let timestamp = parseInt(date);
         if (timestamp < 10000000000) {
             timestamp = timestamp * 1000;
@@ -517,7 +479,6 @@ formatFriendlyDate: function(date) {
     } 
     // Si es una cadena en formato YYYY-MM-DD
     else if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        console.log('Tratando como fecha ISO (YYYY-MM-DD):', date);
         // Dividir la fecha en partes
         const parts = date.split('-');
         // Crear un objeto Date con el año, mes (0-11) y día, forzando UTC
@@ -526,11 +487,9 @@ formatFriendlyDate: function(date) {
     } 
     // Cualquier otro formato
     else {
-        console.log('Tratando como string de fecha genérico:', date);
         dateObj = new Date(date);
     }
     
-    console.log('dateObj creado:', dateObj);
     
     if (isNaN(dateObj.getTime())) {
         console.error('Fecha inválida:', date);
@@ -546,7 +505,6 @@ formatFriendlyDate: function(date) {
         };
         
         const formatted = dateObj.toLocaleDateString('es-ES', options);
-        console.log('Fecha formateada final:', formatted);
         return formatted;
     } catch (e) {
         console.error('Error al formatear fecha:', e);
@@ -557,7 +515,6 @@ formatFriendlyDate: function(date) {
         // Formatear información del evento para mostrar
        formatEventInfo: function() {
 		   
-		       console.log('formatEventInfo called with eventDate:', this.data.eventDate, typeof this.data.eventDate);
 
     if (!this.data.eventId) {
         return 'No seleccionado';
@@ -595,7 +552,6 @@ formatFriendlyDate: function(date) {
        initEventListeners: function() {
     var self = this;
     
-    console.log('Initializing context panel event listeners');
     
     // Eliminar handlers previos para evitar duplicados
     $(document).off('click', '.eq-context-panel-button.change-lead');
@@ -605,17 +561,14 @@ formatFriendlyDate: function(date) {
     
     // Delegación de eventos para los botones del panel
     $(document).on('click', '.eq-context-panel-button.change-lead', function() {
-        console.log('Lead button clicked');
         self.openLeadModal();
     });
     
     $(document).on('click', '.eq-context-panel-button.toggle-panel', function() {
-        console.log('Toggle button clicked');
         self.togglePanel();
     });
     
     $(document).on('click', '.eq-context-panel-button.change-event', function() {
-        console.log('Event button clicked');
         if (!self.data.leadId) {
             alert('Primero debe seleccionar un lead');
             return;
@@ -624,7 +577,6 @@ formatFriendlyDate: function(date) {
     });
     
     $(document).on('click', '.eq-context-panel-button.end-session', function() {
-        console.log('End session button clicked');
         self.endSession();
     });
             
@@ -1084,16 +1036,11 @@ modalsHtml += '</select>' +
   selectEvent: function(eventId, eventDate, eventType) {
     var self = this;
     
-    // Comprobar si es el mismo evento (con log para depuración)
-    console.log('Selecting event:', eventId, 'current:', this.data.eventId);
-    
-    // PRIMERO: Limpiar todas las señales de sesión finalizada
     // Eliminar la cookie de sesión finalizada
     document.cookie = 'eq_session_ended=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
     // Eliminar flags en localStorage
     localStorage.removeItem('eq_context_session_force_clear');
     localStorage.removeItem('eq_context_session_ended');
-    console.log('Cleared all session ended flags before selecting event');
     
     // Actualizar datos locales
     this.data.eventId = eventId;
@@ -1103,9 +1050,6 @@ modalsHtml += '</select>' +
     // Actualizar UI
     $('#eq-context-event-info').text(this.formatEventInfo());
 	   
-	   // Log para depuración
-console.log('Context panel updated - Lead:', this.data.leadName, 'Event:', this.formatEventInfo());
-
 // Asegurarnos de que el panel esté visible y actualizado
 if ($('.eq-context-panel').length === 0) {
     this.renderPanel();
@@ -1128,7 +1072,6 @@ if ($('.eq-context-panel').length === 0) {
         },
         success: function(response) {
     if (response.success) {
-        console.log('Context session created/updated:', response.data);
         
         // Guardar token de sesión
         self.data.sessionToken = response.data.session_token;
@@ -1152,7 +1095,6 @@ $.ajax({
     },
     success: function(response) {
         if (response.success) {
-            console.log('Cart context updated:', response.data);
             
             // Notificar al usuario
             self.showNotification('Evento seleccionado y contexto actualizado', 'success');
@@ -1169,13 +1111,7 @@ $.ajax({
             // Verificar si venimos de crear un nuevo evento
             if (self.isCreatingNewEvent) {
 				
-				console.log('DIAGNÓSTICO: Antes de recargar para evento nuevo');
-    console.log('DIAGNÓSTICO: eventDate antes de recargar:', self.data.eventDate, typeof self.data.eventDate);
-    console.log('DIAGNÓSTICO: localStorage antes de recargar:', {
-        eq_panel_selected_date: localStorage.getItem('eq_panel_selected_date'),
-        eq_selected_date: localStorage.getItem('eq_selected_date'),
-        eq_date_source: localStorage.getItem('eq_date_source')
-    });
+			
                 // Limpiar el flag
                 self.isCreatingNewEvent = false;
                 
@@ -1215,7 +1151,6 @@ syncEventDate: function(date) {
     var formattedDate = date;
     var dateObj;
 
-    console.log('Original date input:', date, typeof date);
 
     // Si es timestamp
     if (typeof date === 'number' || (typeof date === 'string' && !isNaN(parseInt(date)) && !date.includes('-'))) {
@@ -1252,8 +1187,6 @@ syncEventDate: function(date) {
                 // También crear un objeto de fecha para otras operaciones
                 dateObj = new Date(Date.UTC(year, month, day, 12, 0, 0));
                 
-                console.log('Fecha ISO procesada directamente:', formattedDate);
-                console.log('Objeto de fecha creado:', dateObj);
             } else {
                 console.error('Error parseando partes de la fecha:', parts);
                 return;
@@ -1296,14 +1229,6 @@ syncEventDate: function(date) {
                     String(dateObj.getUTCDate()).padStart(2, '0');
     }
 
-    console.log('Normalized date (UTC):', formattedDate);
-    
-    // Agregar logs para diagnóstico
-    console.log('DIAGNÓSTICO: Antes de guardar en localStorage:', {
-        fecha_original: date,
-        tipo_fecha_original: typeof date,
-        fecha_formateada: formattedDate
-    });
     
     // Guardar en localStorage para referencia
     localStorage.setItem('eq_date_source', 'panel');
@@ -1311,11 +1236,6 @@ syncEventDate: function(date) {
     localStorage.setItem('eq_selected_date', formattedDate);
     localStorage.setItem('eq_date_timestamp', Date.now().toString());
     
-    console.log('DIAGNÓSTICO: Después de guardar en localStorage:', {
-        eq_panel_selected_date: localStorage.getItem('eq_panel_selected_date'),
-        eq_selected_date: localStorage.getItem('eq_selected_date'),
-        eq_date_source: localStorage.getItem('eq_date_source')
-    });
     
     // NUEVO: Verificar si estamos en una página de single listing
     var listingId = this.getCurrentListingId();
@@ -1329,7 +1249,6 @@ syncEventDate: function(date) {
             } else {
                 // Mostrar alerta si la fecha no está disponible
                 this.showNotification('La fecha del panel (' + formattedDate + ') no está disponible para este listing. Por favor seleccione otra fecha.', 'warning');
-                console.log('Date from context panel is not available for this listing:', formattedDate);
             }
         }.bind(this));
     } else {
@@ -1403,7 +1322,6 @@ checkDateAvailability: function(listingId, date, callback) {
 
 // NUEVA FUNCIÓN: Actualizar todos los displays de fecha
 updateDateDisplays: function(formattedDate, dateObj) {
-    console.log('Updating date displays with:', formattedDate);
     
     // 1. Actualizar selectores genéricos
     var bookingDatepickers = document.querySelectorAll('.eq-date-picker, .bv-date-input');
@@ -1412,7 +1330,6 @@ updateDateDisplays: function(formattedDate, dateObj) {
     bookingDatepickers.forEach(function(input) {
         // Verificar si el input está visible - no actualizar campos ocultos
         if (input.offsetParent !== null) {
-            console.log('Updating visible input:', input);
             
             // Forzar la actualización del valor
             input.value = formattedDate;
@@ -1435,13 +1352,11 @@ updateDateDisplays: function(formattedDate, dateObj) {
     var filterInput = document.getElementById('fecha');
     if (filterInput && filterInput.offsetParent !== null) {
         filterInput.value = formattedDate;
-        console.log('Updated filter date input with:', formattedDate);
         updatedAny = true;
     }
     
     // 3. Interfaz directa con BookingForm si está disponible
     if (window._bookingFormInstance) {
-        console.log('BookingForm instance found, updating date directly');
         try {
             // Verificar si los inputs son visibles antes de actualizar
             var visibleInputs = window._bookingFormInstance.dateInputs.filter(function() {
@@ -1493,7 +1408,6 @@ updateDateDisplays: function(formattedDate, dateObj) {
             force: true // Indicar que debe tener prioridad
         }]);
         
-        console.log('Event Quote Panel: Date synchronized from panel context:', formattedDate);
     } else {
         console.log('No visible date inputs found to update');
     }
@@ -1607,7 +1521,6 @@ showNotification: function(message, type) {
     var self = this;
     
     if (confirm('¿Está seguro que desea finalizar la sesión de cotización?')) {
-        console.log('Ending context session...');
         
         // Mostrar notificación de proceso
         self.showNotification('Finalizando sesión...', 'info');
@@ -1639,7 +1552,6 @@ showNotification: function(message, type) {
         // Establecer cookies
         document.cookie = 'eq_session_ended=true; path=/; max-age=86400';
         
-        console.log('Cleaned all local storage and set all flags');
         
         // Eliminar panel del DOM inmediatamente
         $('.eq-context-panel').remove();
@@ -1661,14 +1573,12 @@ showNotification: function(message, type) {
                 timestamp: Date.now()
             },
             success: function(response) {
-                console.log('Server response to session end:', response);
                 
                 if (response.success) {
                     self.showNotification('Sesión finalizada correctamente', 'success');
                     
                     // Verificar que el panel ya no está visible
                     if ($('.eq-context-panel').length > 0) {
-                        console.log('Panel still visible after session end, removing it forcefully');
                         $('.eq-context-panel').remove();
                         self.renderToggleButton();
                     }
@@ -1700,10 +1610,8 @@ showNotification: function(message, type) {
     }
 },
 
-// Nuevo método para forzar finalización de sesión
 forceEndSession: function() {
     var self = this;
-    console.log('Using force method to end session');
     
     // Intentar nueva solicitud AJAX con parámetros adicionales
     $.ajax({
@@ -1738,7 +1646,6 @@ forceEndSession: function() {
 // Nueva función para limpiar con reintentos
 clearContextWithRetry: function(retries) {
     var self = this;
-    console.log('Attempting to clear context on server (retries left: ' + retries + ')');
     
     $.ajax({
         url: eqCartData.ajaxurl,
@@ -1751,10 +1658,8 @@ clearContextWithRetry: function(retries) {
             timestamp: Date.now() // Evitar caché
         },
         success: function(response) {
-            console.log('Server responded to clear_context_meta:', response);
             
             if (response.success && response.data && response.data.cleared) {
-                console.log('Session successfully cleared on server');
                 
                 // Verificar después de un breve retraso si la sesión realmente se eliminó
                 setTimeout(function() {
@@ -1810,7 +1715,6 @@ verifyContextCleared: function() {
                     console.error('Context still active after clearing! Retrying...');
                     self.clearContextWithRetry(1);
                 } else {
-                    console.log('Verification confirmed: context successfully cleared');
                     self.showNotification('Sesión finalizada correctamente', 'success');
                     
                     // Recargar después de un breve retraso

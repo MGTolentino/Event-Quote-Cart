@@ -95,11 +95,6 @@ class Event_Quote_Cart_Loader {
     private function load_dependencies() {
         $plugin_root = dirname(dirname(__FILE__));
         
-        // Debug
-        error_log('Plugin Root: ' . $plugin_root);
-        error_log('Admin Path: ' . $plugin_root . '/admin/class-admin.php');
-		error_log('File exists: ' . (file_exists($plugin_root . '/admin/class-admin.php') ? 'YES' : 'NO'));
-        
         // Load admin class
         require_once $plugin_root . '/admin/class-admin.php';
         

@@ -35,7 +35,6 @@
 		bindContextEvents() {
     // Escuchar cambios en el contexto
     $(document).on('eqContextChanged', (e, contextData) => {
-        console.log('Context changed event received:', contextData);
         
         // Actualizar estado interno si es necesario
         if (contextData && contextData.eventDate) {
@@ -53,7 +52,6 @@
 		bindDateEvents() {
     // 1. Evento para cambios desde el context panel (máxima prioridad)
     $(document).on('eqContextDateChanged', (e, date) => {
-        console.log('Context panel date changed:', date);
         this.state.selectedDate = date;
         localStorage.setItem('eq_selected_date', date);
         
@@ -73,7 +71,6 @@
             return;
         }
         
-        console.log('Date changed from other component:', date);
         this.state.selectedDate = date;
         
         // Update datepicker if it exists
@@ -95,7 +92,6 @@
             return;
         }
         
-        console.log('Filter date applied:', date);
         this.state.selectedDate = date;
         
         // Update datepicker if it exists
@@ -199,7 +195,6 @@ if (validateResponse.data.hasItems) {
     // Verificar si todas las fechas son iguales usando la nueva propiedad
     else if (validateResponse.data.allSameDate) {
         // Si todas las fechas son iguales, proceder sin confirmar
-        console.log('All items have the same date, proceeding without confirmation');
         this.proceedWithAddToCart(form, submitButton, originalText);
     }
     else {
@@ -270,7 +265,6 @@ proceedWithAddToCart(form, submitButton, originalText) {
         if (parsedContext.isActive && parsedContext.leadId && parsedContext.eventId) {
             data.context_lead_id = parsedContext.leadId;
             data.context_event_id = parsedContext.eventId;
-            console.log('Including context in add_to_cart:', parsedContext.leadId, parsedContext.eventId);
         }
     }
 } catch (e) {
@@ -495,7 +489,6 @@ this.content.on('click', '.eq-include-button', (e) => {
     try {
         // Mejorar la detección de elementos existentes asegurando conversión numérica
 const listingIdNum = parseInt(listingId);
-console.log('Checking if listing exists in cart:', listingIdNum);
 
 // Buscar el elemento en los items existentes, con log para debug
 let existingItem = null;
@@ -503,11 +496,9 @@ for (let i = 0; i < this.state.items.length; i++) {
     const currentItem = this.state.items[i];
     const currentListingId = parseInt(currentItem.listing_id);
     
-    console.log('Comparing with cart item:', currentListingId, 'Status:', currentItem.status);
     
     if (currentListingId === listingIdNum && currentItem.status === 'active') {
         existingItem = currentItem;
-        console.log('Found existing item:', existingItem);
         break;
     }
 }
@@ -536,7 +527,6 @@ for (let i = 0; i < this.state.items.length; i++) {
         this.renderAddForm();
         this.openSidebar();
     } catch (error) {
-        console.error('Error fetching listing data:', error);
         alert('Error loading product data');
     }
 }
@@ -1416,13 +1406,6 @@ collectExtrasData() {
             }
         }
     }
-	
-	// Global AJAX error handler
-$(document).ajaxError((event, jqXHR, settings, error) => {
-    console.error('AJAX Error:', error);
-    console.error('Status:', jqXHR.status);
-    console.error('Response:', jqXHR.responseText);
-});
 
     // Inicializar cuando el documento esté listo
     $(document).ready(() => {

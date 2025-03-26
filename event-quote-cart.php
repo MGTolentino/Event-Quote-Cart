@@ -12,7 +12,6 @@
  * Domain Path: /languages
  */
 
-// If this file is called directly, abort.
 if (!defined('WPINC')) {
     die;
 }
@@ -144,7 +143,6 @@ function init_event_quote_cart() {
 }
 
 function eq_cart_enqueue_scripts() {
-    // CSS
     wp_enqueue_style(
         'event-quote-cart',
         EQ_CART_PLUGIN_URL . 'public/css/sidebar.css',
@@ -152,8 +150,7 @@ function eq_cart_enqueue_scripts() {
         EQ_CART_VERSION
     );
 	
-	   // Cargar CSS de página de carrito basado en la URL actual
-    $current_url = $_SERVER['REQUEST_URI']; // Obtiene la URL actual
+    $current_url = $_SERVER['REQUEST_URI']; 
     
     // Si la URL contiene 'quote-cart'
     if (strpos($current_url, 'quote-cart') !== false) {
@@ -185,8 +182,6 @@ function eq_cart_enqueue_scripts() {
         );
     }
 	
-
-    // JavaScript
     wp_enqueue_script(
         'event-quote-cart',
         EQ_CART_PLUGIN_URL . 'public/js/quote-cart.js',
@@ -204,8 +199,7 @@ function eq_cart_enqueue_scripts() {
         )
     );
 
-    // Localizar script
-    wp_localize_script(
+wp_localize_script(
     'event-quote-cart',
     'eqCartData',
     array(
@@ -217,45 +211,20 @@ function eq_cart_enqueue_scripts() {
         'thousand_sep' => wc_get_price_thousand_separator(),
         'decimal_sep' => wc_get_price_decimal_separator(),
         'num_decimals' => wc_get_price_decimals(),
-        'i18n' => array(
-            'addedToCart' => __('Added to quote cart', 'event-quote-cart'),
-            'errorAdding' => __('Error adding to quote cart', 'event-quote-cart'),
-            'removedFromCart' => __('Removed from quote cart', 'event-quote-cart'),
-            'errorRemoving' => __('Error removing from quote cart', 'event-quote-cart'),
-            'dateRequired' => __('Please select a date', 'event-quote-cart'),
-            'dateNotAvailable' => __('Selected date is not available', 'event-quote-cart'),
-            'dateAvailable' => __('Date is available', 'event-quote-cart'),
-            'errorValidating' => __('Error validating date', 'event-quote-cart'),
-            'adding' => __('Adding...', 'event-quote-cart'),
-            'updating' => __('Updating...', 'event-quote-cart'),
-            'checking' => __('Checking availability...', 'event-quote-cart'),
-            'selectDate' => __('Select date', 'event-quote-cart'),
-            'editDate' => __('Edit date', 'event-quote-cart'),
-            'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
-            'dateConflict' => __('This date conflicts with another booking', 'event-quote-cart'),
-            'quantityRequired' => __('Please enter a valid quantity', 'event-quote-cart'),
-            'invalidQuantity' => __('Quantity must be between %d and %d', 'event-quote-cart'),
-            'dateOutOfRange' => __('Selected date is outside the allowed booking window', 'event-quote-cart'),
-            'loadingError' => __('Error loading data', 'event-quote-cart')
-        )
+        'i18n' => eq_get_js_translations('main')
     )
 );
 
-    // Localizar script de integración single
-    wp_localize_script(
-        'event-quote-cart-single',
-        'eqSingleData',
-        array(
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('eq_cart_public_nonce'),
-            'i18n' => array(
-                'checkingAvailability' => __('Checking availability...', 'event-quote-cart'),
-                'dateAvailable' => __('This date is available', 'event-quote-cart'),
-                'dateNotAvailable' => __('This date is not available', 'event-quote-cart'),
-                'errorChecking' => __('Error checking availability', 'event-quote-cart')
-            )
-        )
-    );
+wp_localize_script(
+    'event-quote-cart-single',
+    'eqSingleData',
+    array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eq_cart_public_nonce'),
+        'i18n' => eq_get_js_translations('single')
+    )
+);
+
 }
 add_action('plugins_loaded', 'init_event_quote_cart');
 
@@ -297,13 +266,6 @@ function eq_clear_context_on_logout() {
         array('%d')
     );
     
-    // Verificar si hubo algún error
-    if ($result === false) {
-        error_log('wp_logout: Error deleting context session - ' . $wpdb->last_error);
-    } else {
-        error_log('wp_logout: Context cleared for user ' . $user_id . ' - Rows affected: ' . $result);
-    }
-    
     // Limpiar cookies relacionadas
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
@@ -340,7 +302,6 @@ function eq_sync_context_session() {
 	
 	// Verificar si hay cookie de sesión finalizada
 if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
-    error_log('eq_sync_context_session: Session ended cookie found, skipping sync');
     
     // Asegurar que la sesión PHP esté limpia
     if (isset($_SESSION['eq_quote_context'])) {
@@ -362,7 +323,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     
     // PASO 1: Verificar si existe una señal de "no restaurar"
     if (isset($_SESSION['eq_context_no_restore']) && $_SESSION['eq_context_no_restore'] === true) {
-        error_log('eq_sync_context_session: No-restore flag found, skipping session restoration');
         return;
     }
     
@@ -377,11 +337,9 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     
     // PASO 3: Si no hay sesión en la BD, limpiar también la sesión PHP (sincronizar estados)
     if (!$session) {
-        error_log('eq_sync_context_session: No session in DB for user ' . $user_id);
         
         // Si hay datos en la sesión PHP pero no en la BD, limpiarlos para sincronizar
         if (isset($_SESSION['eq_quote_context'])) {
-            error_log('eq_sync_context_session: Session found in PHP but not in DB, clearing PHP session');
             unset($_SESSION['eq_quote_context']);
         }
         
@@ -401,7 +359,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     
     // PASO 5: Si los IDs no son válidos, eliminar la sesión de la BD
     if (!$lead_exists || !$event_exists) {
-        error_log('eq_sync_context_session: Invalid lead/event IDs in DB session, deleting session');
         
         $wpdb->delete(
             $wpdb->prefix . 'eq_context_sessions',
@@ -431,7 +388,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     }
     
     if ($needs_update) {
-        error_log('eq_sync_context_session: Updating PHP session with DB values - lead_id: ' . 
             $session->lead_id . ', event_id: ' . $session->event_id);
         
         $_SESSION['eq_quote_context'] = array(
@@ -452,10 +408,8 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
         
         if ($cart_id) {
             update_user_meta($user_id, 'eq_active_cart_id', $cart_id);
-            error_log('eq_sync_context_session: Updated active_cart_id to ' . $cart_id);
         }
     } else {
-        error_log('eq_sync_context_session: PHP session already synchronized with DB');
     }
 }
 
@@ -521,7 +475,6 @@ function eq_update_sessions_table() {
     
     // Actualizar versión
     update_option('eq_sessions_table_version', '1.1');
-    error_log('eq_update_sessions_table: Table updated to version 1.1');
 }
 
 // Limpiar cookies de sesión finalizada al iniciar una nueva sesión

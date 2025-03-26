@@ -35,15 +35,6 @@ class Event_Quote_Cart_Page_Handler {
     // Obtener contexto activo
     $context = $this->get_active_context();
     
-    // Log para depuración
-    if ($context) {
-        error_log('render_quote_page: Active context found - Lead: ' . 
-            (isset($context['lead']->lead_nombre) ? $context['lead']->lead_nombre . ' ' . $context['lead']->lead_apellido : 'unknown') . 
-            ', Event: ' . (isset($context['event']->tipo_de_evento) ? $context['event']->tipo_de_evento : 'unknown'));
-    } else {
-        error_log('render_quote_page: No active context found');
-    }
-    
     // Verificar si el usuario debe ver el context panel
     $user = wp_get_current_user();
     $is_privileged = in_array('administrator', $user->roles) || in_array('ejecutivo_de_ventas', $user->roles);
@@ -59,7 +50,6 @@ class Event_Quote_Cart_Page_Handler {
         ));
         
         if ($session) {
-            error_log('render_quote_page: Session found in DB but not loaded in context. Deleting orphaned session.');
             $wpdb->delete(
                 $wpdb->prefix . 'eq_context_sessions',
                 array('id' => $session->id),
@@ -70,9 +60,6 @@ class Event_Quote_Cart_Page_Handler {
     
     // Obtener items del carrito
     $cart_items = $this->get_cart_items();
-    
-    // Log para depuración
-    error_log('render_quote_page: Number of cart items returned: ' . count($cart_items));
     
     // Calcular totales
     $totals = $this->calculate_totals($cart_items);
@@ -104,8 +91,6 @@ class Event_Quote_Cart_Page_Handler {
         
         // Verificar que el contexto pertenezca al usuario actual
         if ($context_user_id !== null && $context_user_id !== $user_id) {
-            error_log('get_cart_items: Context in session belongs to different user, ignoring. Session user: ' . 
-                $context_user_id . ', Current user: ' . $user_id);
             $context_lead_id = null;
             $context_event_id = null;
         } else if ($context_lead_id && $context_event_id) {
@@ -124,8 +109,6 @@ class Event_Quote_Cart_Page_Handler {
         ));
         
         if ($context_cart_id) {
-            error_log('get_cart_items: Found cart ID ' . $context_cart_id . 
-                ' for context lead_id: ' . $context_lead_id . ', event_id: ' . $context_event_id);
                 
             // Actualizar meta de usuario para consistencia
             update_user_meta($user_id, 'eq_active_cart_id', $context_cart_id);
@@ -180,9 +163,6 @@ class Event_Quote_Cart_Page_Handler {
         }
     }
 
-    // Log para depuración - muestra el ID del carrito activo
-    error_log('Active cart ID in get_cart_items: ' . $active_cart_id);
-
     // Obtener items del carrito activo
     $items_query = $wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}eq_cart_items
@@ -191,13 +171,7 @@ class Event_Quote_Cart_Page_Handler {
         $active_cart_id
     );
     
-    // Log para depuración - muestra la consulta
-    error_log('Items query: ' . $items_query);
-    
     $items = $wpdb->get_results($items_query);
-    
-    // Log para depuración - muestra número de items encontrados
-    error_log('Number of items found: ' . count($items));
 
     // Procesar cada item
     $processed_items = array();
@@ -205,16 +179,10 @@ class Event_Quote_Cart_Page_Handler {
         try {
             $listing = get_post($item->listing_id);
             if (!$listing) {
-                error_log('Listing not found: ' . $item->listing_id);
                 continue;
             }
             
             $form_data = json_decode($item->form_data, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                error_log('JSON error decoding form_data: ' . json_last_error_msg());
-                error_log('Raw form_data: ' . $item->form_data);
-                continue;
-            }
 
             $processed_item = new stdClass();
             $processed_item->id = $item->id;
@@ -232,9 +200,6 @@ class Event_Quote_Cart_Page_Handler {
             error_log('Error processing item #' . $item->id . ': ' . $e->getMessage());
         }
     }
-
-    // Log para depuración - muestra número de items procesados
-    error_log('Number of processed items: ' . count($processed_items));
     
     return $processed_items;
 }

@@ -68,7 +68,7 @@ if (!$context && !empty($cart_items)) {
     }
 }
 			
-			// Obtener el carrito activo para usar en la inserción de la cotización
+// Obtener el carrito activo para usar en la inserción de la cotización
 $cart = eq_get_active_cart();
 
 // Generar HTML para el PDF
@@ -143,9 +143,6 @@ wp_send_json_success(array(
         }
     }
     
-    /**
-     * Generar HTML para el PDF
-     */
     /**
  * Generar HTML para el PDF
  */

@@ -150,26 +150,19 @@ if (isset($_POST['context_event_id']) && !empty($_POST['context_event_id'])) {
 
 $cart_id = $this->get_or_create_cart($lead_id, $event_id);
 		
-				 error_log('Añadiendo ítem al carrito - cart_id: ' . $cart_id);
-
 		
-	// Usar el precio calculado del form si está disponible, o calcular el precio completo incluyendo extras
 $total_price = isset($_POST['calculated_price']) ? 
     floatval($_POST['calculated_price']) : 
     $this->calculate_price($listing_id, $quantity, $extras, $date);
 
-// 2. Verificar disponibilidad
 if (!$this->date_handler->check_listing_availability($listing_id, $date)) {
     throw new Exception('Date not available for this listing');
 }
 
-// 3. Obtener precio base del listing
 $base_price = get_post_meta($listing_id, 'hp_price', true);
 
-// 4. Obtener extras completos del listing para validar y almacenar info
 $listing_extras = get_post_meta($listing_id, 'hp_price_extras', true);
 
-// 5. Procesar y validar extras (pero NO sumar al precio total otra vez)
 foreach ($extras as &$extra) {
     $extra_id = isset($extra['id']) ? $extra['id'] : '';
     if (isset($listing_extras[$extra_id])) {
@@ -178,13 +171,8 @@ foreach ($extras as &$extra) {
         // Copiar información importante al array de extras
         $extra['price'] = floatval($listing_extra['price']);
         $extra['name'] = $listing_extra['name'];
-        
-        // NO sumar estos valores al total_price, ya que ya están incluidos en el cálculo de calculate_price()
-    }
+            }
 }
-
-     
-        // 7. Verificar si el listing ya existe en el carrito
         $query = $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}eq_cart_items 
             WHERE cart_id = %d 
@@ -193,12 +181,9 @@ foreach ($extras as &$extra) {
             $cart_id,
             $listing_id
         );
-        error_log('Query: ' . $query);
         
         $existing_item = $wpdb->get_row($query);
-        error_log('Existing item: ' . print_r($existing_item, true));
 		
-		error_log('Before saving - total_price: ' . $total_price . ', base_price: ' . $base_price);
 
 // Verificación de último momento para asegurar el precio correcto
 if (!empty($date)) {
@@ -214,13 +199,11 @@ if (!empty($date)) {
                 isset($range['price'])) {
                 // Forzar el precio correcto
                 $day_price = floatval($range['price']);
-                error_log('Found day price: ' . $day_price . ' for day: ' . $day_of_week);
                 
                 // Si el base_price no es el precio del día, corregirlo
                 if ($base_price != $day_price) {
                     $base_price = $day_price;
                     $total_price = $this->recalculate_total_with_new_base($day_price, $quantity, $extras);
-                    error_log('Corrected total_price to: ' . $total_price);
                 }
                 break;
             }
@@ -248,7 +231,6 @@ if (!empty($date)) {
             );
 
             $item_id = $existing_item->id;
-			error_log('Ítem procesado - ID: ' . $item_id . ', total_price: ' . $total_price);
 			
 			// Verificar otros ítems en el carrito
 $other_items = $wpdb->get_results($wpdb->prepare(
@@ -259,7 +241,6 @@ $other_items = $wpdb->get_results($wpdb->prepare(
 
 foreach ($other_items as $other_item) {
     $other_form_data = json_decode($other_item->form_data, true);
-    error_log('Otro ítem ID ' . $other_item->id . ' - total_price: ' . ($other_form_data['total_price'] ?? 'no definido'));
 }
 			
         } else {
@@ -304,7 +285,6 @@ foreach ($other_items as $other_item) {
 
     public function update_cart_item() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
-    error_log('Update cart item request: ' . json_encode($_POST));
 
     // Verificación estricta de permisos
     if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
@@ -336,7 +316,6 @@ foreach ($other_items as $other_item) {
         $extras = $_POST['extras'];
     }
     
-    error_log('Processed extras: ' . json_encode($extras));
 
     if (!$item_id) {
         wp_send_json_error('Invalid item ID');
@@ -379,7 +358,6 @@ foreach ($other_items as $other_item) {
                     in_array($day_of_week, $range['days']) && 
                     isset($range['price'])) {
                     $base_price = floatval($range['price']);
-                    error_log('Update: Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
                     break;
                 }
             }
@@ -387,7 +365,6 @@ foreach ($other_items as $other_item) {
         
         // Calcular el precio total usando recalculate_total_with_new_base (que ahora incluye impuestos)
         $total_price = $this->recalculate_total_with_new_base($base_price, $quantity, $extras);
-        error_log('Update: New total with base ' . $base_price . ': ' . $total_price);
         
         // Preparar datos actualizados
         $updated_form_data = array(
@@ -398,9 +375,7 @@ foreach ($other_items as $other_item) {
             'total_price' => $total_price
         );
         
-        error_log('Updated form data: ' . json_encode($updated_form_data));
 
-        // Actualizar en la base de datos
         $wpdb->update(
             $wpdb->prefix . 'eq_cart_items',
             array(
@@ -584,8 +559,6 @@ public function update_cart_event() {
  * @return float Precio total calculado
  */
 private function calculate_price($listing_id, $quantity, $extras, $date = '') {
-    // Log para depuración inicial
-    error_log('calculate_price called with listing_id: ' . $listing_id . ', date: ' . ($date ?: 'not set'));
     
     // Obtener precio base del listing
     $base_price = floatval(get_post_meta($listing_id, 'hp_price', true));
@@ -599,13 +572,11 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
     if (!empty($date)) {
         // Obtener rangos de precios por día si existen
         $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
-        error_log('Booking ranges: ' . (is_array($booking_ranges) ? json_encode($booking_ranges) : 'none'));
         
         if (!empty($booking_ranges) && is_array($booking_ranges)) {
             // Convertir la fecha a día de la semana (0 domingo, 6 sábado)
             $date_obj = new DateTime($date);
             $day_of_week = intval($date_obj->format('w'));
-            error_log('Day of week for ' . $date . ': ' . $day_of_week);
             
             // Buscar si hay un precio específico para este día
             foreach ($booking_ranges as $range) {
@@ -613,7 +584,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
                     in_array($day_of_week, $range['days']) && 
                     isset($range['price'])) {
                     $base_price = floatval($range['price']);
-                    error_log('Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
                     break;
                 }
             }
@@ -622,9 +592,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
     
     // Calcular subtotal (precio base * cantidad)
     $total_price = $base_price * $quantity;
-    
-    // Para debug
-    error_log('Calculate Price - Listing ID: ' . $listing_id . ', Quantity: ' . $quantity . ', Base Price: ' . $base_price);
     
     // Procesar extras si existen
     if (!empty($extras) && is_array($extras)) {
@@ -653,8 +620,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
             // Obtener la cantidad del extra
             $extra_quantity = isset($extra['quantity']) ? intval($extra['quantity']) : 1;
             
-            // Para debug
-            error_log('Extra: ' . $extra_name . ', Type: ' . $extra_type . ', Price: ' . $extra_price . ', Quantity: ' . $extra_quantity);
             
             // Variable para almacenar cuánto se suma por este extra
             $extra_total = 0;
@@ -683,13 +648,10 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
             // Sumar al total
             $total_price += $extra_total;
             
-            // Para debug
-            error_log('Extra Total: ' . $extra_total . ', Running Total: ' . $total_price);
+          
         }
     }
     
-    // Para debug
-    error_log('Final Total Price: ' . $total_price);
     
     return $total_price;
 }
@@ -831,11 +793,7 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
     $user_id = get_current_user_id();
     $user = get_user_by('id', $user_id);
     
-    // Registrar parámetros para debugging
-    error_log('get_or_create_cart called with lead_id: ' . ($lead_id !== null ? $lead_id : 'null') . 
-              ', event_id: ' . ($event_id !== null ? $event_id : 'null'));
     
-    // PASO 1: Siempre priorizar los parámetros proporcionados explícitamente
     if ($lead_id !== null && $event_id !== null) {
         // Buscar un carrito existente con esta combinación exacta lead_id/event_id
         $existing_cart = $wpdb->get_var($wpdb->prepare(
@@ -847,7 +805,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         
         // Si existe, usarlo
         if ($existing_cart) {
-            error_log('Found existing cart ID ' . $existing_cart . ' for lead_id=' . $lead_id . ', event_id=' . $event_id);
             
             // Actualizar como carrito activo del usuario
             update_user_meta($user_id, 'eq_active_cart_id', $existing_cart);
@@ -856,7 +813,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         }
         
         // Si no existe, crear uno nuevo específicamente para esta combinación
-        error_log('Creating new cart for lead_id=' . $lead_id . ', event_id=' . $event_id);
         
         $cart_data = array(
             'user_id' => $user_id,
@@ -878,11 +834,9 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         // Actualizar como carrito activo del usuario
         update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
         
-        error_log('Created new cart ID ' . $new_cart_id);
         return intval($new_cart_id);
     }
     
-    // PASO 2: Si no se proporcionaron ambos parámetros, intentar inferirlos para usuarios normales
     $is_privileged_user = current_user_can('administrator') || current_user_can('ejecutivo_de_ventas');
     
     // Para usuarios normales, intentar buscar o crear automáticamente
@@ -899,7 +853,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
             
             if ($lead) {
                 $lead_id = $lead->_ID;
-                error_log('Inferred lead_id=' . $lead_id . ' based on user email');
             }
         }
         
@@ -924,7 +877,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
                     
                     if ($evento) {
                         $event_id = $evento->_ID;
-                        error_log('Found event_id=' . $event_id . ' with exact date match');
                     } else {
                         // 2.2.2. Si no hay coincidencia exacta, buscar un evento cercano (±7 días)
                         $siete_dias = 7 * 24 * 60 * 60; // 7 días en segundos
@@ -940,12 +892,10 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
                         
                         if ($evento_cercano) {
                             $event_id = $evento_cercano->_ID;
-                            error_log('Found nearby event_id=' . $event_id);
                         } else {
                             // 2.2.3. Si no hay evento cercano, crear uno nuevo
                             $event_id = $this->create_new_event_for_lead($lead_id, $date_timestamp);
                             if ($event_id) {
-                                error_log('Created new event_id=' . $event_id);
                             }
                         }
                     }
@@ -954,7 +904,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         }
     }
     
-    // PASO 3: Si hemos determinado lead_id y event_id, intentar encontrar o crear carrito
     if ($lead_id !== null && $event_id !== null) {
         // Buscar un carrito existente con esta combinación exacta lead_id/event_id
         $existing_cart = $wpdb->get_var($wpdb->prepare(
@@ -966,7 +915,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         
         // Si existe, usarlo
         if ($existing_cart) {
-            error_log('Found existing cart ID ' . $existing_cart . ' for inferred lead_id=' . $lead_id . ', event_id=' . $event_id);
             
             // Actualizar como carrito activo del usuario
             update_user_meta($user_id, 'eq_active_cart_id', $existing_cart);
@@ -974,9 +922,7 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
             return intval($existing_cart);
         }
         
-        // Si no existe, crear uno nuevo específicamente para esta combinación
-        error_log('Creating new cart for inferred lead_id=' . $lead_id . ', event_id=' . $event_id);
-        
+        // Si no existe, crear uno nuevo específicamente para esta combinación        
         $cart_data = array(
             'user_id' => $user_id,
             'lead_id' => $lead_id,
@@ -997,11 +943,9 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         // Actualizar como carrito activo del usuario
         update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
         
-        error_log('Created new cart ID ' . $new_cart_id . ' for inferred parameters');
         return intval($new_cart_id);
     }
     
-    // PASO 4: Si no pudimos determinar lead_id y event_id, usar el carrito activo existente
     $active_cart_id = get_user_meta($user_id, 'eq_active_cart_id', true);
     
     if ($active_cart_id) {
@@ -1013,12 +957,10 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         ));
         
         if ($cart_exists) {
-            error_log('Using existing active cart ID ' . $active_cart_id . ' from user meta');
             return intval($active_cart_id);
         }
     }
     
-    // PASO 5: Si no hay carrito activo en meta o no es válido, buscar el más reciente
     $recent_cart_id = $wpdb->get_var($wpdb->prepare(
         "SELECT id FROM {$wpdb->prefix}eq_carts 
         WHERE user_id = %d AND status = 'active'
@@ -1030,12 +972,8 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         // Actualizar meta para futuras referencias
         update_user_meta($user_id, 'eq_active_cart_id', $recent_cart_id);
         
-        error_log('Using most recent cart ID ' . $recent_cart_id);
         return intval($recent_cart_id);
     }
-    
-    // PASO 6: Si no hay ningún carrito, crear uno nuevo sin lead_id/event_id
-    error_log('Creating new empty cart with no lead_id/event_id');
     
     $cart_data = array(
         'user_id' => $user_id,
@@ -1055,7 +993,6 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
     // Actualizar meta para futuras referencias
     update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
     
-    error_log('Created new empty cart ID ' . $new_cart_id);
     return intval($new_cart_id);
 }
 		
@@ -1262,7 +1199,6 @@ private function get_listing_data_for_edit($listing_id, $date = null) {
                     in_array($day_of_week, $range['days']) && 
                     isset($range['price'])) {
                     $base_price = floatval($range['price']);
-                    error_log('Edit: Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
                     break;
                 }
             }
@@ -1357,9 +1293,6 @@ public function validate_cart_date() {
             WHERE cart_id = %d AND status = 'active'",
             $cart_id
         ));
-		
-				error_log('Validando cambio de fecha - ítems en carrito: ' . count($items));
-
 
         $has_conflicts = false;
         $different_dates = array();
@@ -1372,7 +1305,6 @@ public function validate_cart_date() {
 
         foreach ($items as $item) {
             $form_data = json_decode($item->form_data, true);
-			    error_log('Item ID ' . $item->id . ' - total_price: ' . ($form_data['total_price'] ?? 'no definido'));
 
             if (isset($form_data['date'])) {
                 // Convertir también la fecha del ítem para comparación estándar
@@ -1441,9 +1373,6 @@ public function validate_cart_date_change() {
             ));
             return;
         }
-
-        // Log para depuración
-        error_log('validate_cart_date_change using cart_id: ' . $active_cart_id . ', new_date: ' . $new_date);
         
         // Obtener items existentes
         $items = $wpdb->get_results($wpdb->prepare(
@@ -1494,16 +1423,11 @@ foreach ($items as $item) {
             $item_date_obj = new DateTime($form_data['date']);
             $item_date_normalized = $item_date_obj->format('Y-m-d');
             
-            // Log para depuración
-            error_log('Comparing dates - Item: ' . $item_date_normalized . ', New: ' . $new_date_normalized);
-            
             // Verificar si son diferentes - comparar las cadenas normalizadas
             if ($item_date_normalized !== $new_date_normalized) {
                 $all_same_date = false;
-                error_log('Date mismatch detected: ' . $item_date_normalized . ' != ' . $new_date_normalized);
             }
         } catch (Exception $e) {
-            error_log('Error parsing date: ' . $e->getMessage());
             $all_same_date = false;
         }
     }
@@ -1583,9 +1507,7 @@ foreach ($items as $item) {
 				foreach ($items as $item) {
 					
 					// Antes de actualizar, registrar precio actual
-					$form_data_before = json_decode($item->form_data, true);
-					error_log('Item ID ' . $item->id . ' antes de actualizar - total_price: ' . ($form_data_before['total_price'] ?? 'no definido'));
-    
+					$form_data_before = json_decode($item->form_data, true);    
 					
 					// Obtener datos actuales
 					$form_data = json_decode($item->form_data, true);
@@ -1643,7 +1565,6 @@ foreach ($items as $item) {
 						$form_data['total_price'] = $total_price;
 					}
 
-					// Actualizar en la base de datos
 					$wpdb->update(
 						$wpdb->prefix . 'eq_cart_items',
 						array(
@@ -1657,8 +1578,6 @@ foreach ($items as $item) {
 					
 					// Después de actualizar, registrar nuevo precio
     $form_data_after = json_decode($item->form_data, true);
-    error_log('Item ID ' . $item->id . ' después de actualizar - total_price: ' . ($form_data_after['total_price'] ?? 'no definido'));
-
 				}
 
 				// Guardar la nueva fecha maestra en una opción de usuario
@@ -1781,9 +1700,7 @@ public function clear_context_meta() {
     
     $user_id = get_current_user_id();
     $force_delete = isset($_POST['force_delete']) && $_POST['force_delete'] === 'true';
-    
-    error_log('clear_context_meta: Starting cleanup for user ' . $user_id . ' (force_delete: ' . ($force_delete ? 'yes' : 'no') . ')');
-    
+        
     // Establecer señal de "no restaurar" para evitar recreación automática
     $_SESSION['eq_context_no_restore'] = true;
     
@@ -1816,9 +1733,7 @@ public function clear_context_meta() {
         "DELETE FROM {$wpdb->prefix}eq_context_sessions WHERE user_id = %d",
         $user_id
     ));
-    
-    error_log('clear_context_meta: Deleted by user_id. Result: ' . ($deleted !== false ? $deleted : 'Error: ' . $wpdb->last_error));
-    
+        
     // Si se usó force_delete o la primera eliminación no funcionó, intentar con consulta directa
     if ($force_delete || $deleted === false || $deleted === 0) {
         // Método más agresivo: obtener todos los IDs de sesión para este usuario
@@ -1834,15 +1749,12 @@ public function clear_context_meta() {
                     $session_id
                 ));
                 
-                error_log('clear_context_meta: Force deleted session ID ' . $session_id . '. Result: ' . 
-                    ($force_delete !== false ? $force_delete : 'Error: ' . $wpdb->last_error));
             }
         }
         
         // Como último recurso, usar consulta sin preparar pero segura
         $table_name = $wpdb->prefix . 'eq_context_sessions';
         $wpdb->query("DELETE FROM {$table_name} WHERE user_id = {$user_id}");
-        error_log('clear_context_meta: Used last resort deletion method');
     }
     
     // Verificar que la sesión se eliminó correctamente
@@ -1852,7 +1764,6 @@ public function clear_context_meta() {
     ));
     
     if ($session_check) {
-        error_log('clear_context_meta: WARNING - Session still exists after deletion attempt!');
         wp_send_json_error([
             'message' => 'No se pudo eliminar la sesión completamente',
             'cleared' => false
@@ -1885,11 +1796,9 @@ public function clear_context_meta() {
     $user_id = get_current_user_id();
     $response = array('isActive' => false);
     
-    error_log('Check context status for user_id: ' . $user_id);
     
     // Verificar primero si hay cookie de sesión finalizada
     if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
-        error_log('check_context_status: Session ended cookie found, reporting inactive');
         wp_send_json_success(array('isActive' => false));
         return;
     }
@@ -1902,11 +1811,8 @@ $session = $wpdb->get_row($wpdb->prepare(
     $user_id
 ));
 
-error_log('check_context_status: SQL query: ' . $wpdb->last_query);
-error_log('check_context_status: Session query result: ' . ($session ? 'Found - ID: ' . $session->id : 'Not found'));
 
 if (!$session) {
-    error_log('check_context_status: No session found in database');
     
     // Si no hay sesión en BD pero sí en PHP, limpiarla
     if (isset($_SESSION['eq_quote_context'])) {
@@ -1934,7 +1840,6 @@ if (!$session) {
     ));
     
     if (!$lead || !$event) {
-        error_log('check_context_status: Invalid lead or event in session, deleting session');
         
         // Eliminar sesión inválida
         $wpdb->delete(
@@ -1972,9 +1877,6 @@ if (!$session) {
         'session_token' => $session->session_token
     );
     
-    error_log('check_context_status: Found valid session in database - Lead: ' . 
-              $response['leadName'] . ', Event: ' . $response['eventType']);
-    
     wp_send_json_success($response);
 }
 	
@@ -2002,7 +1904,6 @@ public function verify_context_cleared() {
     
     // Si existe sesión en BD, intentar eliminarla nuevamente
     if ($session) {
-        error_log('verify_context_cleared: Session still exists in database! ID: ' . $session->id);
         
         // Intentar eliminar directamente
         $deleted = $wpdb->query($wpdb->prepare(
@@ -2010,7 +1911,6 @@ public function verify_context_cleared() {
             $session->id
         ));
         
-        error_log('verify_context_cleared: Forced deletion result: ' . ($deleted !== false ? $deleted : 'Error: ' . $wpdb->last_error));
         
         // Verificar nuevamente
         $still_exists = $wpdb->get_var($wpdb->prepare(
@@ -2019,7 +1919,6 @@ public function verify_context_cleared() {
         ));
         
         if ($still_exists) {
-            error_log('verify_context_cleared: CRITICAL - Session still exists after forced deletion!');
             wp_send_json_success(array('isActive' => true, 'forceReload' => true));
             return;
         }
@@ -2027,7 +1926,6 @@ public function verify_context_cleared() {
     
     // Verificar en sesión PHP
     if (isset($_SESSION['eq_quote_context'])) {
-        error_log('verify_context_cleared: Session still exists in PHP! Clearing...');
         unset($_SESSION['eq_quote_context']);
     } else {
         error_log('verify_context_cleared: No session in PHP');
@@ -2071,13 +1969,11 @@ public function verify_context_cleared() {
     // Eliminar cualquier cookie de sesión finalizada
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
-        error_log('create_context_session: Cleared eq_session_ended cookie');
     }
     
     // Asegurarnos de que no haya señal de "no restaurar" en la sesión
     if (isset($_SESSION['eq_context_no_restore'])) {
         unset($_SESSION['eq_context_no_restore']);
-        error_log('create_context_session: Cleared eq_context_no_restore flag');
     }
     
     // IMPORTANTE: Eliminar cualquier sesión existente primero para evitar conflictos
@@ -2086,9 +1982,6 @@ public function verify_context_cleared() {
         array('user_id' => $user_id),
         array('%d')
     );
-    
-    error_log('create_context_session: Deleted existing sessions. Result: ' . 
-              ($deleted !== false ? $deleted : 'Error: ' . $wpdb->last_error));
     
     // Crear la nueva sesión
     $insert_result = $wpdb->insert(
@@ -2105,13 +1998,11 @@ public function verify_context_cleared() {
     );
     
     if ($insert_result === false) {
-        error_log('create_context_session: Error inserting new session: ' . $wpdb->last_error);
         wp_send_json_error('Error al crear sesión de contexto en la base de datos');
         return;
     }
     
     $new_session_id = $wpdb->insert_id;
-    error_log('create_context_session: Created new session ID ' . $new_session_id);
     
     // Actualizar context en sesión PHP
     $_SESSION['eq_quote_context'] = array(
@@ -2212,12 +2103,10 @@ public function update_cart_context() {
     // Limpiar cualquier cookie o señal de sesión finalizada
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
-        error_log('update_cart_context: Cleared eq_session_ended cookie');
     }
     
     if (isset($_SESSION['eq_context_no_restore'])) {
         unset($_SESSION['eq_context_no_restore']);
-        error_log('update_cart_context: Cleared eq_context_no_restore flag');
     }
     
     // Verificar que el usuario tenga acceso a este lead/evento
@@ -2286,9 +2175,6 @@ public function update_cart_context() {
         'timestamp' => time()
     );
     
-    // Registrar para depuración
-    error_log('update_cart_context: Session updated with lead_id=' . $lead_id . ', event_id=' . $event_id . ', user_id=' . $user_id);
-    
     // Buscar si ya existe un carrito para este par lead-evento
     $existing_cart = $wpdb->get_var($wpdb->prepare(
         "SELECT id FROM {$wpdb->prefix}eq_carts 
@@ -2300,7 +2186,6 @@ public function update_cart_context() {
     if ($existing_cart) {
         // Si existe, establecerlo como carrito activo
         update_user_meta($user_id, 'eq_active_cart_id', $existing_cart);
-        error_log('update_cart_context: Using existing cart ID ' . $existing_cart);
         
         wp_send_json_success(array(
             'message' => 'Contexto actualizado a carrito existente',
@@ -2326,7 +2211,6 @@ public function update_cart_context() {
     );
     
     $new_cart_id = $wpdb->insert_id;
-    error_log('update_cart_context: Created new cart ID ' . $new_cart_id);
     
     // Establecer como carrito activo
     update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
@@ -2717,9 +2601,6 @@ public function get_lead_email() {
         $lead_email = !empty($lead->lead_e_mail) ? $lead->lead_e_mail : '';
     }
     
-    // Log para debugging
-    error_log('get_lead_email: Context lead email: ' . ($lead_email ?: 'none'));
-    
     // Si no se encontró email en el contexto, intentar el método antiguo como respaldo
     if (empty($lead_email)) {
         global $wpdb;
@@ -2736,7 +2617,6 @@ public function get_lead_email() {
                 $cart->lead_id
             ));
             
-            error_log('get_lead_email: Fallback cart lead email: ' . ($lead_email ?: 'none'));
         }
     }
     
