@@ -153,53 +153,37 @@ $cart_id = $this->get_or_create_cart($lead_id, $event_id);
 				 error_log('Añadiendo ítem al carrito - cart_id: ' . $cart_id);
 
 		
-		// Usar el precio calculado del form si está disponible
-        $total_price = isset($_POST['calculated_price']) ? 
-            floatval($_POST['calculated_price']) : 
-            $this->calculate_price($listing_id, $quantity, $extras);
+	// Usar el precio calculado del form si está disponible, o calcular el precio completo incluyendo extras
+$total_price = isset($_POST['calculated_price']) ? 
+    floatval($_POST['calculated_price']) : 
+    $this->calculate_price($listing_id, $quantity, $extras, $date);
 
-        // 2. Verificar disponibilidad
-        if (!$this->date_handler->check_listing_availability($listing_id, $date)) {
-            throw new Exception('Date not available for this listing');
-        }
+// 2. Verificar disponibilidad
+if (!$this->date_handler->check_listing_availability($listing_id, $date)) {
+    throw new Exception('Date not available for this listing');
+}
 
-        // 3. Obtener precio base del listing
-        $base_price = get_post_meta($listing_id, 'hp_price', true);
-        
-        // 4. Obtener extras completos del listing para validar
-        $listing_extras = get_post_meta($listing_id, 'hp_price_extras', true);
+// 3. Obtener precio base del listing
+$base_price = get_post_meta($listing_id, 'hp_price', true);
 
-        // 5. Calcular precio total
-        $total_price = floatval($base_price) * $quantity;
+// 4. Obtener extras completos del listing para validar y almacenar info
+$listing_extras = get_post_meta($listing_id, 'hp_price_extras', true);
 
-        // 6. Procesar y validar extras
+// 5. Procesar y validar extras (pero NO sumar al precio total otra vez)
 foreach ($extras as &$extra) {
     $extra_id = isset($extra['id']) ? $extra['id'] : '';
     if (isset($listing_extras[$extra_id])) {
         $listing_extra = $listing_extras[$extra_id];
         
+        // Copiar información importante al array de extras
         $extra['price'] = floatval($listing_extra['price']);
         $extra['name'] = $listing_extra['name'];
         
-        $extra_quantity = isset($extra['quantity']) ? intval($extra['quantity']) : 1;
-        
-        switch($extra['type']) {
-            case 'per_quantity':
-                $total_price += $extra['price'] * $quantity;
-                break;
-            case 'variable_quantity':
-                $total_price += $extra['price'] * $extra_quantity;
-                break;
-            case 'per_order':
-            case 'per_item': // Tratar per_item igual que per_order (precio fijo)
-                $total_price += $extra['price'];
-                break;
-            default:
-                $total_price += $extra['price'] * $quantity;
-        }
+        // NO sumar estos valores al total_price, ya que ya están incluidos en el cálculo de calculate_price()
     }
 }
-        
+
+     
         // 7. Verificar si el listing ya existe en el carrito
         $query = $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}eq_cart_items 
@@ -213,6 +197,36 @@ foreach ($extras as &$extra) {
         
         $existing_item = $wpdb->get_row($query);
         error_log('Existing item: ' . print_r($existing_item, true));
+		
+		error_log('Before saving - total_price: ' . $total_price . ', base_price: ' . $base_price);
+
+// Verificación de último momento para asegurar el precio correcto
+if (!empty($date)) {
+    // Código para obtener el precio específico del día, similar al de calculate_price
+    $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
+    if (!empty($booking_ranges) && is_array($booking_ranges)) {
+        $date_obj = new DateTime($date);
+        $day_of_week = intval($date_obj->format('w'));
+        
+        foreach ($booking_ranges as $range) {
+            if (isset($range['days']) && is_array($range['days']) && 
+                in_array($day_of_week, $range['days']) && 
+                isset($range['price'])) {
+                // Forzar el precio correcto
+                $day_price = floatval($range['price']);
+                error_log('Found day price: ' . $day_price . ' for day: ' . $day_of_week);
+                
+                // Si el base_price no es el precio del día, corregirlo
+                if ($base_price != $day_price) {
+                    $base_price = $day_price;
+                    $total_price = $this->recalculate_total_with_new_base($day_price, $quantity, $extras);
+                    error_log('Corrected total_price to: ' . $total_price);
+                }
+                break;
+            }
+        }
+    }
+}
 
         if ($existing_item) {
             // 8a. Actualizar el item existente
@@ -290,10 +304,9 @@ foreach ($other_items as $other_item) {
 
     public function update_cart_item() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
-		error_log('Update cart item request: ' . json_encode($_POST));
+    error_log('Update cart item request: ' . json_encode($_POST));
 
-
-     // Verificación estricta de permisos
+    // Verificación estricta de permisos
     if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
         wp_send_json_error('Unauthorized');
         return;
@@ -322,9 +335,8 @@ foreach ($other_items as $other_item) {
         // Procesar extras en el formato tradicional (para compatibilidad)
         $extras = $_POST['extras'];
     }
-		
-		error_log('Processed extras: ' . json_encode($extras));
-
+    
+    error_log('Processed extras: ' . json_encode($extras));
 
     if (!$item_id) {
         wp_send_json_error('Invalid item ID');
@@ -343,45 +355,39 @@ foreach ($other_items as $other_item) {
             throw new Exception('Item not found');
         }
         
-        // Obtener datos actuales para preservar base_price y otros datos
-        $current_data = json_decode($item->form_data, true);
+        $listing_id = $item->listing_id;
         
         // Verificar disponibilidad si la fecha cambió
-        if ($date && $date !== $current_data['date']) {
-            if (!$this->date_handler->check_listing_availability($item->listing_id, $date)) {
+        if ($date && isset($current_data['date']) && $date !== $current_data['date']) {
+            if (!$this->date_handler->check_listing_availability($listing_id, $date)) {
                 throw new Exception('Date not available for this listing');
             }
         }
+
+        // CAMBIO IMPORTANTE: Usar recalculate_total_with_new_base para obtener el precio correcto
+        // Primero, obtener el precio base según el día de la semana
+        $base_price = get_post_meta($listing_id, 'hp_price', true);
         
-        // Calcular precio total
-        $base_price = isset($current_data['base_price']) ? $current_data['base_price'] : 
-                     get_post_meta($item->listing_id, 'hp_price', true);
-        
-        $total_price = floatval($base_price) * $quantity;
-        
-        // Añadir extras al total
-foreach ($extras as $extra) {
-    if (isset($extra['price']) && isset($extra['type'])) {
-        $extra_price = floatval($extra['price']);
-        $extra_quantity = isset($extra['quantity']) ? intval($extra['quantity']) : 1;
-        
-        switch ($extra['type']) {
-            case 'per_quantity':
-                $total_price += $extra_price * $quantity;
-                break;
-            case 'variable_quantity':
-            case 'variable':
-                $total_price += $extra_price * $extra_quantity;
-                break;
-            case 'per_order':
-            case 'per_item': // Tratar per_item igual que per_order
-                $total_price += $extra_price;
-                break;
-            default:
-                $total_price += $extra_price * $quantity;
+        // Verificar si hay precio específico para el día
+        $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
+        if (!empty($booking_ranges) && is_array($booking_ranges) && !empty($date)) {
+            $date_obj = new DateTime($date);
+            $day_of_week = intval($date_obj->format('w'));
+            
+            foreach ($booking_ranges as $range) {
+                if (isset($range['days']) && is_array($range['days']) && 
+                    in_array($day_of_week, $range['days']) && 
+                    isset($range['price'])) {
+                    $base_price = floatval($range['price']);
+                    error_log('Update: Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
+                    break;
+                }
+            }
         }
-    }
-}
+        
+        // Calcular el precio total usando recalculate_total_with_new_base (que ahora incluye impuestos)
+        $total_price = $this->recalculate_total_with_new_base($base_price, $quantity, $extras);
+        error_log('Update: New total with base ' . $base_price . ': ' . $total_price);
         
         // Preparar datos actualizados
         $updated_form_data = array(
@@ -391,30 +397,16 @@ foreach ($extras as $extra) {
             'base_price' => $base_price,
             'total_price' => $total_price
         );
-		
-		error_log('Updated form data: ' . json_encode($updated_form_data));
+        
+        error_log('Updated form data: ' . json_encode($updated_form_data));
 
-
-        // Actualizar datos del item
-        // Obtener datos actuales para preservar la fecha
-$current_form_data = json_decode($item->form_data, true);
-$current_date = isset($current_form_data['date']) ? $current_form_data['date'] : $date;
-
-// Actualizar datos del item con la nueva fecha
-$update_data = array(
-    'form_data' => json_encode(array(
-        'date' => $date, // Usar la variable $date que está definida al inicio de la función
-        'quantity' => $quantity,
-        'extras' => $extras,
-        'base_price' => isset($current_form_data['base_price']) ? $current_form_data['base_price'] : 0,
-        'total_price' => $total_price // Usar el nuevo total calculado
-    )),
-    'updated_at' => current_time('mysql')
-);
-
+        // Actualizar en la base de datos
         $wpdb->update(
             $wpdb->prefix . 'eq_cart_items',
-            $update_data,
+            array(
+                'form_data' => json_encode($updated_form_data),
+                'updated_at' => current_time('mysql')
+            ),
             array('id' => $item_id),
             array('%s', '%s'),
             array('%d')
@@ -591,9 +583,42 @@ public function update_cart_event() {
  * @param array $extras Array de extras seleccionados
  * @return float Precio total calculado
  */
-private function calculate_price($listing_id, $quantity, $extras) {
+private function calculate_price($listing_id, $quantity, $extras, $date = '') {
+    // Log para depuración inicial
+    error_log('calculate_price called with listing_id: ' . $listing_id . ', date: ' . ($date ?: 'not set'));
+    
     // Obtener precio base del listing
     $base_price = floatval(get_post_meta($listing_id, 'hp_price', true));
+    
+    // Si no se proporcionó fecha como parámetro, intentar obtenerla de POST
+    if (empty($date) && isset($_POST['date'])) {
+        $date = sanitize_text_field($_POST['date']);
+    }
+    
+    // Verificar si hay una fecha seleccionada para aplicar precio específico del día
+    if (!empty($date)) {
+        // Obtener rangos de precios por día si existen
+        $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
+        error_log('Booking ranges: ' . (is_array($booking_ranges) ? json_encode($booking_ranges) : 'none'));
+        
+        if (!empty($booking_ranges) && is_array($booking_ranges)) {
+            // Convertir la fecha a día de la semana (0 domingo, 6 sábado)
+            $date_obj = new DateTime($date);
+            $day_of_week = intval($date_obj->format('w'));
+            error_log('Day of week for ' . $date . ': ' . $day_of_week);
+            
+            // Buscar si hay un precio específico para este día
+            foreach ($booking_ranges as $range) {
+                if (isset($range['days']) && is_array($range['days']) && 
+                    in_array($day_of_week, $range['days']) && 
+                    isset($range['price'])) {
+                    $base_price = floatval($range['price']);
+                    error_log('Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
+                    break;
+                }
+            }
+        }
+    }
     
     // Calcular subtotal (precio base * cantidad)
     $total_price = $base_price * $quantity;
@@ -635,25 +660,25 @@ private function calculate_price($listing_id, $quantity, $extras) {
             $extra_total = 0;
             
             // Calcular precio según el tipo de extra
-switch($extra_type) {
-    case 'per_quantity':
-        // Para extras que se aplican por cada ítem
-        $extra_total = $extra_price * $quantity;
-        break;
-    case 'variable_quantity':
-        // Para extras con cantidad variable
-        $extra_total = $extra_price * $extra_quantity;
-        break;
-    case 'per_order':
-    case 'per_booking':
-    case 'per_item': // Tratar per_item igual que per_order
-        // Para extras que se aplican una vez por orden
-        $extra_total = $extra_price;
-        break;
-    default:
-        // Si no hay tipo definido o no reconocido, tratar como precio por ítem
-        $extra_total = $extra_price * $quantity;
-}
+            switch($extra_type) {
+                case 'per_quantity':
+                    // Para extras que se aplican por cada ítem
+                    $extra_total = $extra_price * $quantity;
+                    break;
+                case 'variable_quantity':
+                    // Para extras con cantidad variable
+                    $extra_total = $extra_price * $extra_quantity;
+                    break;
+                case 'per_order':
+                case 'per_booking':
+                case 'per_item': // Tratar per_item igual que per_order
+                    // Para extras que se aplican una vez por orden
+                    $extra_total = $extra_price;
+                    break;
+                default:
+                    // Si no hay tipo definido o no reconocido, tratar como precio por ítem
+                    $extra_total = $extra_price * $quantity;
+            }
             
             // Sumar al total
             $total_price += $extra_total;
@@ -667,6 +692,40 @@ switch($extra_type) {
     error_log('Final Total Price: ' . $total_price);
     
     return $total_price;
+}
+	
+	private function recalculate_total_with_new_base($day_price, $quantity, $extras) {
+    $total = $day_price * $quantity;
+    
+    if (!empty($extras) && is_array($extras)) {
+        foreach ($extras as $extra) {
+            $extra_price = isset($extra['price']) ? floatval($extra['price']) : 0;
+            $extra_type = isset($extra['type']) ? $extra['type'] : '';
+            $extra_quantity = isset($extra['quantity']) ? intval($extra['quantity']) : 1;
+            
+            switch($extra_type) {
+                case 'per_quantity':
+                    $total += $extra_price * $quantity;
+                    break;
+                case 'variable_quantity':
+                    $total += $extra_price * $extra_quantity;
+                    break;
+                case 'per_order':
+                case 'per_booking':
+                case 'per_item':
+                    $total += $extra_price;
+                    break;
+                default:
+                    $total += $extra_price * $quantity;
+            }
+        }
+    }
+    
+    // Aplicar impuestos al total
+    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    $total_with_taxes = $total * (1 + ($tax_rate / 100));
+    
+    return $total_with_taxes;
 }
 
  public function get_cart_items() {
@@ -1052,6 +1111,14 @@ private function create_new_event_for_lead($lead_id, $date_timestamp) {
     $listing = get_post($item->listing_id);
     $form_data = json_decode($item->form_data, true);
 
+    // Asegurarse de que base_price refleje el precio específico del día si es aplicable
+    $base_price = isset($form_data['base_price']) ? $form_data['base_price'] : 0;
+    
+    // Si no hay base_price en form_data, verificar si hay precio específico para el día
+    if (!$base_price && !empty($form_data['date'])) {
+        $base_price = $this->get_day_specific_price($item->listing_id, $form_data['date']);
+    }
+
     return array(
         'id' => $item->id,
         'listing_id' => $item->listing_id,
@@ -1063,10 +1130,32 @@ private function create_new_event_for_lead($lead_id, $date_timestamp) {
         'status' => $item->status,
         'created_at' => $item->created_at,
         'updated_at' => $item->updated_at,
-        'base_price' => $form_data['base_price'],
+        'base_price' => $base_price,
         'total_price' => $form_data['total_price'],
         'price_formatted' => hivepress()->woocommerce->format_price($form_data['total_price'])
     );
+}
+
+// Función auxiliar para obtener el precio específico del día
+private function get_day_specific_price($listing_id, $date) {
+    $base_price = get_post_meta($listing_id, 'hp_price', true);
+    
+    $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
+    if (!empty($booking_ranges) && is_array($booking_ranges) && !empty($date)) {
+        $date_obj = new DateTime($date);
+        $day_of_week = intval($date_obj->format('w'));
+        
+        foreach ($booking_ranges as $range) {
+            if (isset($range['days']) && is_array($range['days']) && 
+                in_array($day_of_week, $range['days']) && 
+                isset($range['price'])) {
+                $base_price = floatval($range['price']);
+                break;
+            }
+        }
+    }
+    
+    return $base_price;
 }
 
     private function format_extras($extras) {
@@ -1125,11 +1214,14 @@ public function get_cart_item() {
             throw new Exception('Item not found');
         }
 
-        // Obtener datos del listing
-        $listing_data = $this->get_listing_data_for_edit($item->listing_id);
-        
         // Parsear form_data
         $form_data = json_decode($item->form_data, true);
+        
+        // Obtener la fecha del ítem
+        $item_date = isset($form_data['date']) ? $form_data['date'] : '';
+        
+        // Obtener datos del listing pasando la fecha
+        $listing_data = $this->get_listing_data_for_edit($item->listing_id, $item_date);
         
         // Combinar datos para la respuesta
         $response_data = array(
@@ -1149,17 +1241,39 @@ public function get_cart_item() {
 /**
  * Obtener datos del listing para la edición
  */
-private function get_listing_data_for_edit($listing_id) {
+private function get_listing_data_for_edit($listing_id, $date = null) {
     $listing = get_post($listing_id);
     if (!$listing || $listing->post_type !== 'hp_listing') {
         throw new Exception('Listing not found');
+    }
+    
+    // Obtener el precio base estándar
+    $base_price = get_post_meta($listing_id, 'hp_price', true);
+    
+    // Verificar si hay precio específico para el día si se proporciona una fecha
+    if (!empty($date)) {
+        $booking_ranges = get_post_meta($listing_id, 'hp_booking_ranges', true);
+        if (!empty($booking_ranges) && is_array($booking_ranges)) {
+            $date_obj = new DateTime($date);
+            $day_of_week = intval($date_obj->format('w'));
+            
+            foreach ($booking_ranges as $range) {
+                if (isset($range['days']) && is_array($range['days']) && 
+                    in_array($day_of_week, $range['days']) && 
+                    isset($range['price'])) {
+                    $base_price = floatval($range['price']);
+                    error_log('Edit: Using day-specific price: ' . $base_price . ' for day: ' . $day_of_week);
+                    break;
+                }
+            }
+        }
     }
     
     $data = array(
         'id' => $listing_id,
         'title' => get_the_title($listing_id),
         'image' => get_the_post_thumbnail_url($listing_id, 'medium'),
-        'price' => get_post_meta($listing_id, 'hp_price', true),
+        'price' => $base_price, // Ahora este puede ser el precio específico del día
         'min_quantity' => get_post_meta($listing_id, 'hp_booking_min_quantity', true),
         'max_quantity' => get_post_meta($listing_id, 'hp_booking_max_quantity', true),
         'has_quantity' => true

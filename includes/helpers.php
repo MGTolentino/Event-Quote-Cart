@@ -245,15 +245,18 @@ if (!$has_active_context) {
  * Calculate cart totals
  */
 function eq_calculate_cart_totals($items) {
-    $subtotal = 0;
+    $total = 0;
     
     foreach ($items as $item) {
-        // Usar la propiedad total_price directamente en lugar de decodificar el JSON de nuevo
-        $subtotal += isset($item->total_price) ? $item->total_price : 0;
+        // Sumar los precios totales (que ya incluyen impuestos)
+        $total += isset($item->total_price) ? $item->total_price : 0;
     }
+    
+    // Calcular el subtotal y los impuestos basados en el total
     $tax_rate = floatval(get_option('eq_tax_rate', 16));
-    $tax = $subtotal * ($tax_rate / 100);
-    $total = $subtotal + $tax;
+    $subtotal = $total / (1 + ($tax_rate / 100));
+    $tax = $total - $subtotal;
+    
     return array(
         'subtotal' => hivepress()->woocommerce->format_price($subtotal),
         'tax' => hivepress()->woocommerce->format_price($tax),

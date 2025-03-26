@@ -136,15 +136,15 @@
                         
                         <!-- Añadir sección de totales -->
                         <div class="eq-price-summary">
-                            <div class="eq-base-price">
-                                <span>Base Price:</span>
-                                <span class="eq-price-value"></span>
-                            </div>
-                            <div class="eq-total-price">
-                                <span>Total (incl. taxes):</span>
-                                <span class="eq-price-value"></span>
-                            </div>
-                        </div>
+    <div class="eq-subtotal">
+        <span>Subtotal:</span>
+        <span class="eq-price-value"></span>
+    </div>
+    <div class="eq-total-price">
+        <span>Total (incl. taxes):</span>
+        <span class="eq-price-value"></span>
+    </div>
+</div>
                         
                         <div class="eq-form-actions">
                             <button type="submit" class="eq-update-item">Update</button>
@@ -178,48 +178,45 @@
 		
 		initEditModalTotals($modal, itemData) {
     const form = $modal.find('#eq-edit-form');
-    const basePriceElement = $modal.find('.eq-base-price .eq-price-value');
+    // Cambiar el selector para usar eq-subtotal en lugar de eq-base-price
+    const subtotalElement = $modal.find('.eq-subtotal .eq-price-value');
     const totalPriceElement = $modal.find('.eq-total-price .eq-price-value');
     
     // Obtener valores iniciales
     const basePrice = this.cleanPrice(itemData.listing_data.price) || 0;
     let quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
     
-    
     // Calcular y mostrar totales iniciales
-    this.calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceElement);
+    this.calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement);
     
-// Escuchar cambios en cantidad - solo si el campo visible existe
-const quantityInput = form.find('input[name="quantity"]:not([type="hidden"])');
-if (quantityInput.length) {
-    $modal.on('input', 'input[name="quantity"]:not([type="hidden"])', () => {
-        quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
-        console.log('Cantidad cambiada:', quantity);
-        this.calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceElement);
-    });
-}
-    // Escuchar cambios en checkboxes de extras - usando delegación directa en el modal
+    // Escuchar cambios en cantidad - solo si el campo visible existe
+    const quantityInput = form.find('input[name="quantity"]:not([type="hidden"])');
+    if (quantityInput.length) {
+        $modal.on('input', 'input[name="quantity"]:not([type="hidden"])', () => {
+            quantity = parseInt(form.find('input[name="quantity"]').val()) || 1;
+            this.calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement);
+        });
+    }
+    
+    // Escuchar cambios en checkboxes de extras
     $modal.on('change', 'input[type="checkbox"]', () => {
-        console.log('Checkbox cambiado');
-        this.calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceElement);
+        this.calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement);
     });
     
-    // Escuchar cambios en extras variables - usando delegación directa en el modal
+    // Escuchar cambios en extras variables
     $modal.on('input', 'input[type="number"][name^="extras"]', () => {
-        console.log('Extra variable cambiado');
-        this.calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceElement);
+        this.calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement);
     });
 }
 
-calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceElement) {
+calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement) {
+	
+	
     // Asegurar que basePrice sea un número limpio
     basePrice = this.cleanPrice(basePrice);
     
-    // Calcular precio base * cantidad
-    const baseTotal = basePrice * quantity;
-    
-    // Inicializar subtotal con el precio base
-    let subtotal = baseTotal;
+    // Inicializar subtotal con el precio base × cantidad
+    let subtotal = basePrice * quantity;
     
     // Añadir extras con checkbox
     form.find('input[type="checkbox"]:checked').each((_, checkbox) => {
@@ -246,13 +243,15 @@ calculateEditTotals(form, basePrice, quantity, basePriceElement, totalPriceEleme
         }
     });
     
-    // Calcular impuestos
-    const taxRate = (eqCartData && eqCartData.taxRate) ? parseFloat(eqCartData.taxRate) : 0;
+    // Calcular impuestos - asegurarse de que taxRate sea correcto
+    const taxRate = (eqCartData && eqCartData.taxRate) ? parseFloat(eqCartData.taxRate) : 16;
+	console.log('Tax rate used in modal:', taxRate);
+
     const taxAmount = subtotal * (taxRate / 100);
     const total = subtotal + taxAmount;
     
     // Actualizar UI
-    basePriceElement.text(this.formatPrice(baseTotal));
+    subtotalElement.text(this.formatPrice(subtotal));
     totalPriceElement.text(this.formatPrice(total));
 }
 		

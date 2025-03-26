@@ -239,23 +239,24 @@ class Event_Quote_Cart_Page_Handler {
     return $processed_items;
 }
 
-   private function calculate_totals($items) {
-       $subtotal = 0;
-       
-       foreach ($items as $item) {
-           $subtotal += floatval($item->total_price);
-       }
+  private function calculate_totals($items) {
+    $total = 0;
+    
+    foreach ($items as $item) {
+        $total += floatval($item->total_price);
+    }
 
-       $tax_rate = floatval(get_option('eq_tax_rate', 16));
-       $taxes = $subtotal * ($tax_rate / 100);
-       $total = $subtotal + $taxes;
+    // Calcular el subtotal y los impuestos basados en el total
+    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    $subtotal = $total / (1 + ($tax_rate / 100));
+    $tax = $total - $subtotal;
 
-       return array(
-           'subtotal' => hivepress()->woocommerce->format_price($subtotal),
-           'taxes' => hivepress()->woocommerce->format_price($taxes),
-           'total' => hivepress()->woocommerce->format_price($total)
-       );
-   }
+    return array(
+        'subtotal' => hivepress()->woocommerce->format_price($subtotal),
+        'taxes' => hivepress()->woocommerce->format_price($tax),
+        'total' => hivepress()->woocommerce->format_price($total)
+    );
+}
 
 	private function get_active_context() {
     return eq_get_active_context();

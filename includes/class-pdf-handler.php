@@ -739,7 +739,8 @@ private function get_detailed_cart_items() {
         $listing_id = $item->listing_id;
         $listing = get_post($listing_id);
         
-        // Crear objeto con datos detallados
+        $form_data = json_decode($item->form_data, true);
+
 $detailed_item = (object) array(
     'id' => $item->id,
     'listing_id' => $listing_id,
@@ -750,7 +751,9 @@ $detailed_item = (object) array(
     'quantity' => $item->quantity,
     'price_formatted' => $item->price_formatted,
     'total_price' => isset($item->total_price) ? $item->total_price : 0,
-    'base_price' => floatval(get_post_meta($listing_id, 'hp_price', true)),
+    // Usar el precio base almacenado en form_data en lugar de obtenerlo nuevamente
+    'base_price' => isset($form_data['base_price']) ? floatval($form_data['base_price']) : 
+                   floatval(get_post_meta($listing_id, 'hp_price', true)),
     'extras' => array()
 );
         
