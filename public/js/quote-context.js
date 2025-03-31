@@ -1236,8 +1236,6 @@ syncEventDate: function(date) {
     localStorage.setItem('eq_selected_date', formattedDate);
     localStorage.setItem('eq_date_timestamp', Date.now().toString());
     
-    
-    // NUEVO: Verificar si estamos en una página de single listing
     var listingId = this.getCurrentListingId();
     
     if (listingId) {
