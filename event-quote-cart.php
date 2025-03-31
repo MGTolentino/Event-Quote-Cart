@@ -3,7 +3,7 @@
  * Plugin Name: Event Quote Cart
  * Plugin URI: 
  * Description: A custom quote cart system for event services
- * Version: 1.0.0
+ * Version: 2.0.0
  * Author: Miguel Tolentino
  * Author URI: 
  * License: GPL v2 or later
@@ -16,35 +16,25 @@ if (!defined('WPINC')) {
     die;
 }
 
-// Plugin version
 define('EQ_CART_VERSION', '1.0.0');
 
-// Plugin Paths
 define('EQ_CART_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EQ_CART_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('EQ_CART_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('EQ_CART_PLUGIN_FILE', __FILE__);
 
-// Cargar Composer autoload si existe
 $composer_autoload = EQ_CART_PLUGIN_DIR . 'vendor/autoload.php';
 if (file_exists($composer_autoload)) {
     require_once $composer_autoload;
 }
 
-// Definir constante para usar con DOMPDF
 define('DOMPDF_ENABLE_REMOTE', true);
 
-/**
- * Activation function
- */
 function activate_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-activator.php';
     Event_Quote_Cart_Activator::activate();
 }
 
-/**
- * Deactivation function
- */
 function deactivate_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-deactivator.php';
     Event_Quote_Cart_Deactivator::deactivate();
@@ -53,9 +43,6 @@ function deactivate_event_quote_cart() {
 register_activation_hook(__FILE__, 'activate_event_quote_cart');
 register_deactivation_hook(__FILE__, 'deactivate_event_quote_cart');
 
-/**
- * Check required plugins
- */
 function eq_cart_check_requirements() {
     $required_plugins = array(
         'woocommerce/woocommerce.php' => 'WooCommerce',
@@ -83,10 +70,6 @@ function eq_cart_check_requirements() {
 }
 add_action('admin_init', 'eq_cart_check_requirements');
 
-
-/**
- * Permission check function
- */
 function eq_can_view_quote_button() {
     if (!is_user_logged_in()) {
         return false;
@@ -99,10 +82,6 @@ function eq_can_view_quote_button() {
     );
 }
 
-/**
- * Verifica si el usuario puede usar la integración con leads/eventos
- * Restringido a administradores y ejecutivos de ventas
- */
 function eq_can_use_leads_integration() {
     if (!is_user_logged_in()) {
         return false;
@@ -114,9 +93,6 @@ function eq_can_use_leads_integration() {
     );
 }
 
-/**
- * Initialize plugin
- */
 function init_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-loader.php';
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-ajax-handler.php';
@@ -126,10 +102,10 @@ function init_event_quote_cart() {
 	require_once EQ_CART_PLUGIN_DIR . 'includes/class-pdf-handler.php';
 
 	new Event_Quote_Cart_Single_Handler();
-	 // Cargar el manejador de la página del carrito
+
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-cart-page-handler.php';
     new Event_Quote_Cart_Page_Handler();
-	// Cargar el manejador de la vista de cotización
+
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-quote-view-handler.php';
     new Event_Quote_Cart_Quote_View_Handler();
     
@@ -138,7 +114,6 @@ function init_event_quote_cart() {
     
     $plugin->run();
     
-    // Enqueue scripts y estilos
     add_action('wp_enqueue_scripts', 'eq_cart_enqueue_scripts');
 }
 
@@ -152,7 +127,6 @@ function eq_cart_enqueue_scripts() {
 	
     $current_url = $_SERVER['REQUEST_URI']; 
     
-    // Si la URL contiene 'quote-cart'
     if (strpos($current_url, 'quote-cart') !== false) {
         wp_enqueue_style(
             'event-quote-cart-page',
@@ -161,7 +135,6 @@ function eq_cart_enqueue_scripts() {
             EQ_CART_VERSION
         );
         
-        // También cargar el JavaScript correspondiente
         wp_enqueue_script(
             'event-quote-cart-page',
             EQ_CART_PLUGIN_URL . 'public/js/quote-cart-page.js',
@@ -170,7 +143,6 @@ function eq_cart_enqueue_scripts() {
             true
         );
         
-        // Pasar datos al JavaScript
         wp_localize_script(
             'event-quote-cart-page',
             'eqCartData',
@@ -190,7 +162,6 @@ function eq_cart_enqueue_scripts() {
         true
     );
 	
-	// Obtener tax rate
     global $wpdb;
     $tax_rate = $wpdb->get_var(
         $wpdb->prepare(
@@ -241,24 +212,17 @@ function eq_render_booking_form_quote_button($listing_id) {
     <?php
 }
 
-// Agregar este código junto a otros add_action
 add_action('wp_logout', 'eq_clear_context_on_logout');
 
-/**
- * Limpiar cualquier sesión de contexto cuando el usuario cierra sesión de WordPress
- */
 function eq_clear_context_on_logout() {
     $user_id = get_current_user_id();
     
-    // Limpiar carrito activo en user meta
     delete_user_meta($user_id, 'eq_active_cart_id');
     
-    // Limpiar contexto en sesión
     if (isset($_SESSION['eq_quote_context'])) {
         unset($_SESSION['eq_quote_context']);
     }
     
-    // Eliminar la entrada de sesión en la BD con verificación de errores
     global $wpdb;
     $result = $wpdb->delete(
         $wpdb->prefix . 'eq_context_sessions',
@@ -266,12 +230,10 @@ function eq_clear_context_on_logout() {
         array('%d')
     );
     
-    // Limpiar cookies relacionadas
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
     }
     
-    // Limpiar localStorage mediante JavaScript
     ?>
     <script>
     try {
@@ -287,28 +249,20 @@ function eq_clear_context_on_logout() {
     <?php
 }
 
-// Agregar este código junto a otros add_action
-add_action('init', 'eq_sync_context_session', 5); // Prioridad 5 para ejecutar temprano
+add_action('init', 'eq_sync_context_session', 5); 
 
-
-/**
- * Sincroniza la sesión PHP con la información de la tabla eq_context_sessions
- */
 function eq_sync_context_session() {
-    // Solo para usuarios logueados
+
     if (!is_user_logged_in()) {
         return;
     }
 	
-	// Verificar si hay cookie de sesión finalizada
 if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
     
-    // Asegurar que la sesión PHP esté limpia
     if (isset($_SESSION['eq_quote_context'])) {
         unset($_SESSION['eq_quote_context']);
     }
     
-    // Establecer flag de no restaurar
     $_SESSION['eq_context_no_restore'] = true;
     
     return;
@@ -316,17 +270,14 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     
     $user_id = get_current_user_id();
     
-    // Verificar si se inició la sesión PHP
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
     
-    // PASO 1: Verificar si existe una señal de "no restaurar"
     if (isset($_SESSION['eq_context_no_restore']) && $_SESSION['eq_context_no_restore'] === true) {
         return;
     }
     
-    // PASO 2: Buscar sesión activa en la base de datos
     global $wpdb;
     $session = $wpdb->get_row($wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}eq_context_sessions 
@@ -335,10 +286,8 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
         $user_id
     ));
     
-    // PASO 3: Si no hay sesión en la BD, limpiar también la sesión PHP (sincronizar estados)
     if (!$session) {
         
-        // Si hay datos en la sesión PHP pero no en la BD, limpiarlos para sincronizar
         if (isset($_SESSION['eq_quote_context'])) {
             unset($_SESSION['eq_quote_context']);
         }
@@ -346,7 +295,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
         return;
     }
     
-    // PASO 4: Si hay sesión en la BD, verificar que los IDs sean válidos
     $lead_exists = $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM {$wpdb->prefix}jet_cct_leads WHERE _ID = %d",
         $session->lead_id
@@ -357,7 +305,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
         $session->event_id
     ));
     
-    // PASO 5: Si los IDs no son válidos, eliminar la sesión de la BD
     if (!$lead_exists || !$event_exists) {
         
         $wpdb->delete(
@@ -366,7 +313,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
             array('%d')
         );
         
-        // Limpiar también la sesión PHP
         if (isset($_SESSION['eq_quote_context'])) {
             unset($_SESSION['eq_quote_context']);
         }
@@ -374,10 +320,8 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
         return;
     }
     
-    // PASO 6: Si todo es válido, actualizar sesión PHP solo si es necesario
     $needs_update = false;
     
-    // Verificar si la sesión PHP existe y contiene los mismos valores
     if (!isset($_SESSION['eq_quote_context']) || 
         !isset($_SESSION['eq_quote_context']['lead_id']) || 
         !isset($_SESSION['eq_quote_context']['event_id']) ||
@@ -388,7 +332,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     }
     
     if ($needs_update) {
-            $session->lead_id . ', event_id: ' . $session->event_id);
         
         $_SESSION['eq_quote_context'] = array(
             'lead_id' => $session->lead_id,
@@ -398,7 +341,6 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
             'session_token' => $session->session_token
         );
         
-        // También actualizar el active_cart_id en user meta para consistencia
         $cart_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}eq_carts 
             WHERE user_id = %d AND lead_id = %d AND event_id = %d AND status = 'active'
@@ -413,14 +355,10 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     }
 }
 
-// Ejecutar la actualización de tabla de sesiones al activar el plugin
 add_action('plugins_loaded', 'eq_update_sessions_table');
 
-/**
- * Actualiza la estructura de la tabla de sesiones de contexto
- */
 function eq_update_sessions_table() {
-    // Solo ejecutar una vez verificando una opción
+
     $current_version = get_option('eq_sessions_table_version', '0.0');
     if (version_compare($current_version, '1.1', '>=')) {
         return;
@@ -428,21 +366,18 @@ function eq_update_sessions_table() {
     
     global $wpdb;
     
-    // Verificar si la tabla existe
     $table_name = $wpdb->prefix . 'eq_context_sessions';
     if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-        // Si la tabla no existe, no hacer nada (se creará con la estructura correcta)
+
         update_option('eq_sessions_table_version', '1.1');
         return;
     }
     
-    // Verificar si la columna status existe
     $status_exists = $wpdb->get_var("SHOW COLUMNS FROM $table_name LIKE 'status'");
     if ($status_exists) {
-        // 1. Eliminar sesiones inactivas
+
         $wpdb->query("DELETE FROM $table_name WHERE status = 'inactive'");
         
-        // 2. Eliminar duplicados
         $wpdb->query("
             CREATE TEMPORARY TABLE temp_sessions AS
             SELECT MAX(id) as max_id, user_id
@@ -458,31 +393,24 @@ function eq_update_sessions_table() {
         
         $wpdb->query("DROP TEMPORARY TABLE IF EXISTS temp_sessions");
         
-        // 3. Eliminar columna status
         $wpdb->query("ALTER TABLE $table_name DROP COLUMN status");
     }
     
-    // 4. Verificar si ya existe la restricción UNIQUE en user_id
     $unique_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'user_id' AND Non_unique = 0");
     if (empty($unique_exists)) {
         try {
-            // 5. Añadir restricción UNIQUE para user_id
+
             $wpdb->query("ALTER TABLE $table_name ADD UNIQUE INDEX user_id (user_id)");
         } catch (Exception $e) {
             error_log('Error adding UNIQUE constraint: ' . $e->getMessage());
         }
     }
     
-    // Actualizar versión
     update_option('eq_sessions_table_version', '1.1');
 }
 
-// Limpiar cookies de sesión finalizada al iniciar una nueva sesión
 add_action('wp_login', 'eq_clear_session_cookies');
 
-/**
- * Limpiar cookies relacionadas con sesiones finalizadas al iniciar sesión
- */
 function eq_clear_session_cookies() {
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);

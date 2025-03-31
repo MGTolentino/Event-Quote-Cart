@@ -1,7 +1,4 @@
 <?php
-/**
- * The public-facing functionality of the plugin.
- */
 
 class Event_Quote_Cart_Public {
 
@@ -15,14 +12,8 @@ class Event_Quote_Cart_Public {
         $this->date_handler = new Event_Quote_Cart_Date_Handler();
     }
 
-    /**
-     * Register the stylesheets for the public-facing side of the site.
-     */
     public function enqueue_styles() {
 		
-
-
-        // Enqueue Flatpickr CSS if not already enqueued
         if (!wp_style_is('flatpickr', 'enqueued')) {
             wp_enqueue_style(
                 'flatpickr',
@@ -57,11 +48,8 @@ class Event_Quote_Cart_Public {
 		
     }
 
-    /**
-     * Register the JavaScript for the public-facing side of the site.
-     */
     public function enqueue_scripts() {
-        // Flatpickr
+
         wp_enqueue_script(
             'flatpickr',
             'https://cdn.jsdelivr.net/npm/flatpickr',
@@ -70,7 +58,6 @@ class Event_Quote_Cart_Public {
             true
         );
 
-        // Main plugin script
         wp_enqueue_script(
             $this->plugin_name,
             EQ_CART_PLUGIN_URL . 'public/js/quote-cart.js',
@@ -95,7 +82,6 @@ class Event_Quote_Cart_Public {
         true
     );
 
-        // Localize script
         wp_localize_script(
             $this->plugin_name,
             'eqCartData',
@@ -122,7 +108,6 @@ class Event_Quote_Cart_Public {
             )
         );
 		
-		// Obtener status dinámicamente de Leads Management
 $status_options = array();
 if (class_exists('LTB_Leads_Status_Utils')) {
     $status_options = LTB_Leads_Status_Utils::get_status_options();
@@ -137,7 +122,6 @@ if (class_exists('LTB_Leads_Status_Utils')) {
     );
 }
 
-// Pasar los status al script del context panel
 wp_localize_script(
     $this->plugin_name . '-context-panel',
     'eqStatusConfig',
@@ -164,7 +148,6 @@ wp_localize_script(
         )
     );
 		
-		// Single integration script
 				wp_enqueue_script(
 					$this->plugin_name . '-single',
 					EQ_CART_PLUGIN_URL . 'public/js/single-integration.js',
@@ -174,9 +157,6 @@ wp_localize_script(
 				);
     }
 
-    /**
- * Get the URL of the cart page
- */
 private function get_cart_page_url() {
     $cart_page_id = get_option('eq_cart_page_id');
     if (!$cart_page_id) {
@@ -187,19 +167,14 @@ private function get_cart_page_url() {
     return $cart_url ? $cart_url : home_url();
 }
 
-
-    /**
- * Initialize hooks
- */
 public function init() {
-    // Assets
+
     add_action('wp_enqueue_scripts', array($this, 'enqueue_styles'));
     add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
 
-    // Template rendering
     add_action('wp_footer', array($this, 'render_cart_sidebar'));
     add_action('wp_footer', array($this, 'render_header_cart'));
-    add_action('wp_footer', array($this, 'render_context_panel')); // Añadir esta línea
+    add_action('wp_footer', array($this, 'render_context_panel')); 
     add_action('eq_cart_add_quote_button', array($this, 'render_quote_button'));
 	
 	add_action('wp_ajax_eq_search_leads', array($this, 'search_leads'));
@@ -207,18 +182,13 @@ add_action('wp_ajax_eq_create_lead', array($this, 'create_lead'));
 add_action('wp_ajax_eq_get_lead_events', array($this, 'get_lead_events'));
 add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
 
-    // AJAX handlers
     add_action('wp_ajax_eq_remove_from_cart', array($this, 'remove_from_cart'));
     
-    // Iniciar sesión si no está iniciada
     if (!session_id() && !headers_sent()) {
         session_start();
     }
 }
 
-    /**
-     * Render the quote button
-     */
     public function render_quote_button($listing_id) {
         if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
             return;
@@ -231,9 +201,6 @@ add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
         include EQ_CART_PLUGIN_DIR . 'templates/quote-button.php';
     }
 
-    /**
-     * Render the cart sidebar
-     */
     public function render_cart_sidebar() {
         if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
             return;
@@ -250,11 +217,8 @@ add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
     include EQ_CART_PLUGIN_DIR . 'templates/header-cart.php';
 }
 	
-/**
- * Renderizar el panel de contexto
- */
 public function render_context_panel() {
-    // Verificación estricta de permisos
+
     if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
         return;
     }
@@ -265,27 +229,22 @@ public function render_context_panel() {
         return;
     }
 	
-	// Verificar si estamos en una página relevante
     $show_panel = false;
     
-    // 1. Verificar si es un hp_listing individual
     if (is_singular('hp_listing')) {
         $show_panel = true;
     }
     
-    // 2. Verificar si estamos en la página del carrito
     $cart_page_id = get_option('eq_cart_page_id');
     if ($cart_page_id && is_page($cart_page_id)) {
         $show_panel = true;
     }
     
-    // 3. Verificar si estamos en una página con el shortcode de cotizador-eventos
     global $post;
     if ($post && has_shortcode($post->post_content, 'cotizador_eventos')) {
         $show_panel = true;
     }
     
-    // 4. Alternativa: verificar por URL si no podemos detectar por shortcode
     if (strpos($_SERVER['REQUEST_URI'], 'cotizador-de-eventos') !== false) {
         $show_panel = true;
     }
@@ -294,7 +253,6 @@ public function render_context_panel() {
         return;
     }
     
-    // Obtener datos de contexto (se cargarán vía JS, esto es solo para SSR inicial)
     $context_data = array(
         'lead_id' => null,
         'lead_name' => null,
@@ -303,18 +261,13 @@ public function render_context_panel() {
         'event_type' => null
     );
     
-    // Si hay datos en la sesión, extraerlos
     if (isset($_SESSION['eq_quote_context'])) {
         $context_data = $_SESSION['eq_quote_context'];
     }
     
-    // Incluir template con los datos
     include EQ_CART_PLUGIN_DIR . 'templates/context-panel.php';
 }
 
-    /**
-     * Format extras for response
-     */
     private function format_extras($extras) {
         $formatted = array();
         foreach ($extras as $key => $extra) {
@@ -329,9 +282,6 @@ public function render_context_panel() {
         return $formatted;
     }
 
-    /**
-     * Remove item from cart
-     */
     public function remove_from_cart() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
 
@@ -348,7 +298,6 @@ public function render_context_panel() {
     try {
         global $wpdb;
         
-        // Verificar si el item ya está marcado como eliminado
         $existing_removed = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}eq_cart_items 
             WHERE id = %d AND status = 'removed'",
@@ -356,20 +305,18 @@ public function render_context_panel() {
         ));
         
         if ($existing_removed) {
-            // Ya está marcado como eliminado, no hacer nada
+
             wp_send_json_success(array(
                 'message' => 'Item was already removed'
             ));
             return;
         }
         
-        // Obtener información del item antes de eliminarlo (para debugging)
         $item_info = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}eq_cart_items WHERE id = %d",
             $item_id
         ));
         
-        // Eliminar físicamente el item en lugar de cambiar su estado
         $result = $wpdb->delete(
             $wpdb->prefix . 'eq_cart_items',
             array('id' => $item_id),
@@ -393,9 +340,6 @@ public function render_context_panel() {
     }
 }
 
-    /**
-     * Get cart item data
-     */
     private function get_cart_item_data($item_id) {
         global $wpdb;
         
@@ -426,9 +370,6 @@ public function render_context_panel() {
         );
     }
 
-    /**
-     * Calculate item price
-     */
     private function calculate_item_price($item) {
         $form_data = json_decode($item->form_data, true);
         $base_price = get_post_meta($item->listing_id, 'hp_price', true);
@@ -471,7 +412,6 @@ private function get_or_create_cart() {
         $lead_id = intval($_SESSION['eq_quote_context']['lead_id']);
         $event_id = intval($_SESSION['eq_quote_context']['event_id']);
         
-        // Si es usuario privilegiado, buscar el carrito específico para este lead/evento
         if ($is_privileged_user && $lead_id && $event_id) {
             $exact_cart = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM {$wpdb->prefix}eq_carts 
@@ -480,7 +420,6 @@ private function get_or_create_cart() {
                 $user_id, $lead_id, $event_id
             ));
             
-            // Si existe un carrito específico, usarlo
             if ($exact_cart) {
                 update_user_meta($user_id, 'eq_active_cart_id', $exact_cart);
                 return $exact_cart;
@@ -580,7 +519,6 @@ private function get_cart_items_count() {
         $user_id
     ));
     
-    // Si no hay carrito, devolver 0
     if (!$cart_id) {
         return 0;
     }
@@ -602,23 +540,19 @@ private function is_context_panel_active() {
         return false;
     }
     
-    // Verificar si el usuario tiene permisos
     if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
         return false;
     }
     
-    // Verificar si hay contexto activo en la sesión
     if (isset($_SESSION['eq_quote_context']) && 
         !empty($_SESSION['eq_quote_context']['lead_id']) && 
         !empty($_SESSION['eq_quote_context']['event_id'])) {
         return true;
     }
     
-    // Verificar si hay lead_id y event_id en el carrito activo
     global $wpdb;
     $user_id = get_current_user_id();
     
-    // Verificar primero si hay un carrito activo en user meta
     $active_cart_id = get_user_meta($user_id, 'eq_active_cart_id', true);
     
     if ($active_cart_id) {
@@ -640,9 +574,6 @@ private function is_context_panel_active() {
     return $cart && !empty($cart->lead_id) && !empty($cart->event_id);
 }
 	
-	/**
- * AJAX: Buscar leads
- */
 public function search_leads() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
     
@@ -652,11 +583,9 @@ public function search_leads() {
     
     $term = isset($_POST['term']) ? sanitize_text_field($_POST['term']) : '';
     
-    // Crear instancia de la clase de leads
     require_once WP_PLUGIN_DIR . '/leads-management/includes/class-leads-query.php';
     $leads_query = new LTB_Leads_Query();
     
-    // Buscar leads
     $args = array();
     if ($term) {
         $args['search'] = $term;
@@ -673,9 +602,6 @@ public function search_leads() {
     }
 }
 
-	/**
- * AJAX: Crear lead
- */
 public function create_lead() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
     
@@ -725,9 +651,6 @@ public function create_lead() {
     ));
 }
 
-/**
- * AJAX: Obtener eventos de un lead
- */
 public function get_lead_events() {
     check_ajax_referer('eq_cart_public_nonce', 'nonce');
     

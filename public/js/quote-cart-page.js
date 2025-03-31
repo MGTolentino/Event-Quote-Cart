@@ -14,22 +14,19 @@
         }
 
       bindEvents() {
-    // Editar item
-    this.container.on('click', '.eq-edit-item', (e) => {
+
+        this.container.on('click', '.eq-edit-item', (e) => {
         this.handleEdit($(e.currentTarget));
     });
 
-    // Eliminar item
     this.container.on('click', '.eq-remove-item', (e) => {
         this.handleRemove($(e.currentTarget));
     });
 
-    // Generar cotización
     this.container.on('click', '.eq-generate-quote', (e) => {
         this.handleGenerateQuote();
     });
 
-    // Compartir cotización
     this.container.on('click', '.eq-share-quote', (e) => {
         this.handleShare();
     });
@@ -204,7 +201,6 @@
 }
 
 calculateEditTotals(form, basePrice, quantity, subtotalElement, totalPriceElement) {
-	
 	
     // Asegurar que basePrice sea un número limpio
     basePrice = this.cleanPrice(basePrice);
