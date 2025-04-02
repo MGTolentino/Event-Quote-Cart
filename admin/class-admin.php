@@ -221,6 +221,21 @@ class Event_Quote_Cart_Admin {
     }
 
     /**
+ * Render enabled field (checkbox)
+ */
+public function render_enabled_field($args) {
+    $option_name = $args['label_for'];
+    $value = get_option($option_name);
+    ?>
+    <select id="<?php echo esc_attr($args['label_for']); ?>"
+           name="<?php echo esc_attr($option_name); ?>">
+        <option value="yes" <?php selected($value, 'yes'); ?>><?php _e('Enabled', 'event-quote-cart'); ?></option>
+        <option value="no" <?php selected($value, 'no'); ?>><?php _e('Disabled', 'event-quote-cart'); ?></option>
+    </select>
+    <?php
+}
+
+    /**
      * Initialize hooks
      */
     public function init() {
@@ -236,4 +251,6 @@ class Event_Quote_Cart_Admin {
 		
 
     }
+
+    
 }
