@@ -150,6 +150,22 @@ class Event_Quote_Cart_Admin {
             'eq_cart_general_settings',
             array('label_for' => 'eq_cart_enabled')
         );
+
+        register_setting('eq_cart_settings', 'eq_cart_page_id');
+    register_setting('eq_cart_settings', 'eq_cart_button_text');
+    register_setting('eq_cart_settings', 'eq_cart_button_text_en');
+    register_setting('eq_cart_settings', 'eq_tax_rate');
+    
+    // Stripe settings
+    register_setting('eq_cart_settings', 'eq_stripe_enabled');
+    register_setting('eq_cart_settings', 'eq_stripe_test_mode');
+    register_setting('eq_cart_settings', 'eq_stripe_test_secret_key');
+    register_setting('eq_cart_settings', 'eq_stripe_test_publishable_key');
+    register_setting('eq_cart_settings', 'eq_stripe_test_webhook_secret');
+    register_setting('eq_cart_settings', 'eq_stripe_secret_key');
+    register_setting('eq_cart_settings', 'eq_stripe_publishable_key');
+    register_setting('eq_cart_settings', 'eq_stripe_webhook_secret');
+    register_setting('eq_cart_settings', 'eq_stripe_default_vendor_id');
     }
 
     /**

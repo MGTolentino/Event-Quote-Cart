@@ -416,3 +416,15 @@ function eq_clear_session_cookies() {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
     }
 }
+
+/**
+ * Begins execution of the plugin.
+ */
+public function run() {
+    $this->loader->run();
+    
+    // Inicializar Stripe si está habilitado
+    if (get_option('eq_stripe_enabled') === 'yes') {
+        new Event_Quote_Cart_Stripe_Handler();
+    }
+}

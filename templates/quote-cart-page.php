@@ -232,13 +232,33 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                 </div>
 
                 <div class="eq-cart-actions">
-                    <button class="eq-generate-quote">
-                        <?php esc_html_e('Generate Quote', 'event-quote-cart'); ?>
-                    </button>
-                    <button class="eq-share-quote">
-                        <?php esc_html_e('Share Quote', 'event-quote-cart'); ?>
-                    </button>
-                </div>
+    <button class="eq-generate-quote">
+        <?php esc_html_e('Generate Quote', 'event-quote-cart'); ?>
+    </button>
+    <button class="eq-share-quote">
+        <?php esc_html_e('Share Quote', 'event-quote-cart'); ?>
+    </button>
+    
+    <?php if (get_option('eq_stripe_enabled') === 'yes'): ?>
+        <?php 
+        // Verificar si es usuario administrador o ejecutivo con contexto activo
+        $is_privileged = current_user_can('administrator') || current_user_can('ejecutivo_de_ventas');
+        $has_context = isset($context) && $context && $context['lead'] && $context['event'];
+        ?>
+        
+        <?php if ($is_privileged && $has_context): ?>
+            <!-- Para usuarios privilegiados con contexto: generar enlace de pago -->
+            <button class="eq-generate-payment-link">
+                <?php esc_html_e('Generate Payment Link', 'event-quote-cart'); ?>
+            </button>
+        <?php else: ?>
+            <!-- Para usuarios regulares o admin sin contexto: pago directo -->
+            <button class="eq-pay-now">
+                <?php esc_html_e('Pay Now', 'event-quote-cart'); ?>
+            </button>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
             </div>
         </div>
     <?php else: ?>
@@ -251,3 +271,96 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
         </div>
     <?php endif; ?>
 </div>
+
+<?php if (get_option('eq_stripe_enabled') === 'yes'): ?>
+<!-- Modal de pago -->
+<div id="eq-payment-modal" class="eq-modal">
+    <div class="eq-modal-content">
+        <span class="eq-modal-close">&times;</span>
+        <h2><?php esc_html_e('Complete Payment', 'event-quote-cart'); ?></h2>
+        
+        <div id="eq-payment-form-container">
+            <div class="eq-payment-info">
+                <p><?php esc_html_e('Total Amount:', 'event-quote-cart'); ?> <span id="eq-payment-total"><?php echo esc_html($totals['total']); ?></span></p>
+            </div>
+            
+            <form id="eq-payment-form">
+                <div class="eq-form-row">
+                    <label for="eq-payment-name"><?php esc_html_e('Full Name', 'event-quote-cart'); ?></label>
+                    <input type="text" id="eq-payment-name" required>
+                </div>
+                
+                <div class="eq-form-row">
+                    <label for="eq-payment-email"><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
+                    <input type="email" id="eq-payment-email" required>
+                </div>
+                
+                <div class="eq-form-row">
+                    <label for="eq-payment-phone"><?php esc_html_e('Phone', 'event-quote-cart'); ?></label>
+                    <input type="tel" id="eq-payment-phone">
+                </div>
+                
+                <div class="eq-form-row">
+                    <label><?php esc_html_e('Card Information', 'event-quote-cart'); ?></label>
+                    <div id="eq-card-element">
+                        <!-- Stripe Elements se montará aquí -->
+                    </div>
+                    <div id="eq-card-errors" role="alert"></div>
+                </div>
+                
+                <button id="eq-submit-payment" type="submit">
+                    <span id="eq-button-text"><?php esc_html_e('Pay Now', 'event-quote-cart'); ?></span>
+                    <span id="eq-spinner" class="hidden"></span>
+                </button>
+            </form>
+        </div>
+        
+        <div id="eq-payment-success" class="hidden">
+            <div class="eq-success-icon">✓</div>
+            <h3><?php esc_html_e('Payment Successful!', 'event-quote-cart'); ?></h3>
+            <p><?php esc_html_e('Your payment has been processed successfully.', 'event-quote-cart'); ?></p>
+            <p><?php esc_html_e('Order Number:', 'event-quote-cart'); ?> <strong id="eq-order-number"></strong></p>
+            <p><?php esc_html_e('A confirmation email has been sent to your email address.', 'event-quote-cart'); ?></p>
+            <button id="eq-payment-done"><?php esc_html_e('Done', 'event-quote-cart'); ?></button>
+        </div>
+        
+        <div id="eq-payment-error" class="hidden">
+            <div class="eq-error-icon">✗</div>
+            <h3><?php esc_html_e('Payment Failed', 'event-quote-cart'); ?></h3>
+            <p id="eq-error-message"></p>
+            <button id="eq-payment-retry"><?php esc_html_e('Try Again', 'event-quote-cart'); ?></button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para compartir enlace de pago -->
+<div id="eq-payment-link-modal" class="eq-modal">
+    <div class="eq-modal-content">
+        <span class="eq-modal-close">&times;</span>
+        <h2><?php esc_html_e('Payment Link Generated', 'event-quote-cart'); ?></h2>
+        
+        <div id="eq-payment-link-container">
+            <p><?php esc_html_e('Share this link with your client to complete the payment:', 'event-quote-cart'); ?></p>
+            
+            <div class="eq-payment-link-box">
+                <input type="text" id="eq-payment-link-input" readonly>
+                <button id="eq-copy-link"><?php esc_html_e('Copy', 'event-quote-cart'); ?></button>
+            </div>
+            
+            <div class="eq-payment-link-actions">
+                <button id="eq-email-link">
+                    <i class="fas fa-envelope"></i> <?php esc_html_e('Send via Email', 'event-quote-cart'); ?>
+                </button>
+                
+                <button id="eq-whatsapp-link">
+                    <i class="fab fa-whatsapp"></i> <?php esc_html_e('Share via WhatsApp', 'event-quote-cart'); ?>
+                </button>
+            </div>
+            
+            <div class="eq-payment-link-note">
+                <p><?php esc_html_e('Note: This link is valid for 24 hours and can only be used once.', 'event-quote-cart'); ?></p>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
