@@ -421,3 +421,13 @@ function eq_clear_session_cookies() {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
     }
 }
+
+// Añade esto al inicio de tu plugin
+function eq_cart_add_custom_capabilities() {
+    // Dar a los administradores esta capacidad personalizada
+    $role = get_role('administrator');
+    if ($role) {
+        $role->add_cap('manage_eq_cart_settings');
+    }
+}
+register_activation_hook(__FILE__, 'eq_cart_add_custom_capabilities');

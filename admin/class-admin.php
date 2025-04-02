@@ -38,23 +38,25 @@ class Event_Quote_Cart_Admin {
      * Register the JavaScript for the admin area.
      */
     public function enqueue_scripts() {
-        wp_enqueue_script(
-            $this->plugin_name . '-admin',
-            EQ_CART_PLUGIN_URL . 'admin/js/admin.js',
-            array('jquery'),
-            $this->version,
-            false
-        );
 
-        // Localize script
-        wp_localize_script(
-            'event-quote-cart-admin',
-            'eqCartAdmin',
-            array(
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('eq_cart_admin_nonce')
-            )
-        );
+$handle = $this->plugin_name . '-admin';
+
+wp_enqueue_script(
+    $handle,
+    EQ_CART_PLUGIN_URL . 'admin/js/admin.js',
+    array('jquery'),
+    $this->version,
+    false
+);
+
+wp_localize_script(
+    $handle,
+    'eqCartAdmin',
+    array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eq_cart_admin_nonce')
+    )
+);
 	
 		
     }
