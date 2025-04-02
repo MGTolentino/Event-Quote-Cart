@@ -111,7 +111,7 @@ public function create_payment_intent() {
             'currency' => 'mxn',
             'metadata' => $metadata,
             'description' => 'Orden #' . time(),
-            'statement_descriptor' => 'EVENT-QUOTE'
+            'statement_descriptor_suffix' => 'EQ-CART'  
         ]);
         
         // Crear una orden preliminar en la base de datos
