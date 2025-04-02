@@ -113,6 +113,11 @@ function init_event_quote_cart() {
     new Event_Quote_Cart_Ajax_Handler();
     
     $plugin->run();
+
+    // Inicializar Stripe si está habilitado
+    if (get_option('eq_stripe_enabled') === 'yes') {
+        new Event_Quote_Cart_Stripe_Handler();
+    }
     
     add_action('wp_enqueue_scripts', 'eq_cart_enqueue_scripts');
 }
@@ -414,17 +419,5 @@ add_action('wp_login', 'eq_clear_session_cookies');
 function eq_clear_session_cookies() {
     if (isset($_COOKIE['eq_session_ended'])) {
         setcookie('eq_session_ended', '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN);
-    }
-}
-
-/**
- * Begins execution of the plugin.
- */
-public function run() {
-    $this->loader->run();
-    
-    // Inicializar Stripe si está habilitado
-    if (get_option('eq_stripe_enabled') === 'yes') {
-        new Event_Quote_Cart_Stripe_Handler();
     }
 }
