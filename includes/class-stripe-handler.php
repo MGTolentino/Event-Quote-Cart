@@ -122,6 +122,16 @@ public function create_payment_intent() {
             'status' => 'pending'
         ]);
         
+        // Enviar correo inmediatamente (añadir esto)
+        try {
+            $user = wp_get_current_user();
+            $subject = 'Confirmación de Pago - Orden #' . $order_id;
+            $message = "Gracias por tu compra. Tu orden #" . $order_id . " ha sido creada.";
+            wp_mail($user->user_email, $subject, $message);
+        } catch (\Exception $e) {
+            error_log('Error al enviar correo: ' . $e->getMessage());
+        }
+        
         wp_send_json_success([
             'clientSecret' => $payment_intent->client_secret,
             'order_id' => $order_id
