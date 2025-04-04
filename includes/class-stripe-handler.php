@@ -587,6 +587,9 @@ private function create_bookings_for_order($payment_id) {
          * Enviar email de confirmación para una orden
          */
          private function send_order_confirmation($payment_id) {
+
+            error_log('Intentando enviar confirmación para pago: ' . $payment_id);
+
             global $wpdb;
             
             $order = $wpdb->get_row($wpdb->prepare(
@@ -623,6 +626,8 @@ private function create_bookings_for_order($payment_id) {
                     $user_name = $user->display_name;
                 }
             }
+
+            error_log('Enviando correo a: ' . $user_email);
             
             if (!$user_email) {
                 return;
