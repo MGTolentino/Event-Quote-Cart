@@ -50,3 +50,7 @@
         margin: 5px 0;
     }
 }
+
+.eq-hide-cart {
+    display: none !important;
+}

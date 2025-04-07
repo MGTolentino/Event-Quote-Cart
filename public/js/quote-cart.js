@@ -12,8 +12,8 @@
     this.bindContextEvents();
 }
 
-        init() {
-   // Estado inicial
+init() {
+    // Estado inicial
     this.state = {
         isOpen: false,
         items: [],
@@ -28,8 +28,13 @@
     this.footer = this.sidebar.find('.eq-sidebar-footer');
     this.headerCart = $('.eq-header-cart');
 
-    // Obtener items existentes
-    this.loadCartItems();
+    // Obtener items existentes solo si el usuario ha iniciado sesión
+    if (eqCartData.userLoggedIn) {
+        this.loadCartItems();
+    } else {
+        // Ocultar o desactivar elementos para usuarios no logueados
+        this.headerCart.addClass('eq-hide-cart');
+    }
 }
 		
 		bindContextEvents() {
@@ -463,6 +468,12 @@ this.content.on('click', '.eq-include-button', (e) => {
         }
 
         async loadCartItems() {
+            // Verificar si el usuario ha iniciado sesión
+            if (!eqCartData.userLoggedIn) {
+                console.log('User not logged in, skipping cart load');
+                return;
+            }
+            
             try {
                 const response = await $.ajax({
                     url: eqCartData.ajaxurl,
@@ -472,13 +483,12 @@ this.content.on('click', '.eq-include-button', (e) => {
                         nonce: eqCartData.nonce
                     }
                 });
-
+        
                 if (response.success) {
-                    this.state.items = response.data.items;
+                    this.state.items = response.data.items || [];
                     this.renderItems();
                     this.updateCartSummary();
-					this.updateHeaderCart(); 
-
+                    this.updateHeaderCart();
                 }
             } catch (error) {
                 console.error('Error loading cart items:', error);

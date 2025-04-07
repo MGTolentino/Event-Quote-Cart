@@ -97,6 +97,7 @@ class Event_Quote_Cart_Public {
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('eq_cart_public_nonce'),
                 'cartUrl' => $this->get_cart_page_url(),
+                'userLoggedIn' => is_user_logged_in(),
                 'i18n' => array(
                     'addedToCart' => __('Added to quote cart', 'event-quote-cart'),
                     'errorAdding' => __('Error adding to quote cart', 'event-quote-cart'),

@@ -7,44 +7,6 @@
     let orderId = null;
     let clientSecret = null;
     let modal, paymentLinkModal;
-    
-    function initStripe() {
-        // Inicializar Stripe con la clave pública
-        stripe = Stripe(eqStripeData.publishableKey);
-        
-        // Crear instancia de Elements
-        elements = stripe.elements();
-        
-       // Crear un elemento Card y montar
-       const style = {
-        base: {
-            color: '#32325d',
-            fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-            fontSmoothing: 'antialiased',
-            fontSize: '16px',
-            '::placeholder': {
-                color: '#aab7c4'
-            }
-        },
-        invalid: {
-            color: '#fa755a',
-            iconColor: '#fa755a'
-        }
-    };
-    
-    cardElement = elements.create('card', {style: style});
-    cardElement.mount('#eq-card-element');
-    
-    // Manejar errores de validación en tiempo real
-    cardElement.on('change', function(event) {
-        var displayError = document.getElementById('eq-card-errors');
-        if (event.error) {
-            displayError.textContent = event.error.message;
-        } else {
-            displayError.textContent = '';
-        }
-    });
-}
 
 // Inicializar modales
 function initModals() {
@@ -213,21 +175,68 @@ function checkPaymentStatus(paymentId, orderId) {
 function init() {
     if (!eqStripeData || !eqStripeData.publishableKey) return;
     
-    // Inicializar Stripe y modales
-    initStripe();
+    // Inicializar sólo los modales, no Stripe todavía
     initModals();
     
     // Evento para mostrar el modal de pago
     $(document).on('click', '.eq-pay-now', function(e) {
         e.preventDefault();
         
+        // Mostrar el modal
         modal.style.display = 'block';
         showPaymentForm();
         
-        // Crear el Payment Intent
-        createPayment().catch(error => {
-            showPaymentError(error.message);
-        });
+        // Inicializar Stripe sólo cuando el modal está visible
+        try {
+            // Inicializar Stripe y montar el elemento de tarjeta
+            stripe = Stripe(eqStripeData.publishableKey);
+            elements = stripe.elements();
+            
+            // Verificar si el elemento ya existe para evitar remontarlo
+            if (!cardElement) {
+                const style = {
+                    base: {
+                        color: '#32325d',
+                        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                        fontSmoothing: 'antialiased',
+                        fontSize: '16px',
+                        '::placeholder': {
+                            color: '#aab7c4'
+                        }
+                    },
+                    invalid: {
+                        color: '#fa755a',
+                        iconColor: '#fa755a'
+                    }
+                };
+                
+                // Verificar que el elemento existe antes de montar
+                if (document.getElementById('eq-card-element')) {
+                    cardElement = elements.create('card', {style: style});
+                    cardElement.mount('#eq-card-element');
+                    
+                    // Manejar errores de validación en tiempo real
+                    cardElement.on('change', function(event) {
+                        var displayError = document.getElementById('eq-card-errors');
+                        if (displayError) {
+                            if (event.error) {
+                                displayError.textContent = event.error.message;
+                            } else {
+                                displayError.textContent = '';
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Crear el Payment Intent
+            createPayment().catch(error => {
+                showPaymentError(error.message);
+            });
+        } catch (error) {
+            console.error('Error initializing Stripe:', error);
+            showPaymentError('Error initializing payment system. Please try again later.');
+        }
     });
     
     // Evento para generar enlace de pago
@@ -254,7 +263,7 @@ function init() {
     });
     
     // Manejar envío del formulario de pago
-    document.getElementById('eq-payment-form').addEventListener('submit', async function(e) {
+    $(document).on('submit', '#eq-payment-form', async function(e) {
         e.preventDefault();
         
         const submitButton = document.getElementById('eq-submit-payment');
