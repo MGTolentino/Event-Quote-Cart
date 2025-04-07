@@ -37,13 +37,20 @@ init() {
     }
 }
 		
-		bindContextEvents() {
+bindContextEvents() {
     // Escuchar cambios en el contexto
     $(document).on('eqContextChanged', (e, contextData) => {
+        console.log('Context changed event received:', contextData);
         
         // Actualizar estado interno si es necesario
         if (contextData && contextData.eventDate) {
             this.state.selectedDate = contextData.eventDate;
+            
+            // Almacenar en localStorage para persistencia
+            localStorage.setItem('eq_selected_date', contextData.eventDate);
+            
+            // Actualizar la visualización de la fecha
+            this.updateDateDisplay(contextData.eventDate);
         }
         
         // Si estamos en una página de carrito, recargar para mostrar el nuevo contexto
@@ -52,6 +59,34 @@ init() {
             this.loadCartItems();
         }
     });
+}
+
+updateDateDisplay(dateString) {
+    try {
+        // Convertir a objeto Date para formateo
+        const dateObj = new Date(dateString);
+        if (isNaN(dateObj.getTime())) {
+            console.error('Fecha inválida:', dateString);
+            return;
+        }
+        
+        // Formatear la fecha para mostrar
+        const formattedDate = dateObj.toLocaleDateString();
+        
+        // Actualizar todos los campos de fecha en la página
+        $('.eq-date-value').text(formattedDate);
+        $('.eq-date-display').addClass('has-date');
+        
+        // Si hay un datepicker flatpickr, actualizarlo también
+        const datePicker = $('.eq-date-picker');
+        if (datePicker.length && datePicker[0]._flatpickr) {
+            datePicker[0]._flatpickr.setDate(dateString);
+        }
+        
+        console.log('Date display updated to:', formattedDate);
+    } catch (e) {
+        console.error('Error updating date display:', e);
+    }
 }
 		
 		bindDateEvents() {
@@ -415,6 +450,16 @@ getExtrasData(form) {
 
             // Eventos del sidebar
             this.sidebar.on('click', '.eq-sidebar-close', () => this.closeSidebar());
+
+            $(document).on('click', (e) => {
+                // Si el sidebar está abierto y el clic no fue dentro del sidebar ni en un botón que lo abre
+                if (this.state.isOpen && 
+                    !$(e.target).closest('.eq-sidebar').length && 
+                    !$(e.target).closest('.boton-cotizar').length &&
+                    !$(e.target).closest('.eq-header-cart-button').length) {
+                    this.closeSidebar();
+                }
+            });
         
 			
 	// Eventos de items

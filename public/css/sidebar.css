@@ -8,7 +8,7 @@
     background: #fff;
     box-shadow: -2px 0 10px rgba(0,0,0,0.1);
     transition: right 0.3s ease;
-    z-index: 999999;
+    z-index: 999990; 
     display: flex;
     flex-direction: column;
 }
@@ -611,4 +611,18 @@
 /* Ocultar completamente el grupo de cantidad cuando está oculto */
 input[type="hidden"].eq-quantity-input + .eq-form-group.eq-quantity-group {
     display: none !important;
+}
+
+/* Ajuste cuando el context panel está activo */
+body.has-eq-context-panel .eq-sidebar {
+    top: 50px; /* Para dar espacio al context panel */
+    height: calc(100vh - 50px);
+}
+
+/* Para dispositivos móviles ajustar la altura */
+@media (max-width: 768px) {
+    body.has-eq-context-panel .eq-sidebar {
+        top: 95px; /* Para dar espacio al context panel móvil */
+        height: calc(100vh - 95px);
+    }
 }

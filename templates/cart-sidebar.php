@@ -58,7 +58,7 @@ defined('ABSPATH') || exit;
 									<span class="eq-loading-spinner"></span>
 									<?php esc_html_e('Checking availability...', 'event-quote-cart'); ?>
 								</div>
-
+                                    
 								<!-- Date Error State -->
 								<div class="eq-date-error" style="display: none;">
 								</div>

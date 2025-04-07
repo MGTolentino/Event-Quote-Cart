@@ -391,3 +391,12 @@ body.has-eq-context-panel {
     transform: translateY(-1px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+/* Estado minimizado */
+body.has-eq-context-minimized {
+    padding-top: 0;
+}
+
+.eq-context-panel.minimized {
+    display: none;
+}

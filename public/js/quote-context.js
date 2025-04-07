@@ -447,16 +447,29 @@ checkServerContext: function(callback) {
     // Renderizar panel
     this.renderPanel();
 },
-		togglePanel: function() {
-    // Ocultar panel
-    $('.eq-context-panel').remove();
-    $('body').removeClass('has-eq-context-panel');
+togglePanel: function() {
+    var self = this;
     
-    // Renderizar botón toggle
-    this.renderToggleButton();
+    // Cambiar estado de minimizado
+    this.data.isMinimized = !this.data.isMinimized;
     
-    // Mantener el estado activo pero guardar que está minimizado
-    this.data.isMinimized = true;
+    if (this.data.isMinimized) {
+        // Minimizar panel
+        $('.eq-context-panel').slideUp(200, function() {
+            // Después de la animación, mostrar el botón toggle
+            self.renderToggleButton();
+            
+            // Ajustar padding del body
+            $('body').removeClass('has-eq-context-panel').addClass('has-eq-context-minimized');
+        });
+    } else {
+        // Maximizar panel
+        $('.eq-context-toggle-button').remove();
+        $('.eq-context-panel').slideDown(200);
+        $('body').addClass('has-eq-context-panel').removeClass('has-eq-context-minimized');
+    }
+    
+    // Guardar estado
     this.saveToStorage();
 },
 		// Función para formatear fechas en formato amigable
@@ -1105,24 +1118,26 @@ $.ajax({
                 leadName: self.data.leadName,
                 eventId: eventId,
                 eventType: eventType,
-                eventDate: eventDate // CORRECTO
+                eventDate: eventDate
             }]);
             
-            // Verificar si venimos de crear un nuevo evento
-            if (self.isCreatingNewEvent) {
-				
-			
-                // Limpiar el flag
-                self.isCreatingNewEvent = false;
-                
-                // Para nuevos eventos, esperar antes de recargar
-                setTimeout(function() {
-                    window.location.reload();
-                }, 1000); // Esperar 1 segundo para permitir que las actualizaciones terminen
-            } else {
-                // Para eventos existentes, recargar normalmente
-                window.location.reload();
-            }
+            setTimeout(function() {
+                // Verificar si venimos de crear un nuevo evento
+                if (self.isCreatingNewEvent) {
+                    // Limpiar el flag
+                    self.isCreatingNewEvent = false;
+                    
+                    // Para nuevos eventos, esperar antes de recargar
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Para eventos existentes, recargar después de un pequeño retraso
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 300);
+                }
+            }, 200);
         } else {
                     console.error('Error updating cart context:', response.data);
                     self.showNotification('Error al actualizar contexto', 'error');
