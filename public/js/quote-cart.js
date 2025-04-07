@@ -59,6 +59,50 @@ bindContextEvents() {
             this.loadCartItems();
         }
     });
+
+    // Verificar si el panel de contexto está activo al cargar la página
+    this.checkContextPanelState();
+    
+    // Escuchar eventos de activación/desactivación del panel de contexto
+    $(document).on('eqContextPanelActivated', () => {
+        $('body').addClass('has-eq-context-panel');
+    });
+    
+    $(document).on('eqContextPanelDeactivated', () => {
+        $('body').removeClass('has-eq-context-panel');
+    });
+    
+    // Escuchar eventos de minimización/maximización
+    $(document).on('eqContextPanelMinimized', () => {
+        $('body').removeClass('has-eq-context-panel').addClass('has-eq-context-minimized');
+    });
+    
+    $(document).on('eqContextPanelMaximized', () => {
+        $('body').addClass('has-eq-context-panel').removeClass('has-eq-context-minimized');
+    });
+    
+    // Escuchar clicks en el botón de toggle del panel
+    $(document).on('click', '.eq-context-panel-button.toggle-panel', () => {
+        if ($('.eq-context-panel').hasClass('minimized')) {
+            // Si está minimizado, maximizarlo
+            $('.eq-context-panel').removeClass('minimized');
+            $('body').addClass('has-eq-context-panel').removeClass('has-eq-context-minimized');
+        } else {
+            // Si está maximizado, minimizarlo
+            $('.eq-context-panel').addClass('minimized');
+            $('body').removeClass('has-eq-context-panel').addClass('has-eq-context-minimized');
+        }
+    });
+}
+
+// Método para verificar el estado inicial del panel de contexto
+checkContextPanelState() {
+    // Verificar si el panel de contexto existe y está visible
+    if ($('.eq-context-panel').length && !$('.eq-context-panel').hasClass('minimized')) {
+        $('body').addClass('has-eq-context-panel');
+    } else if ($('.eq-context-panel').length && $('.eq-context-panel').hasClass('minimized')) {
+        $('body').addClass('has-eq-context-minimized');
+    }
 }
 
 updateDateDisplay(dateString) {
