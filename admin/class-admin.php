@@ -38,23 +38,25 @@ class Event_Quote_Cart_Admin {
      * Register the JavaScript for the admin area.
      */
     public function enqueue_scripts() {
-        wp_enqueue_script(
-            $this->plugin_name . '-admin',
-            EQ_CART_PLUGIN_URL . 'admin/js/admin.js',
-            array('jquery'),
-            $this->version,
-            false
-        );
 
-        // Localize script
-        wp_localize_script(
-            'event-quote-cart-admin',
-            'eqCartAdmin',
-            array(
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('eq_cart_admin_nonce')
-            )
-        );
+$handle = $this->plugin_name . '-admin';
+
+wp_enqueue_script(
+    $handle,
+    EQ_CART_PLUGIN_URL . 'admin/js/admin.js',
+    array('jquery'),
+    $this->version,
+    false
+);
+
+wp_localize_script(
+    $handle,
+    'eqCartAdmin',
+    array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eq_cart_admin_nonce')
+    )
+);
 	
 		
     }
@@ -150,6 +152,22 @@ class Event_Quote_Cart_Admin {
             'eq_cart_general_settings',
             array('label_for' => 'eq_cart_enabled')
         );
+
+        register_setting('eq_cart_settings', 'eq_cart_page_id');
+    register_setting('eq_cart_settings', 'eq_cart_button_text');
+    register_setting('eq_cart_settings', 'eq_cart_button_text_en');
+    register_setting('eq_cart_settings', 'eq_tax_rate');
+    
+    // Stripe settings
+    register_setting('eq_cart_settings', 'eq_stripe_enabled');
+    register_setting('eq_cart_settings', 'eq_stripe_test_mode');
+    register_setting('eq_cart_settings', 'eq_stripe_test_secret_key');
+    register_setting('eq_cart_settings', 'eq_stripe_test_publishable_key');
+    register_setting('eq_cart_settings', 'eq_stripe_test_webhook_secret');
+    register_setting('eq_cart_settings', 'eq_stripe_secret_key');
+    register_setting('eq_cart_settings', 'eq_stripe_publishable_key');
+    register_setting('eq_cart_settings', 'eq_stripe_webhook_secret');
+    register_setting('eq_cart_settings', 'eq_stripe_default_vendor_id');
     }
 
     /**
@@ -205,6 +223,21 @@ class Event_Quote_Cart_Admin {
     }
 
     /**
+ * Render enabled field (checkbox)
+ */
+public function render_enabled_field($args) {
+    $option_name = $args['label_for'];
+    $value = get_option($option_name);
+    ?>
+    <select id="<?php echo esc_attr($args['label_for']); ?>"
+           name="<?php echo esc_attr($option_name); ?>">
+        <option value="yes" <?php selected($value, 'yes'); ?>><?php _e('Enabled', 'event-quote-cart'); ?></option>
+        <option value="no" <?php selected($value, 'no'); ?>><?php _e('Disabled', 'event-quote-cart'); ?></option>
+    </select>
+    <?php
+}
+
+    /**
      * Initialize hooks
      */
     public function init() {
@@ -220,4 +253,6 @@ class Event_Quote_Cart_Admin {
 		
 
     }
+
+    
 }

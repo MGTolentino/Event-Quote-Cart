@@ -1,0 +1,183 @@
+/* Estilos para los modales de pago */
+
+.eq-modal-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    width: 80%;
+    max-width: 600px;
+}
+
+.eq-modal-close {
+    position: absolute;
+    right: 15px;
+    top: 10px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.eq-modal-close:hover {
+    color: #333;
+}
+
+/* Estilos para el formulario de pago */
+#eq-payment-form {
+    margin-top: 20px;
+}
+
+.eq-form-row {
+    margin-bottom: 20px;
+}
+
+.eq-form-row label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.eq-form-row input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#eq-card-element {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+#eq-card-errors {
+    color: #dc3545;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+#eq-submit-payment {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+#eq-submit-payment:hover {
+    background-color: #0056b3;
+}
+
+#eq-submit-payment:disabled {
+    background-color: #99c2ff;
+    cursor: not-allowed;
+}
+
+/* Estilos para el spinner */
+#eq-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Estilos para mensajes de éxito y error */
+#eq-payment-success, #eq-payment-error {
+    text-align: center;
+    padding: 20px;
+}
+
+.eq-success-icon, .eq-error-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.eq-success-icon {
+    color: #28a745;
+}
+
+.eq-error-icon {
+    color: #dc3545;
+}
+
+#eq-payment-done, #eq-payment-retry {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+/* Estilos para el enlace de pago */
+.eq-payment-link-box {
+    display: flex;
+    margin: 20px 0;
+}
+
+#eq-payment-link-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    font-size: 14px;
+}
+
+#eq-copy-link {
+    padding: 10px 15px;
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+}
+
+.eq-payment-link-actions {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+.eq-payment-link-actions button {
+    flex: 1;
+    margin: 0 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#eq-email-link {
+    color: #0066cc;
+}
+
+#eq-whatsapp-link {
+    color: #25D366;
+}
+
+.eq-payment-link-note {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 20px;
+}

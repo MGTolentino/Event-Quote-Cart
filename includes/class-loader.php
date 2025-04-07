@@ -100,6 +100,10 @@ class Event_Quote_Cart_Loader {
         
         // Load public class
         require_once $plugin_root . '/public/class-public.php';
+
+        //Stripe Handler
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-stripe-handler.php';
+
     }
 
     /**

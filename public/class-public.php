@@ -45,6 +45,14 @@ class Event_Quote_Cart_Public {
 			array(), $this->version, 'all'
 		);
 
+        if (get_option('eq_stripe_enabled') === 'yes') {
+            wp_enqueue_style(
+                $this->plugin_name . '-stripe',
+                EQ_CART_PLUGIN_URL . 'public/css/stripe-integration.css',
+                array(),
+                $this->version
+            );
+        }
 		
     }
 
@@ -89,6 +97,7 @@ class Event_Quote_Cart_Public {
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('eq_cart_public_nonce'),
                 'cartUrl' => $this->get_cart_page_url(),
+                'userLoggedIn' => is_user_logged_in(),
                 'i18n' => array(
                     'addedToCart' => __('Added to quote cart', 'event-quote-cart'),
                     'errorAdding' => __('Error adding to quote cart', 'event-quote-cart'),
@@ -155,6 +164,53 @@ wp_localize_script(
 					$this->version,
 					true
 				);
+
+    if (get_option('eq_stripe_enabled') === 'yes') {
+        // Clave publicable de Stripe
+        $test_mode = get_option('eq_stripe_test_mode', 'yes') === 'yes';
+        $publishable_key = $test_mode ? 
+            get_option('eq_stripe_test_publishable_key', '') : 
+            get_option('eq_stripe_publishable_key', '');
+        
+        // Obtener datos del usuario
+        $user_data = null;
+        if (is_user_logged_in()) {
+            $user = wp_get_current_user();
+            $user_data = array(
+                'name' => $user->display_name,
+                'email' => $user->user_email
+            );
+        }
+        
+        // Cargar Stripe.js
+        wp_enqueue_script(
+            'stripe-js',
+            'https://js.stripe.com/v3/',
+            array(),
+            null,
+            true
+        );
+        
+        // Cargar script de integración
+        wp_enqueue_script(
+            $this->plugin_name . '-stripe',
+            EQ_CART_PLUGIN_URL . 'public/js/stripe-integration.js',
+            array('jquery', 'stripe-js'),
+            $this->version,
+            true
+        );
+        
+        // Datos para el script
+        wp_localize_script(
+            $this->plugin_name . '-stripe',
+            'eqStripeData',
+            array(
+                'publishableKey' => $publishable_key,
+                'userData' => $user_data,
+                'isTestMode' => $test_mode
+            )
+        );
+    }
     }
 
 private function get_cart_page_url() {

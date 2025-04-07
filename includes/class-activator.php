@@ -19,7 +19,7 @@ class Event_Quote_Cart_Activator {
     self::update_tables();
     self::update_cart_table_structure();
     self::create_quotes_table();
-    self::create_context_sessions_table(); // Añadir esta línea
+    self::create_context_sessions_table(); 
     self::add_capabilities();
     self::set_default_options();
 }
@@ -63,11 +63,72 @@ class Event_Quote_Cart_Activator {
 				UNIQUE KEY unique_listing_in_cart (cart_id, listing_id, status) /* Agregar esta línea */
 			) $charset_collate;";
 
+             // Tabla de órdenes
+    $table_name = $wpdb->prefix . 'eq_orders';
+    $sql = "CREATE TABLE $table_name (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        cart_id bigint(20) NOT NULL,
+        user_id bigint(20) NOT NULL,
+        lead_id bigint(20) DEFAULT NULL,
+        event_id bigint(20) DEFAULT NULL,
+        status varchar(50) NOT NULL DEFAULT 'pending',
+        payment_id varchar(255) DEFAULT NULL,
+        payment_method varchar(255) DEFAULT NULL,
+        amount decimal(10,2) NOT NULL DEFAULT 0,
+        currency varchar(10) NOT NULL DEFAULT 'MXN',
+        billing_name varchar(255) DEFAULT NULL,
+        billing_email varchar(255) DEFAULT NULL,
+        billing_phone varchar(100) DEFAULT NULL,
+        created_by bigint(20) DEFAULT NULL,
+        checkout_url varchar(512) DEFAULT NULL,
+        created_at datetime NOT NULL,
+        updated_at datetime NOT NULL,
+        PRIMARY KEY  (id),
+        KEY cart_id (cart_id),
+        KEY user_id (user_id),
+        KEY status (status)
+    ) $charset_collate;";
+    
+    // Tabla de vendors para órdenes
+    $table_name_vendors = $wpdb->prefix . 'eq_order_vendors';
+    $sql_vendors = "CREATE TABLE $table_name_vendors (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        order_id bigint(20) NOT NULL,
+        vendor_id bigint(20) NOT NULL,
+        listing_id bigint(20) NOT NULL,
+        amount decimal(10,2) NOT NULL DEFAULT 0,
+        status varchar(50) NOT NULL DEFAULT 'pending',
+        transfer_id varchar(255) DEFAULT NULL,
+        created_at datetime NOT NULL,
+        updated_at datetime NOT NULL,
+        PRIMARY KEY  (id),
+        KEY order_id (order_id),
+        KEY vendor_id (vendor_id)
+    ) $charset_collate;";
+    
+    // Tabla de reservas (bookings)
+    $table_name_bookings = $wpdb->prefix . 'eq_bookings';
+    $sql_bookings = "CREATE TABLE $table_name_bookings (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        order_id bigint(20) NOT NULL,
+        cart_item_id bigint(20) NOT NULL,
+        booking_id bigint(20) DEFAULT NULL,
+        listing_id bigint(20) NOT NULL,
+        vendor_id bigint(20) DEFAULT NULL,
+        status varchar(50) NOT NULL DEFAULT 'pending',
+        created_at datetime NOT NULL,
+        updated_at datetime NOT NULL,
+        PRIMARY KEY  (id),
+        KEY order_id (order_id),
+        KEY cart_item_id (cart_item_id)
+    ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
         // Create tables
-        dbDelta($sql_carts);
-        dbDelta($sql_items);
+        dbDelta($sql);
+        dbDelta($sql_vendors);
+        dbDelta($sql_bookings);
 		
         // Store database version
         add_option('eq_cart_db_version', EQ_CART_VERSION);
