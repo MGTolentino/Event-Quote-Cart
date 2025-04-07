@@ -13,59 +13,89 @@ function initModals() {
     modal = document.getElementById('eq-payment-modal');
     paymentLinkModal = document.getElementById('eq-payment-link-modal');
     
+    // Solo continuar si los modales existen en la página
+    if (!modal && !paymentLinkModal) {
+        return; // Salir si ninguno de los modales existe
+    }
+    
     // Cerrar modal al hacer clic en la X
     const closeButtons = document.getElementsByClassName('eq-modal-close');
-    for (let i = 0; i < closeButtons.length; i++) {
-        closeButtons[i].addEventListener('click', function() {
-            modal.style.display = 'none';
-            paymentLinkModal.style.display = 'none';
-        });
+    if (closeButtons && closeButtons.length > 0) {
+        for (let i = 0; i < closeButtons.length; i++) {
+            closeButtons[i].addEventListener('click', function() {
+                if (modal) modal.style.display = 'none';
+                if (paymentLinkModal) paymentLinkModal.style.display = 'none';
+            });
+        }
     }
     
     // Cerrar modal al hacer clic fuera del contenido
     window.addEventListener('click', function(event) {
-        if (event.target === modal) {
+        if (modal && event.target === modal) {
             modal.style.display = 'none';
         }
-        if (event.target === paymentLinkModal) {
+        if (paymentLinkModal && event.target === paymentLinkModal) {
             paymentLinkModal.style.display = 'none';
         }
     });
     
     // Botón "Done" en el mensaje de éxito
-    document.getElementById('eq-payment-done').addEventListener('click', function() {
-        modal.style.display = 'none';
-        window.location.reload(); // Recargar página después del pago exitoso
-    });
+    const doneButton = document.getElementById('eq-payment-done');
+    if (doneButton) {
+        doneButton.addEventListener('click', function() {
+            if (modal) modal.style.display = 'none';
+            window.location.reload(); // Recargar página después del pago exitoso
+        });
+    }
     
     // Botón "Retry" en el mensaje de error
-    document.getElementById('eq-payment-retry').addEventListener('click', function() {
-        showPaymentForm();
-    });
+    const retryButton = document.getElementById('eq-payment-retry');
+    if (retryButton) {
+        retryButton.addEventListener('click', function() {
+            showPaymentForm();
+        });
+    }
     
     // Botón "Copy" para copiar enlace de pago
-    document.getElementById('eq-copy-link').addEventListener('click', function() {
-        const linkInput = document.getElementById('eq-payment-link-input');
-        linkInput.select();
-        document.execCommand('copy');
-        this.textContent = 'Copied!';
-        setTimeout(() => { this.textContent = 'Copy'; }, 2000);
-    });
+    const copyButton = document.getElementById('eq-copy-link');
+    if (copyButton) {
+        copyButton.addEventListener('click', function() {
+            const linkInput = document.getElementById('eq-payment-link-input');
+            if (linkInput) {
+                linkInput.select();
+                document.execCommand('copy');
+                this.textContent = 'Copied!';
+                setTimeout(() => { this.textContent = 'Copy'; }, 2000);
+            }
+        });
+    }
     
     // Botón para enviar por email
-    document.getElementById('eq-email-link').addEventListener('click', function() {
-        const linkUrl = document.getElementById('eq-payment-link-input').value;
-        const emailSubject = encodeURIComponent('Payment Link for Your Order');
-        const emailBody = encodeURIComponent('Here is your payment link: ' + linkUrl);
-        window.open(`mailto:?subject=${emailSubject}&body=${emailBody}`);
-    });
+    const emailButton = document.getElementById('eq-email-link');
+    if (emailButton) {
+        emailButton.addEventListener('click', function() {
+            const linkInput = document.getElementById('eq-payment-link-input');
+            if (linkInput) {
+                const linkUrl = linkInput.value;
+                const emailSubject = encodeURIComponent('Payment Link for Your Order');
+                const emailBody = encodeURIComponent('Here is your payment link: ' + linkUrl);
+                window.open(`mailto:?subject=${emailSubject}&body=${emailBody}`);
+            }
+        });
+    }
     
     // Botón para compartir por WhatsApp
-    document.getElementById('eq-whatsapp-link').addEventListener('click', function() {
-        const linkUrl = document.getElementById('eq-payment-link-input').value;
-        const whatsappText = encodeURIComponent('Here is your payment link: ' + linkUrl);
-        window.open(`https://wa.me/?text=${whatsappText}`);
-    });
+    const whatsappButton = document.getElementById('eq-whatsapp-link');
+    if (whatsappButton) {
+        whatsappButton.addEventListener('click', function() {
+            const linkInput = document.getElementById('eq-payment-link-input');
+            if (linkInput) {
+                const linkUrl = linkInput.value;
+                const whatsappText = encodeURIComponent('Here is your payment link: ' + linkUrl);
+                window.open(`https://wa.me/?text=${whatsappText}`);
+            }
+        });
+    }
 }
 
 // Mostrar formulario de pago
