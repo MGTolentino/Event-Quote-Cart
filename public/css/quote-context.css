@@ -46,6 +46,7 @@ body.has-eq-context-panel {
     white-space: nowrap;
 }
 
+/* Estilos para los botones y acciones del panel */
 .eq-context-panel-actions {
     display: flex;
     align-items: center;
@@ -213,7 +214,7 @@ body.has-eq-context-panel {
     z-index: 1000002 !important;
 }
 
-/* Estilos responsivos */
+/* Estilos responsivos mejorados */
 @media (max-width: 768px) {
     .eq-context-panel {
         flex-direction: column;
@@ -238,13 +239,40 @@ body.has-eq-context-panel {
         flex-grow: 1;
     }
     
+    /* Modificaciones para los botones en móvil */
     .eq-context-panel-actions {
         width: 100%;
-        justify-content: flex-end;
+        display: flex;
+        flex-wrap: wrap; /* Permitir que los botones se envuelvan en múltiples líneas */
+        justify-content: flex-start; /* Alinear desde la izquierda */
+        gap: 8px; /* Espacio uniforme entre botones */
+    }
+    
+    .eq-context-panel-button {
+        margin: 4px 4px 4px 0; /* Espaciado uniforme */
+        padding: 8px 12px; /* Botones más grandes para mejor interacción táctil */
+        font-size: 13px; /* Texto ligeramente más grande */
+        flex: 1 1 auto; /* Permitir que crezcan pero respetando su contenido */
+        min-width: 100px; /* Ancho mínimo para mejor visualización */
+        text-align: center; /* Centrar texto */
+        white-space: nowrap; /* Evitar que el texto se rompa */
     }
     
     body.has-eq-context-panel {
-        padding-top: 95px;
+        padding-top: 125px; /* Aumentar el padding para acomodar el panel más alto */
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .eq-context-panel-button {
+        min-width: 45%; /* En pantallas muy pequeñas, mostrar 2 botones por fila */
+        font-size: 12px;
+        padding: 10px 8px;
+    }
+    
+    body.has-eq-context-panel {
+        padding-top: 160px; /* Más espacio para el panel */
     }
 }
 
@@ -392,15 +420,6 @@ body.has-eq-context-panel {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-<<<<<<< Updated upstream
-/* Estado minimizado */
-body.has-eq-context-minimized {
-    padding-top: 0;
-}
-
-.eq-context-panel.minimized {
-    display: none;
-=======
 /* Mejoras para flatpickr en móviles */
 @media (max-width: 768px) {
     .flatpickr-calendar {
@@ -420,5 +439,4 @@ body.has-eq-context-minimized {
         height: 38px !important;
         line-height: 38px !important;
     }
->>>>>>> Stashed changes
 }
