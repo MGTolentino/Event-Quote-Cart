@@ -833,13 +833,28 @@ modalsHtml += '</select>' +
                 self.createEvent(type, date, guests);
             });
             
-            // Inicializar flatpickr para selector de fecha
-            if (typeof flatpickr !== 'undefined') {
-                flatpickr('#eq-new-event-date', {
-                    dateFormat: 'Y-m-d',
-                    minDate: 'today'
-                });
-            }
+// Inicializar flatpickr para selector de fecha
+if (typeof flatpickr !== 'undefined') {
+    flatpickr('#eq-new-event-date', {
+        dateFormat: 'Y-m-d',
+        minDate: 'today',
+        locale: 'es',  // Configurar español
+        disableMobile: false,  // Permitir que funcione en móviles
+        position: 'auto', // Posicionamiento automático
+        static: true,  // Hace que el calendario no se oculte en dispositivos táctiles
+        appendTo: document.getElementById('eq-event-modal'),  // Lo anexa directamente al modal
+        onOpen: function() {
+            // Asegurar que sea visible en móviles
+            setTimeout(function() {
+                var calendar = document.querySelector('.flatpickr-calendar');
+                if (calendar) {
+                    calendar.style.zIndex = "1000010"; // Z-index más alto
+                    calendar.style.visibility = "visible";
+                }
+            }, 100);
+        }
+    });
+}
         },
         
         // Abrir modal de lead

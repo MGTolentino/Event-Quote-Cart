@@ -392,6 +392,7 @@ body.has-eq-context-panel {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+<<<<<<< Updated upstream
 /* Estado minimizado */
 body.has-eq-context-minimized {
     padding-top: 0;
@@ -399,4 +400,25 @@ body.has-eq-context-minimized {
 
 .eq-context-panel.minimized {
     display: none;
+=======
+/* Mejoras para flatpickr en móviles */
+@media (max-width: 768px) {
+    .flatpickr-calendar {
+        width: 100% !important;
+        max-width: 300px;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        top: auto !important;
+        bottom: auto !important;
+        position: fixed !important;
+        z-index: 1000010 !important;
+        visibility: visible !important;
+    }
+    
+    /* Mejorar tamaño de los días para interacción táctil */
+    .flatpickr-day {
+        height: 38px !important;
+        line-height: 38px !important;
+    }
+>>>>>>> Stashed changes
 }
