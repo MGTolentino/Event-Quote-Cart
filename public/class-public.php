@@ -85,7 +85,7 @@ class Event_Quote_Cart_Public {
 		wp_enqueue_script(
         $this->plugin_name . '-context-panel',
         EQ_CART_PLUGIN_URL . 'public/js/quote-context.js',
-        array('jquery', 'flatpickr'),
+        array('jquery', 'flatpickr', $this->plugin_name), // Añadimos dependencia al script principal
         $this->version,
         true
     );
