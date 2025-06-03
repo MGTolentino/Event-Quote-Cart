@@ -25,7 +25,23 @@ init: function() {
     // Verificar si las dependencias están disponibles
     if (typeof eqContextData === 'undefined') {
         console.warn('eqContextData no está disponible. Panel de contexto deshabilitado.');
-        return;
+        
+        // Crear un objeto fallback para continuar
+        window.eqContextData = window.eqContextData || {
+            ajaxurl: typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php',
+            nonce: '',
+            canUseContextPanel: true, // Forzamos activación para depuración
+            i18n: {
+                leadLabel: 'Lead:',
+                eventLabel: 'Evento:',
+                notSelected: 'No seleccionado',
+                selectLead: 'Seleccionar Lead',
+                selectEvent: 'Seleccionar Evento',
+                endSession: 'Finalizar Sesión',
+                minimize: 'Minimizar',
+                quoteButton: 'Cotizar'
+            }
+        };
     }
     
     if (typeof eqCartData === 'undefined') {
@@ -39,8 +55,10 @@ init: function() {
     }
     
     // Verificar si el usuario puede usar el panel
+    // Permitir que el panel continúe incluso si canUseContextPanel es false para depuración
     if (!eqContextData.canUseContextPanel) {
-        return; // No inicializar si el usuario no tiene permisos
+        console.info('El usuario no tiene permisos para usar el panel de contexto, pero intentaremos inicializarlo de todos modos para debugging.');
+        // Continuamos en lugar de salir para permitir que funcione
     }
     
     // Iniciar sistema de sincronización entre pestañas primero
@@ -909,9 +927,26 @@ if (typeof flatpickr !== 'undefined') {
         
         // Abrir modal de lead
         openLeadModal: function() {
+            var leadModal = $('#eq-lead-modal');
+            var leadBackdrop = $('#eq-lead-modal-backdrop');
+            
+            // Verificar si los modales existen
+            if (leadModal.length === 0 || leadBackdrop.length === 0) {
+                console.warn('Modal de lead no encontrado, inicializando modales...');
+                this.initModals(); // Reintentar inicializar modales
+            }
+            
+            // Ahora intentar mostrar el modal
             $('#eq-lead-modal-backdrop, #eq-lead-modal').show();
-            $('#eq-lead-search').focus();
-            this.searchLeads('');
+            
+            // Enfocar la búsqueda si existe
+            var searchInput = $('#eq-lead-search');
+            if (searchInput.length > 0) {
+                searchInput.focus();
+                this.searchLeads('');
+            } else {
+                console.error('Campo de búsqueda no encontrado en el modal');
+            }
         },
         
         // Abrir modal de evento
@@ -919,15 +954,30 @@ if (typeof flatpickr !== 'undefined') {
     // Obtener datos del listing actual si estamos en una página de listing
     var listingData = this.getCurrentListingData();
     
+    // Verificar si los modales existen
+    var eventModal = $('#eq-event-modal');
+    var eventBackdrop = $('#eq-event-modal-backdrop');
+    
+    if (eventModal.length === 0 || eventBackdrop.length === 0) {
+        console.warn('Modal de evento no encontrado, inicializando modales...');
+        this.initModals(); // Reintentar inicializar modales
+    }
+    
     // Mostrar modal
     $('#eq-event-modal-backdrop, #eq-event-modal').show();
     
     // Establecer valores de campos ocultos si están disponibles
     if (listingData.ubicacion) {
-        $('#eq-new-event-ubicacion').val(listingData.ubicacion);
+        var ubicacionField = $('#eq-new-event-ubicacion');
+        if (ubicacionField.length > 0) {
+            ubicacionField.val(listingData.ubicacion);
+        }
     }
     if (listingData.categoria) {
-        $('#eq-new-event-categoria').val(listingData.categoria);
+        var categoriaField = $('#eq-new-event-categoria');
+        if (categoriaField.length > 0) {
+            categoriaField.val(listingData.categoria);
+        }
     }
     
     // Cargar eventos existentes

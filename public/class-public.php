@@ -132,6 +132,35 @@ if (class_exists('LTB_Leads_Status_Utils')) {
     );
 }
 
+// También proporcionar eqCartData al script de context-panel
+wp_localize_script(
+    $this->plugin_name . '-context-panel',
+    'eqCartData',
+    array(
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('eq_cart_public_nonce'),
+        'cartUrl' => $this->get_cart_page_url(),
+        'userLoggedIn' => is_user_logged_in(),
+        'i18n' => array(
+            'addedToCart' => __('Added to quote cart', 'event-quote-cart'),
+            'errorAdding' => __('Error adding to quote cart', 'event-quote-cart'),
+            'removedFromCart' => __('Removed from quote cart', 'event-quote-cart'),
+            'errorRemoving' => __('Error removing from quote cart', 'event-quote-cart'),
+            'dateNotAvailable' => __('Selected date is not available', 'event-quote-cart'),
+            'invalidQuantity' => __('Please enter a valid quantity', 'event-quote-cart'),
+            'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
+            'viewQuotes' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotizaciones' : 'View Quotes',
+            'viewQuote' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote',
+            'add_quote' => substr(get_locale(), 0, 2) === 'es' ? '+ Cotizar' : '+ Quote',
+            'view_quote' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote',
+            'update_quote' => substr(get_locale(), 0, 2) === 'es' ? 'Actualizar Cotización' : 'Update Quote'
+        ),
+        'isPrivilegedUser' => current_user_can('administrator') || current_user_can('ejecutivo_de_ventas'),
+        'hasContextPanel' => $this->is_context_panel_active(),
+        'taxRate' => floatval(get_option('eq_tax_rate', 16))
+    )
+);
+
 wp_localize_script(
     $this->plugin_name . '-context-panel',
     'eqStatusConfig',
