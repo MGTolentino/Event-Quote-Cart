@@ -248,7 +248,7 @@ verifySessionToken: function(token) {
             if (response.success) {
                 // Solo registrar el estado pero NO recargar
                 if (!response.data.isActive && self.data.isActive) {
-                    // Sesión cambió en el servidor, pero no forzamos recarga
+                    console.log('Session may have changed on server, but not forcing reload');
                 }
             }
         }
@@ -1389,6 +1389,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
             }
             
             updatedAny = true;
+        } else {
+            console.log('Skipping hidden input:', input);
         }
     });
     
@@ -1432,6 +1434,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
                 }, 100);
                 
                 updatedAny = true;
+            } else {
+                console.log('BookingForm inputs are hidden, skipping update');
             }
         } catch (e) {
             console.error('Error updating BookingForm:', e);
@@ -1450,6 +1454,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
             force: true // Indicar que debe tener prioridad
         }]);
         
+    } else {
+        console.log('No visible date inputs found to update');
     }
 },
         

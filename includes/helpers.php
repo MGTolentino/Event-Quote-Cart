@@ -392,12 +392,12 @@ function eq_get_active_context() {
             $cart->event_id
         ));
     } 
-    // Los ejecutivos de ventas pueden acceder a todos los leads/eventos (menos restrictivo)
+    // Los ejecutivos de ventas solo pueden acceder a leads/eventos asignados a ellos
     else if ($is_sales) {
         $lead = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}jet_cct_leads 
-            WHERE _ID = %d",
-            $cart->lead_id
+            WHERE _ID = %d AND (usuario_asignado = %d OR usuario_asignado IS NULL)",
+            $cart->lead_id, $user_id
         ));
         
         $event = $wpdb->get_row($wpdb->prepare(
