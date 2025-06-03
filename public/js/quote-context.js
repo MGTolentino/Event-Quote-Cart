@@ -22,9 +22,24 @@
 
         
 init: function() {
-	
+    // Verificar si las dependencias están disponibles
+    if (typeof eqContextData === 'undefined') {
+        console.warn('eqContextData no está disponible. Panel de contexto deshabilitado.');
+        return;
+    }
+    
+    if (typeof eqCartData === 'undefined') {
+        console.warn('eqCartData no está disponible. Panel de contexto funcionará con capacidades limitadas.');
+        // Crear objeto fallback
+        window.eqCartData = window.eqCartData || {
+            ajaxurl: typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php',
+            nonce: '',
+            i18n: {}
+        };
+    }
+    
     // Verificar si el usuario puede usar el panel
-    if (typeof eqContextData === 'undefined' || !eqContextData.canUseContextPanel) {
+    if (!eqContextData.canUseContextPanel) {
         return; // No inicializar si el usuario no tiene permisos
     }
     
@@ -65,7 +80,13 @@ init: function() {
                     $('#eq-context-event-info').text(self.formatEventInfo());
                     
                     // Mostrar el panel (quitar clase de carga y eliminar display:none inline)
-                    $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+                    var panel = $('.eq-context-panel');
+                    if (panel.length) {
+                        panel.removeClass('eq-loading');
+                        if (panel.css('display') === 'none') {
+                            panel.css('display', '');
+                        }
+                    }
                 } else {
                     // Renderizar nuevo panel
                     self.renderPanel();
@@ -296,6 +317,14 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
+    // Verificar si eqCartData está disponible
+    if (typeof eqCartData === 'undefined' || !eqCartData.ajaxurl || !eqCartData.nonce) {
+        console.warn('eqCartData no está disponible o es incompleto');
+        if (typeof callback === 'function') {
+            callback({success: false, error: 'Configuration error'});
+        }
+        return;
+    }
     
     $.ajax({
         url: eqCartData.ajaxurl,
@@ -312,9 +341,18 @@ checkServerContext: function(callback) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error checking context status:', status, error);
+            // Mejor manejo de errores
+            var errorMsg = 'Error checking context status: ' + status;
+            console.error(errorMsg, error);
+            
+            // Intentar interpretar la respuesta si es posible
+            var responseText = xhr.responseText || '';
+            if (responseText.indexOf('<!DOCTYPE') === 0) {
+                console.warn('Recibido HTML en lugar de JSON. Posible error de servidor.');
+            }
+            
             if (typeof callback === 'function') {
-                callback({success: false, error: error});
+                callback({success: false, error: errorMsg});
             }
         }
     });
@@ -358,7 +396,13 @@ checkServerContext: function(callback) {
         $('#eq-context-lead-name').text(this.data.leadName || (eqContextData.i18n.notSelected || 'No seleccionado'));
         $('#eq-context-event-info').text(this.formatEventInfo());
         // Asegurar que el panel sea visible
-        $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+        var panel = $('.eq-context-panel');
+        if (panel.length) {
+            panel.removeClass('eq-loading');
+            if (panel.css('display') === 'none') {
+                panel.css('display', '');
+            }
+        }
         return;
     }
     
@@ -403,7 +447,13 @@ checkServerContext: function(callback) {
         this.updateCartWithContext();
     }
 	  
-	      $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+	      var panel = $('.eq-context-panel');
+        if (panel.length) {
+            panel.removeClass('eq-loading');
+            if (panel.css('display') === 'none') {
+                panel.css('display', '');
+            }
+        }
 
 },
 		
