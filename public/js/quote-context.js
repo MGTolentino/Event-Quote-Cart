@@ -61,7 +61,7 @@ init: function() {
                 // Si el panel ya existe, actualizarlo y mostrarlo
                 if ($('.eq-context-panel').length > 0) {
                     // Actualizar contenido
-                    $('#eq-context-lead-name').text(self.data.leadName || 'No seleccionado');
+                    $('#eq-context-lead-name').text(self.data.leadName || (eqContextData.i18n.notSelected || 'No seleccionado'));
                     $('#eq-context-event-info').text(self.formatEventInfo());
                     
                     // Mostrar el panel (quitar clase de carga y eliminar display:none inline)
@@ -355,7 +355,7 @@ checkServerContext: function(callback) {
     
     // Si ya existe el panel, actualizar información y no recrear
     if ($('.eq-context-panel').length > 0) {
-        $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
+        $('#eq-context-lead-name').text(this.data.leadName || (eqContextData.i18n.notSelected || 'No seleccionado'));
         $('#eq-context-event-info').text(this.formatEventInfo());
         // Asegurar que el panel sea visible
         $('.eq-context-panel').removeClass('eq-loading').css('display', '');
@@ -369,23 +369,23 @@ checkServerContext: function(callback) {
         '<div class="eq-context-panel">' +
             '<div class="eq-context-panel-info">' +
                 '<div class="eq-context-panel-section">' +
-                    '<span class="eq-context-panel-label">Lead:</span>' +
+                    '<span class="eq-context-panel-label">' + (eqContextData.i18n.leadLabel || 'Lead:') + '</span>' +
                     '<span class="eq-context-panel-value" id="eq-context-lead-name">' + 
-                        (this.data.leadName || 'No seleccionado') + 
+                        (this.data.leadName || (eqContextData.i18n.notSelected || 'No seleccionado')) + 
                     '</span>' +
                 '</div>' +
                 '<div class="eq-context-panel-section">' +
-                    '<span class="eq-context-panel-label">Evento:</span>' +
+                    '<span class="eq-context-panel-label">' + (eqContextData.i18n.eventLabel || 'Evento:') + '</span>' +
                     '<span class="eq-context-panel-value" id="eq-context-event-info">' + 
                         this.formatEventInfo() + 
                     '</span>' +
                 '</div>' +
             '</div>' +
             '<div class="eq-context-panel-actions">' +
-                '<button type="button" class="eq-context-panel-button change-lead">Seleccionar Lead</button>' +
-                '<button type="button" class="eq-context-panel-button change-event' + (this.data.leadId ? '' : ' disabled') + '">Seleccionar Evento</button>' +
-                '<button type="button" class="eq-context-panel-button end-session' + (this.data.isActive ? '' : ' disabled') + '">Finalizar Sesión</button>' +
-                '<button type="button" class="eq-context-panel-button toggle-panel">Minimizar</button>' +
+                '<button type="button" class="eq-context-panel-button change-lead">' + (eqContextData.i18n.selectLead || 'Seleccionar Lead') + '</button>' +
+                '<button type="button" class="eq-context-panel-button change-event' + (this.data.leadId ? '' : ' disabled') + '">' + (eqContextData.i18n.selectEvent || 'Seleccionar Evento') + '</button>' +
+                '<button type="button" class="eq-context-panel-button end-session' + (this.data.isActive ? '' : ' disabled') + '">' + (eqContextData.i18n.endSession || 'Finalizar Sesión') + '</button>' +
+                '<button type="button" class="eq-context-panel-button toggle-panel">' + (eqContextData.i18n.minimize || 'Minimizar') + '</button>' +
             '</div>' +
         '</div>';
 	  
@@ -417,7 +417,7 @@ checkServerContext: function(callback) {
     var buttonHtml = 
         '<button class="eq-context-toggle-button">' +
             '<i class="fas fa-clipboard-list"></i> ' +
-            '<span>Cotizar</span>' +
+            '<span>' + (eqContextData.i18n.quoteButton || 'Cotizar') + '</span>' +
         '</button>';
         
     // Añadir botón al body
@@ -530,7 +530,7 @@ formatFriendlyDate: function(date) {
 		   
 
     if (!this.data.eventId) {
-        return 'No seleccionado';
+        return eqContextData.i18n.notSelected || 'No seleccionado';
     }
     
     var info = '';
@@ -958,7 +958,7 @@ if (typeof flatpickr !== 'undefined') {
                 this.renderPanel();
             } else {
                 $('#eq-context-lead-name').text(leadName);
-                $('#eq-context-event-info').text('No seleccionado');
+                $('#eq-context-event-info').text(eqContextData.i18n.notSelected || 'No seleccionado');
             }
             
             this.saveToStorage();
@@ -1083,7 +1083,7 @@ if ($('.eq-context-panel').length === 0) {
     this.renderPanel();
 } else {
     // Forzar actualización del DOM
-    $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
+    $('#eq-context-lead-name').text(this.data.leadName || (eqContextData.i18n.notSelected || 'No seleccionado'));
     $('#eq-context-event-info').text(this.formatEventInfo());
 }
     

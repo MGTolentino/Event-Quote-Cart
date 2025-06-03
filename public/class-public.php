@@ -106,11 +106,11 @@ class Event_Quote_Cart_Public {
                     'dateNotAvailable' => __('Selected date is not available', 'event-quote-cart'),
                     'invalidQuantity' => __('Please enter a valid quantity', 'event-quote-cart'),
                     'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
-					'viewQuotes' => get_locale() === 'es_ES' ? 'Ver Cotizaciones' : 'View Quotes',
-					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
-                    'add_quote' => get_locale() === 'es_ES' ? '+ Cotizar' : '+ Quote',
-                    'view_quote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
-                    'update_quote' => get_locale() === 'es_ES' ? 'Actualizar Cotización' : 'Update Quote'
+					'viewQuotes' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotizaciones' : 'View Quotes',
+					'viewQuote' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote',
+                    'add_quote' => substr(get_locale(), 0, 2) === 'es' ? '+ Cotizar' : '+ Quote',
+                    'view_quote' => substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote',
+                    'update_quote' => substr(get_locale(), 0, 2) === 'es' ? 'Actualizar Cotización' : 'Update Quote'
                 ),
 				'isPrivilegedUser' => current_user_can('administrator') || current_user_can('ejecutivo_de_ventas'),
        				 'hasContextPanel' => $this->is_context_panel_active(),
@@ -148,12 +148,14 @@ wp_localize_script(
             'nonce' => wp_create_nonce('eq_cart_public_nonce'),
             'canUseContextPanel' => function_exists('eq_can_view_quote_button') && eq_can_view_quote_button() ? true : false,
             'i18n' => array(
-                'leadLabel' => __('Lead:', 'event-quote-cart'),
-                'eventLabel' => __('Evento:', 'event-quote-cart'),
-                'notSelected' => __('No seleccionado', 'event-quote-cart'),
-                'selectLead' => __('Seleccionar Lead', 'event-quote-cart'),
-                'selectEvent' => __('Seleccionar Evento', 'event-quote-cart'),
-                'endSession' => __('Finalizar Sesión', 'event-quote-cart')
+                'leadLabel' => substr(get_locale(), 0, 2) === 'es' ? 'Lead:' : 'Lead:',
+                'eventLabel' => substr(get_locale(), 0, 2) === 'es' ? 'Evento:' : 'Event:',
+                'notSelected' => substr(get_locale(), 0, 2) === 'es' ? 'No seleccionado' : 'Not selected',
+                'selectLead' => substr(get_locale(), 0, 2) === 'es' ? 'Seleccionar Lead' : 'Select Lead',
+                'selectEvent' => substr(get_locale(), 0, 2) === 'es' ? 'Seleccionar Evento' : 'Select Event',
+                'endSession' => substr(get_locale(), 0, 2) === 'es' ? 'Finalizar Sesión' : 'End Session',
+                'minimize' => substr(get_locale(), 0, 2) === 'es' ? 'Minimizar' : 'Minimize',
+                'quoteButton' => substr(get_locale(), 0, 2) === 'es' ? 'Cotizar' : 'Quote'
             )
         )
     );
