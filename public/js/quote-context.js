@@ -22,43 +22,10 @@
 
         
 init: function() {
-    // Verificar si las dependencias están disponibles
-    if (typeof eqContextData === 'undefined') {
-        console.warn('eqContextData no está disponible. Panel de contexto deshabilitado.');
-        
-        // Crear un objeto fallback para continuar
-        window.eqContextData = window.eqContextData || {
-            ajaxurl: typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php',
-            nonce: '',
-            canUseContextPanel: true, // Forzamos activación para depuración
-            i18n: {
-                leadLabel: 'Lead:',
-                eventLabel: 'Evento:',
-                notSelected: 'No seleccionado',
-                selectLead: 'Seleccionar Lead',
-                selectEvent: 'Seleccionar Evento',
-                endSession: 'Finalizar Sesión',
-                minimize: 'Minimizar',
-                quoteButton: 'Cotizar'
-            }
-        };
-    }
-    
-    if (typeof eqCartData === 'undefined') {
-        console.warn('eqCartData no está disponible. Panel de contexto funcionará con capacidades limitadas.');
-        // Crear objeto fallback
-        window.eqCartData = window.eqCartData || {
-            ajaxurl: typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php',
-            nonce: '',
-            i18n: {}
-        };
-    }
-    
+	
     // Verificar si el usuario puede usar el panel
-    // Permitir que el panel continúe incluso si canUseContextPanel es false para depuración
-    if (!eqContextData.canUseContextPanel) {
-        console.info('El usuario no tiene permisos para usar el panel de contexto, pero intentaremos inicializarlo de todos modos para debugging.');
-        // Continuamos en lugar de salir para permitir que funcione
+    if (typeof eqContextData === 'undefined' || !eqContextData.canUseContextPanel) {
+        return; // No inicializar si el usuario no tiene permisos
     }
     
     // Iniciar sistema de sincronización entre pestañas primero
@@ -335,16 +302,14 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
-    // Usar admin-ajax.php directamente
-    var ajaxurl = '/wp-admin/admin-ajax.php';
     
     $.ajax({
-        url: ajaxurl,
+        url: eqCartData.ajaxurl,
         type: 'POST',
         dataType: 'json',
         data: {
             action: 'eq_check_context_status',
-            nonce: '',  // Omitir nonce para pruebas
+            nonce: eqCartData.nonce,
             timestamp: Date.now() // Evitar caché
         },
         success: function(response) {
@@ -921,10 +886,6 @@ if (typeof flatpickr !== 'undefined') {
         
         // Abrir modal de lead
         openLeadModal: function() {
-            // Forzar inicialización de modales primero
-            this.initModals();
-            
-            // Ahora intentar mostrar el modal
             $('#eq-lead-modal-backdrop, #eq-lead-modal').show();
             $('#eq-lead-search').focus();
             this.searchLeads('');
@@ -934,9 +895,6 @@ if (typeof flatpickr !== 'undefined') {
         openEventModal: function() {
     // Obtener datos del listing actual si estamos en una página de listing
     var listingData = this.getCurrentListingData();
-    
-    // Forzar inicialización de modales primero
-    this.initModals();
     
     // Mostrar modal
     $('#eq-event-modal-backdrop, #eq-event-modal').show();
@@ -965,12 +923,12 @@ if (typeof flatpickr !== 'undefined') {
             $('#eq-lead-results').html('<div class="eq-loading">Buscando...</div>');
             
             $.ajax({
-                url: '/wp-admin/admin-ajax.php',
+                url: eqCartData.ajaxurl,
                 type: 'POST',
                 dataType: 'json',
                 data: {
                     action: 'eq_search_leads',
-                    nonce: '',  // Omitir nonce para pruebas
+                    nonce: eqCartData.nonce,
                     term: term
                 },
                 success: function(response) {
