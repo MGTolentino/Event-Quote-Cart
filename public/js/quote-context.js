@@ -302,14 +302,6 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
-    // Verificar que eqCartData esté disponible
-    if (typeof eqCartData === 'undefined' || !eqCartData.ajaxurl) {
-        console.error('eqCartData no está definido o incompleto');
-        if (typeof callback === 'function') {
-            callback({success: false, error: 'Configuration error'});
-        }
-        return;
-    }
     
     $.ajax({
         url: eqCartData.ajaxurl,
@@ -920,13 +912,6 @@ if (typeof flatpickr !== 'undefined') {
             var self = this;
             
             $('#eq-lead-results').html('<div class="eq-loading">Buscando...</div>');
-            
-            // Verificar que eqCartData esté disponible
-            if (typeof eqCartData === 'undefined' || !eqCartData.ajaxurl) {
-                console.error('eqCartData no está definido o incompleto en searchLeads');
-                $('#eq-lead-results').html('<div class="eq-no-results">Error de configuración</div>');
-                return;
-            }
             
             $.ajax({
                 url: eqCartData.ajaxurl,
