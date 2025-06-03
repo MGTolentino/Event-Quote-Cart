@@ -107,9 +107,10 @@ class Event_Quote_Cart_Public {
                     'invalidQuantity' => __('Please enter a valid quantity', 'event-quote-cart'),
                     'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
 					'viewQuotes' => get_locale() === 'es_ES' ? 'Ver Cotizaciones' : 'View Quotes',
-					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote'
-
-
+					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
+                    'add_quote' => get_locale() === 'es_ES' ? '+ Cotizar' : '+ Quote',
+                    'view_quote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
+                    'update_quote' => get_locale() === 'es_ES' ? 'Actualizar Cotización' : 'Update Quote'
                 ),
 				'isPrivilegedUser' => current_user_can('administrator') || current_user_can('ejecutivo_de_ventas'),
        				 'hasContextPanel' => $this->is_context_panel_active(),
