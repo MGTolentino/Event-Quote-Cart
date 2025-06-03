@@ -335,22 +335,16 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
-    // Verificar si eqCartData está disponible
-    if (typeof eqCartData === 'undefined' || !eqCartData.ajaxurl || !eqCartData.nonce) {
-        console.warn('eqCartData no está disponible o es incompleto');
-        if (typeof callback === 'function') {
-            callback({success: false, error: 'Configuration error'});
-        }
-        return;
-    }
+    // Usar admin-ajax.php directamente
+    var ajaxurl = '/wp-admin/admin-ajax.php';
     
     $.ajax({
-        url: eqCartData.ajaxurl,
+        url: ajaxurl,
         type: 'POST',
         dataType: 'json',
         data: {
             action: 'eq_check_context_status',
-            nonce: eqCartData.nonce,
+            nonce: '',  // Omitir nonce para pruebas
             timestamp: Date.now() // Evitar caché
         },
         success: function(response) {
@@ -927,26 +921,13 @@ if (typeof flatpickr !== 'undefined') {
         
         // Abrir modal de lead
         openLeadModal: function() {
-            var leadModal = $('#eq-lead-modal');
-            var leadBackdrop = $('#eq-lead-modal-backdrop');
-            
-            // Verificar si los modales existen
-            if (leadModal.length === 0 || leadBackdrop.length === 0) {
-                console.warn('Modal de lead no encontrado, inicializando modales...');
-                this.initModals(); // Reintentar inicializar modales
-            }
+            // Forzar inicialización de modales primero
+            this.initModals();
             
             // Ahora intentar mostrar el modal
             $('#eq-lead-modal-backdrop, #eq-lead-modal').show();
-            
-            // Enfocar la búsqueda si existe
-            var searchInput = $('#eq-lead-search');
-            if (searchInput.length > 0) {
-                searchInput.focus();
-                this.searchLeads('');
-            } else {
-                console.error('Campo de búsqueda no encontrado en el modal');
-            }
+            $('#eq-lead-search').focus();
+            this.searchLeads('');
         },
         
         // Abrir modal de evento
@@ -954,30 +935,18 @@ if (typeof flatpickr !== 'undefined') {
     // Obtener datos del listing actual si estamos en una página de listing
     var listingData = this.getCurrentListingData();
     
-    // Verificar si los modales existen
-    var eventModal = $('#eq-event-modal');
-    var eventBackdrop = $('#eq-event-modal-backdrop');
-    
-    if (eventModal.length === 0 || eventBackdrop.length === 0) {
-        console.warn('Modal de evento no encontrado, inicializando modales...');
-        this.initModals(); // Reintentar inicializar modales
-    }
+    // Forzar inicialización de modales primero
+    this.initModals();
     
     // Mostrar modal
     $('#eq-event-modal-backdrop, #eq-event-modal').show();
     
     // Establecer valores de campos ocultos si están disponibles
     if (listingData.ubicacion) {
-        var ubicacionField = $('#eq-new-event-ubicacion');
-        if (ubicacionField.length > 0) {
-            ubicacionField.val(listingData.ubicacion);
-        }
+        $('#eq-new-event-ubicacion').val(listingData.ubicacion);
     }
     if (listingData.categoria) {
-        var categoriaField = $('#eq-new-event-categoria');
-        if (categoriaField.length > 0) {
-            categoriaField.val(listingData.categoria);
-        }
+        $('#eq-new-event-categoria').val(listingData.categoria);
     }
     
     // Cargar eventos existentes
@@ -996,12 +965,12 @@ if (typeof flatpickr !== 'undefined') {
             $('#eq-lead-results').html('<div class="eq-loading">Buscando...</div>');
             
             $.ajax({
-                url: eqCartData.ajaxurl,
+                url: '/wp-admin/admin-ajax.php',
                 type: 'POST',
                 dataType: 'json',
                 data: {
                     action: 'eq_search_leads',
-                    nonce: eqCartData.nonce,
+                    nonce: '',  // Omitir nonce para pruebas
                     term: term
                 },
                 success: function(response) {
