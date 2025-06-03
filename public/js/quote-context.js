@@ -318,18 +318,9 @@ checkServerContext: function(callback) {
             }
         },
         error: function(xhr, status, error) {
-            // Mejor manejo de errores
-            var errorMsg = 'Error checking context status: ' + status;
-            console.error(errorMsg, error);
-            
-            // Intentar interpretar la respuesta si es posible
-            var responseText = xhr.responseText || '';
-            if (responseText.indexOf('<!DOCTYPE') === 0) {
-                console.warn('Recibido HTML en lugar de JSON. Posible error de servidor.');
-            }
-            
+            console.error('Error checking context status:', status, error);
             if (typeof callback === 'function') {
-                callback({success: false, error: errorMsg});
+                callback({success: false, error: error});
             }
         }
     });

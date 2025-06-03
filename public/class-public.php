@@ -132,9 +132,6 @@ if (class_exists('LTB_Leads_Status_Utils')) {
     );
 }
 
-// También proporcionar eqCartData al script de context-panel
-// Ya no localicemos eqCartData para el panel de contexto, sino que usaremos un script en línea
-
 wp_localize_script(
     $this->plugin_name . '-context-panel',
     'eqStatusConfig',
@@ -163,31 +160,6 @@ wp_localize_script(
         )
     );
     
-    // Agregar script en línea para asegurar que eqCartData esté disponible para quote-context.js
-    wp_add_inline_script($this->plugin_name . '-context-panel', 'if (typeof eqCartData === "undefined") {
-        eqCartData = {
-            ajaxurl: "' . admin_url('admin-ajax.php') . '",
-            nonce: "' . wp_create_nonce('eq_cart_public_nonce') . '",
-            i18n: {
-                add_quote: "' . (substr(get_locale(), 0, 2) === 'es' ? '+ Cotizar' : '+ Quote') . '",
-                view_quote: "' . (substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote') . '",
-                update_quote: "' . (substr(get_locale(), 0, 2) === 'es' ? 'Actualizar Cotización' : 'Update Quote') . '"
-            }
-        };
-    } else if (!eqCartData.i18n) {
-        eqCartData.i18n = {};
-    }
-    
-    // Asegurar que las traducciones estén disponibles
-    if (!eqCartData.i18n.add_quote) {
-        eqCartData.i18n.add_quote = "' . (substr(get_locale(), 0, 2) === 'es' ? '+ Cotizar' : '+ Quote') . '";
-    }
-    if (!eqCartData.i18n.view_quote) {
-        eqCartData.i18n.view_quote = "' . (substr(get_locale(), 0, 2) === 'es' ? 'Ver Cotización' : 'View Quote') . '";
-    }
-    if (!eqCartData.i18n.update_quote) {
-        eqCartData.i18n.update_quote = "' . (substr(get_locale(), 0, 2) === 'es' ? 'Actualizar Cotización' : 'Update Quote') . '";
-    }', 'before');
 		
 				wp_enqueue_script(
 					$this->plugin_name . '-single',
