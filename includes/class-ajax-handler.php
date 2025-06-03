@@ -2129,12 +2129,12 @@ public function update_cart_context() {
         
         $has_access = ($lead && $event);
     } 
-    // Los ejecutivos de ventas solo pueden acceder a leads/eventos asignados a ellos
+    // Los ejecutivos de ventas pueden acceder a todos los leads/eventos (menos restrictivo)
     else if ($is_sales) {
         $lead = $wpdb->get_row($wpdb->prepare(
             "SELECT _ID FROM {$wpdb->prefix}jet_cct_leads 
-            WHERE _ID = %d AND (usuario_asignado = %d OR usuario_asignado IS NULL)",
-            $lead_id, $user_id
+            WHERE _ID = %d",
+            $lead_id
         ));
         
         $event = $wpdb->get_row($wpdb->prepare(
