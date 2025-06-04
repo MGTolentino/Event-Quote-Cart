@@ -1,0 +1,628 @@
+/* Main Sidebar Structure */
+.eq-sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    transition: right 0.3s ease;
+    z-index: 999990; 
+    display: flex;
+    flex-direction: column;
+}
+
+.eq-sidebar.active {
+    right: 0;
+}
+
+/* Header */
+.eq-sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+}
+
+.eq-sidebar-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.eq-sidebar-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    color: #666;
+}
+
+/* Content Area */
+.eq-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Product Form */
+.eq-product-form {
+    margin-bottom: 20px;
+}
+
+.eq-product-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.eq-product-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+.eq-product-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Form Fields */
+.eq-form-group {
+    margin-bottom: 15px;
+}
+
+.eq-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.eq-form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Mini Card (Collapsed Product) */
+.eq-mini-card {
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.eq-mini-card:hover {
+    border-color: #cbb881;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.eq-mini-card-status {
+    margin-right: 10px;
+    color: #4CAF50;
+}
+
+.eq-mini-card-info {
+    flex: 1;
+}
+
+.eq-mini-card-title {
+    font-size: 14px;
+    margin: 0 0 5px;
+}
+
+.eq-mini-card-price {
+    font-size: 13px;
+    color: #666;
+}
+
+.eq-mini-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.eq-mini-card-button {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: #666;
+}
+
+/* Footer */
+.eq-sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid #eee;
+    background: #fff;
+}
+
+.eq-quote-button {
+    width: 100%;
+    padding: 12px;
+    background: #cbb881;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.eq-quote-button:hover {
+    background: #b9a66f;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .eq-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+}
+
+/* Animation Classes */
+.eq-fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+.eq-slide-up {
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Estado de no disponibilidad */
+.eq-mini-card.not-available {
+    opacity: 0.7;
+    border-color: #ff6b6b;
+}
+
+.eq-availability-warning {
+    color: #ff6b6b;
+    font-size: 0.875rem;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background-color: #fff5f5;
+    border-radius: 4px;
+    border: 1px solid #ffe3e3;
+}
+
+/* Estilos para el campo de fecha */
+.eq-date-field {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.eq-date-container {
+    position: relative;
+}
+
+.eq-date-edit {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #666;
+    cursor: pointer;
+}
+
+.eq-date-edit:hover {
+    color: #cbb881;
+}
+
+/* Loading State */
+.eq-date-field.validating::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.8);
+}
+
+/* Invalid State */
+.eq-date-field.invalid .eq-date-display {
+    border-color: #dc2626;
+}
+
+/* Loading State */
+.eq-date-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+}
+
+.eq-loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ddd;
+    border-top-color: #cbb881;
+    border-radius: 50%;
+    animation: spinner 0.6s linear infinite;
+}
+
+/* Error State */
+.eq-date-error {
+    margin-top: 4px;
+    padding: 8px;
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 4px;
+    color: #dc2626;
+    font-size: 13px;
+}
+
+@keyframes spinner {
+    to {transform: rotate(360deg);}
+}
+
+/* Flatpickr Customization */
+.flatpickr-calendar {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+}
+
+.flatpickr-day.selected {
+    background: #cbb881;
+    border-color: #cbb881;
+}
+
+.flatpickr-day.selected:hover {
+    background: #b9a66f;
+    border-color: #b9a66f;
+}
+
+.eq-date-field .eq-date-edit:hover {
+    background-color: #f5f5f5;
+}
+
+/* Estado de edición de fecha */
+.eq-date-field.editing .eq-date-display {
+    display: none;
+}
+
+.eq-date-field.editing .eq-date-picker {
+    display: block;
+}
+
+/* Estado normal de fecha */
+.eq-date-field .eq-date-display {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.eq-date-field .eq-date-picker {
+    display: none;
+}
+
+.eq-date-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.eq-date-display:hover {
+    border-color: #cbb881;
+}
+
+.eq-date-display.has-date .eq-date-value {
+    color: #333;
+}
+
+.eq-date-value {
+    color: #333;
+    font-size: 14px;
+}
+
+
+
+/* Estilos para el botón Include */
+.eq-include-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #cbb881;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.eq-include-button:hover {
+    background-color: #b9a66f;
+}
+
+/* Estado colapsado del item */
+.eq-mini-card.collapsed {
+    padding: 10px;
+}
+
+.eq-mini-card.collapsed .eq-mini-card-details {
+    display: none;
+}
+
+.eq-mini-card .eq-see-more {
+    color: #cbb881;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.875rem;
+    margin-top: 5px;
+}
+
+/* Total general */
+.eq-cart-total {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
+}
+
+.eq-cart-total .eq-total-amount {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Botón View Quote */
+.eq-view-quote-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.eq-view-quote-button:hover {
+    background-color: #2d3748;
+}
+
+/* Estilos del Footer del Sidebar */
+.eq-sidebar-footer {
+    border-top: 1px solid #e5e7eb;
+    padding: 16px;
+    background: #fff;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+}
+
+/* Total del Carrito */
+.eq-cart-total {
+    margin-bottom: 16px;
+}
+
+.eq-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.eq-total-label {
+    color: #4b5563;
+}
+
+.eq-cart-total-amount {
+    color: #cbb881;
+}
+
+/* Botones de Acción */
+.eq-cart-actions {
+    margin-bottom: 12px;
+}
+
+.eq-view-quote-button {
+    width: 100%;
+    padding: 12px 24px;
+    background-color: #cbb881;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.eq-view-quote-button:hover:not(:disabled) {
+    background-color: #b9a66f;
+}
+
+.eq-view-quote-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #d1d5db;
+}
+
+/* Resumen de Items */
+.eq-cart-summary {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 8px;
+}
+
+.eq-cart-items-count {
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.eq-cart-total.updated {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Extras Styles */
+.eq-extra-item {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.eq-extra-item.variable {
+    padding: 12px;
+}
+
+.eq-extra-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.eq-extra-quantity-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.eq-extra-quantity {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.eq-extra-price {
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* Price Summary */
+.eq-price-summary {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.eq-base-price,
+.eq-total-price {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.eq-total-price {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Header Cart Button */
+.eq-header-cart {
+    position: relative;
+    margin-left: auto;
+    z-index: 100;
+}
+
+.eq-header-cart-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #cbb881;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.eq-header-cart-button:hover {
+    background: #b5a348;
+    color: white;
+    text-decoration: none;
+}
+
+.eq-cart-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background: #b5a348;
+    color: white;
+    border-radius: 10px;
+    font-size: 12px;
+    padding: 0 6px;
+    margin-left: 4px;
+}
+
+.eq-cart-label {
+    font-weight: 500;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .eq-cart-label {
+        display: none;
+    }
+    
+    .eq-header-cart-button {
+        padding: 8px;
+    }
+}
+
+/* Ocultar completamente el grupo de cantidad cuando está oculto */
+input[type="hidden"].eq-quantity-input + .eq-form-group.eq-quantity-group {
+    display: none !important;
+}
+
+/* Ajuste cuando el context panel está activo */
+body.has-eq-context-panel .eq-sidebar {
+    top: 50px; /* Para dar espacio al context panel */
+    height: calc(100vh - 50px);
+}
+
+/* Para dispositivos móviles ajustar la altura */
+@media (max-width: 768px) {
+    body.has-eq-context-panel .eq-sidebar {
+        top: 95px; /* Para dar espacio al context panel móvil */
+        height: calc(100vh - 95px);
+    }
+}

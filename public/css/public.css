@@ -1,0 +1,176 @@
+/* Public styles for Event Quote Cart */
+
+/* Quote Button Styles */
+.boton-cotizar {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.boton-cotizar:hover {
+    background-color: #45a049;
+}
+
+/* Cart Sidebar Styles */
+.eq-cart-sidebar {
+    position: fixed;
+    right: -400px;
+    top: 0;
+    width: 400px;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+    transition: right 0.3s;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.eq-cart-sidebar.active {
+    right: 0;
+}
+
+.eq-cart-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.eq-cart-close {
+    cursor: pointer;
+    font-size: 24px;
+}
+
+/* Cart Item Styles */
+.eq-cart-item {
+    padding: 15px;
+    border: 1px solid #eee;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.eq-cart-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.eq-cart-item-title {
+    font-weight: bold;
+}
+
+.eq-cart-item-remove {
+    color: red;
+    cursor: pointer;
+}
+
+/* Form Styles */
+.eq-cart-form {
+    margin-top: 15px;
+}
+
+.eq-cart-form-group {
+    margin-bottom: 15px;
+}
+
+.eq-cart-form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.eq-cart-form-group input,
+.eq-cart-form-group select,
+.eq-cart-form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Button Styles */
+.eq-cart-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.eq-cart-button:hover {
+    background-color: #0056b3;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .eq-cart-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .eq-cart-form-group input,
+    .eq-cart-form-group select,
+    .eq-cart-form-group textarea {
+        font-size: 16px; /* Prevent zoom on mobile */
+    }
+}
+
+/* Availability Message Styles */
+.eq-availability-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.eq-availability-message.available {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+}
+
+.eq-availability-message.not-available {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+}
+
+/* Custom Booking Form Integration */
+.hp-form--booking-make .flatpickr-calendar {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+}
+
+.hp-form--booking-make .flatpickr-day.selected {
+    background: #cbb881;
+    border-color: #cbb881;
+}
+
+.hp-form--booking-make .flatpickr-day.selected:hover {
+    background: #b9a66f;
+    border-color: #b9a66f;
+}
+
+.eq-editing-banner {
+    background-color: #f0f9ff;
+    border-left: 4px solid #3b82f6;
+    padding: 12px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+}
+
+.eq-editing-banner span {
+    color: #1e40af;
+    font-weight: 500;
+}

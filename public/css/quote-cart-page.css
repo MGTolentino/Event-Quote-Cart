@@ -1,0 +1,630 @@
+.eq-cart-page {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.eq-cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.eq-cart-header h1 {
+    margin: 0;
+    font-size: 28px;
+    color: #333;
+}
+
+.eq-continue-shopping,
+.eq-start-shopping {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #cbb881;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.eq-continue-shopping:hover,
+.eq-start-shopping:hover {
+    background: #b5a348;
+    color: white;
+    text-decoration: none;
+}
+
+/* Cart Items */
+.eq-cart-item {
+    display: grid;
+    grid-template-columns: 120px 1fr auto auto;
+    gap: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.eq-item-image img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.eq-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.eq-item-title {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.eq-item-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    color: #666;
+}
+
+.eq-item-extras {
+    margin-top: 10px;
+}
+
+.eq-item-extras h4 {
+    margin: 0 0 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+.eq-item-extras ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+}
+
+.eq-item-price {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.eq-item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eq-edit-item,
+.eq-remove-item {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.eq-edit-item {
+    background: #f0ead6;
+    color: #b5a348;
+}
+
+.eq-remove-item {
+    background: #fff0f0;
+    color: #dc3545;
+}
+
+/* Cart Summary */
+.eq-cart-summary {
+    margin-top: 40px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.eq-cart-totals {
+    min-width: 300px;
+}
+
+.eq-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 16px;
+}
+
+.eq-total-row.total {
+    border-top: 2px solid #eee;
+    margin-top: 10px;
+    padding-top: 15px;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.eq-cart-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.eq-generate-quote,
+.eq-share-quote {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.eq-generate-quote {
+    background: #cbb881;
+    color: white;
+}
+
+.eq-share-quote {
+    background: white;
+    color: #cbb881;
+    border: 2px solid #cbb881;
+}
+
+/* Empty Cart */
+.eq-empty-cart {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.eq-empty-cart p {
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: #666;
+}
+
+/* Login Required */
+.eq-login-required {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.eq-login-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #cbb881;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .eq-cart-item {
+        grid-template-columns: 80px 1fr;
+    }
+
+    .eq-item-price,
+    .eq-item-actions {
+        grid-column: span 2;
+    }
+
+    .eq-cart-summary {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .eq-cart-actions {
+        width: 100%;
+    }
+}
+
+/* Modal de edición */
+.eq-edit-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.eq-edit-modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.eq-edit-modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s;
+}
+
+.eq-edit-modal.open .eq-edit-modal-content {
+    transform: translateY(0);
+}
+
+.eq-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.eq-edit-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.eq-edit-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.eq-edit-modal-body {
+    padding: 20px;
+}
+
+.eq-form-group {
+    margin-bottom: 20px;
+}
+
+.eq-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.eq-form-group input[type="date"],
+.eq-form-group input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.eq-extras-container {
+    margin-top: 10px;
+}
+
+.eq-extra-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.eq-extra-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.eq-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.eq-update-item,
+.eq-cancel-edit {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.eq-update-item {
+    background-color: #cbb881;
+    color: white;
+}
+
+.eq-cancel-edit {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+/* Notificaciones */
+.eq-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: white;
+    border-left: 4px solid #cbb881;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+}
+
+.eq-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.eq-notification.error {
+    border-left-color: #dc3545;
+}
+
+.eq-notification.success {
+    border-left-color: #28a745;
+}
+
+/* Menú de compartir */
+.eq-share-options {
+    position: absolute;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 150px;
+}
+
+.eq-share-options button {
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+	color: black;
+}
+
+.eq-share-options button:hover {
+    background-color: #f5f5f5;
+}
+
+.eq-share-options button i {
+    width: 20px;
+    text-align: center;
+}
+
+.eq-share-email i {
+    color: #4285F4;
+}
+
+.eq-share-whatsapp i {
+    color: #25D366;
+}
+
+/* Modal para compartir por email */
+.eq-share-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.eq-share-modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.eq-share-modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s;
+}
+
+.eq-share-modal.open .eq-share-modal-content {
+    transform: translateY(0);
+}
+
+.eq-share-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.eq-share-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.eq-share-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.eq-share-modal-body {
+    padding: 20px;
+}
+
+#eq-share-email-form .eq-form-group {
+    margin-bottom: 20px;
+}
+
+#eq-share-email-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+#eq-share-email-form input[type="email"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#eq-share-email-form .eq-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.eq-send-email, .eq-cancel-share {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.eq-send-email {
+    background-color: #cbb881;
+    color: white;
+}
+
+.eq-cancel-share {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+input[type="date"][readonly] {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.eq-date-info {
+    display: block;
+    color: #888;
+    font-size: 0.85em;
+    margin-top: 5px;
+}
+
+/* Estilos para el resumen de precios en modal de edición */
+.eq-price-summary {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.eq-price-summary > div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.eq-price-summary > div:last-child {
+    margin-bottom: 0;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-weight: bold;
+}
+
+/* Solo para ajustar el diseño */
+.eq-edit-modal .eq-form-group {
+    margin-bottom: 15px;
+}
+
+.eq-edit-modal input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Ocultar completamente el grupo de cantidad cuando está oculto */
+input[type="hidden"].eq-quantity-input + .eq-form-group.eq-quantity-group {
+    display: none !important;
+}
+
+/* Estilos para el banner de contexto */
+.quote-context-banner {
+    background-color: #f8f9fa;
+    border-left: 4px solid #2271b1;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.quote-context-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.quote-context-label {
+    font-weight: bold;
+    color: #555;
+}
+
+.quote-context-lead {
+    font-weight: bold;
+    color: #2271b1;
+}
+
+.quote-context-separator {
+    color: #aaa;
+}
+
+.quote-context-event {
+    color: #333;
+}
+
+@media (max-width: 768px) {
+    .quote-context-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .quote-context-separator {
+        display: none;
+    }
+}
