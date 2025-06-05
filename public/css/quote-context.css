@@ -319,6 +319,11 @@ body.has-eq-context-panel {
     pointer-events: none;
 }
 
+/* Clase para ocultar el panel completamente */
+.eq-context-panel.eq-hidden {
+    display: none !important;
+}
+
 /* Mejoras de diseño para modales */
 .eq-modal {
     width: 90%;

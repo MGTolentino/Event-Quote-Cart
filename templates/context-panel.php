@@ -5,7 +5,7 @@
 defined('ABSPATH') || exit;
 ?>
 
-<div class="eq-context-panel">
+<div class="eq-context-panel eq-hidden">
     <div class="eq-context-panel-info">
         <div class="eq-context-panel-section">
             <span class="eq-context-panel-label"><?php esc_html_e('Lead:', 'event-quote-cart'); ?></span>

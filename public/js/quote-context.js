@@ -35,8 +35,8 @@ init: function() {
     
     var self = this;
     
-    // En lugar de ocultarlo con hide(), agregar clase para controlar visibilidad
-    $('.eq-context-panel').addClass('eq-loading');
+    // Asegurar que el panel esté completamente oculto durante la verificación
+    $('.eq-context-panel').addClass('eq-loading').addClass('eq-hidden');
     
     // Verificar con el servidor si hay un contexto activo
     this.checkServerContext(function(response) {
@@ -65,7 +65,7 @@ init: function() {
                     $('#eq-context-event-info').text(self.formatEventInfo());
                     
                     // Mostrar el panel (quitar clase de carga y eliminar display:none inline)
-                    $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+                    $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
                 } else {
                     // Renderizar nuevo panel
                     self.renderPanel();
@@ -358,7 +358,7 @@ checkServerContext: function(callback) {
         $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
         $('#eq-context-event-info').text(this.formatEventInfo());
         // Asegurar que el panel sea visible
-        $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+        $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
         return;
     }
     
@@ -403,7 +403,7 @@ checkServerContext: function(callback) {
         this.updateCartWithContext();
     }
 	  
-	      $('.eq-context-panel').removeClass('eq-loading').css('display', '');
+	      $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
 
 },
 		
