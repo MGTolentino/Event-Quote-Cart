@@ -172,14 +172,9 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context);
             // Guardar el archivo
 file_put_contents($pdf_path, $dompdf->output());
 
-// Guardar log de depuración
+// Guardar log de depuración usando error_log de WordPress
 $debug_log .= "=== FIN DEL LOG DE COTIZACIÓN ===\n";
-$log_dir = WP_CONTENT_DIR . '/debug-logs';
-if (!file_exists($log_dir)) {
-    wp_mkdir_p($log_dir);
-}
-$log_file = $log_dir . '/quote_debug_' . date('Y-m-d_H-i-s') . '_' . get_current_user_id() . '.log';
-file_put_contents($log_file, $debug_log);
+error_log("QUOTE DEBUG LOG: " . $debug_log);
 
 // Registrar la cotización en la base de datos
 $quote_data = array(
@@ -190,24 +185,22 @@ $quote_data = array(
     'pdf_url' => $pdf_url,
     'pdf_path' => $pdf_path,
     'status' => 'active',
-    'nombre_pdf' => 'Quote_' . date('Y-m-d_H-i-s'),
-    'debug_log_path' => $log_file // Guardar la ruta del log para referencia
+    'nombre_pdf' => 'Quote_' . date('Y-m-d_H-i-s')
 );
 
 $wpdb->insert(
     $wpdb->prefix . 'eq_quotes',
     $quote_data,
-    array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s')
+    array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s')
 );
 
 $quote_id = $wpdb->insert_id;
     
-// Devolver URL del PDF, ID de la cotización y la ruta del log
+// Devolver URL del PDF y el ID de la cotización
 wp_send_json_success(array(
     'pdf_url' => $pdf_url,
     'quote_id' => $quote_id,
-    'debug_log' => $log_file,
-    'message' => 'Quote generated successfully. Debug log saved.'
+    'message' => 'Quote generated successfully. Debug log saved to error log.'
 ));
         } else{
             throw new Exception('DOMPDF not available');
