@@ -19,6 +19,11 @@ class Event_Quote_Cart_PDF_Handler {
         if (!eq_can_view_quote_button()) {
             wp_send_json_error('Unauthorized');
         }
+        
+        // Iniciar un log para debugging
+        $debug_log = "=== INICIO LOG DE COTIZACIÓN ===\n";
+        $debug_log .= "Timestamp: " . date('Y-m-d H:i:s') . "\n";
+        $debug_log .= "Usuario: " . get_current_user_id() . "\n\n";
 		
 		    global $wpdb;
 
@@ -31,8 +36,45 @@ if (empty($cart_items)) {
     throw new Exception('No items in cart');
 }
 
+// Log de items del carrito
+$debug_log .= "ITEMS DEL CARRITO:\n";
+foreach ($cart_items as $index => $item) {
+    $debug_log .= "Item #" . ($index + 1) . " (ID: " . $item->id . "):\n";
+    $debug_log .= "  - Listing ID: " . $item->listing_id . "\n";
+    $debug_log .= "  - Título: " . $item->title . "\n";
+    $debug_log .= "  - Cantidad: " . $item->quantity . "\n";
+    $debug_log .= "  - Fecha: " . $item->date . "\n";
+    $debug_log .= "  - Precio base: " . (isset($item->base_price) ? $item->base_price : 'N/A') . "\n";
+    $debug_log .= "  - Precio total (item->total_price): " . (isset($item->total_price) ? $item->total_price : 'N/A') . "\n";
+    
+    // Log de extras
+    if (!empty($item->extras)) {
+        $debug_log .= "  - Extras:\n";
+        foreach ($item->extras as $extra_index => $extra) {
+            $debug_log .= "    * Extra #" . ($extra_index + 1) . ": ";
+            $debug_log .= (isset($extra['name']) ? $extra['name'] : 'Sin nombre') . " - ";
+            $debug_log .= "Precio: " . (isset($extra['price']) ? $extra['price'] : '0') . "\n";
+        }
+    } else {
+        $debug_log .= "  - Sin extras\n";
+    }
+    $debug_log .= "\n";
+}
+
 // Calcular totales
 $totals = eq_calculate_cart_totals($cart_items);
+
+// Log de totales calculados
+$debug_log .= "TOTALES CALCULADOS POR eq_calculate_cart_totals:\n";
+$debug_log .= "  - Subtotal: " . $totals['subtotal'] . "\n";
+$debug_log .= "  - Tax: " . $totals['tax'] . "\n";
+$debug_log .= "  - Total: " . $totals['total'] . "\n";
+if (isset($totals['subtotal_raw'])) {
+    $debug_log .= "  - Subtotal Raw: " . $totals['subtotal_raw'] . "\n";
+    $debug_log .= "  - Tax Raw: " . $totals['tax_raw'] . "\n";
+    $debug_log .= "  - Total Raw: " . $totals['total_raw'] . "\n";
+}
+$debug_log .= "\n";
 			
 			
 // Obtener contexto activo
@@ -85,6 +127,12 @@ if (!isset($totals['total_raw'])) {
     $totals['subtotal_raw'] = $subtotal;
     $totals['tax_raw'] = $tax;
     $totals['total_raw'] = $total;
+    
+    // Log de totales después de la corrección
+    $debug_log .= "TOTALES DESPUÉS DE CORRECCIÓN (valores raw):\n";
+    $debug_log .= "  - Subtotal Raw (recalculado): " . $subtotal . "\n";
+    $debug_log .= "  - Tax Raw (recalculado): " . $tax . "\n";
+    $debug_log .= "  - Total Raw (suma): " . $total . "\n\n";
 }
 
 // Generar HTML para el PDF
@@ -124,6 +172,15 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context);
             // Guardar el archivo
 file_put_contents($pdf_path, $dompdf->output());
 
+// Guardar log de depuración
+$debug_log .= "=== FIN DEL LOG DE COTIZACIÓN ===\n";
+$log_dir = WP_CONTENT_DIR . '/debug-logs';
+if (!file_exists($log_dir)) {
+    wp_mkdir_p($log_dir);
+}
+$log_file = $log_dir . '/quote_debug_' . date('Y-m-d_H-i-s') . '_' . get_current_user_id() . '.log';
+file_put_contents($log_file, $debug_log);
+
 // Registrar la cotización en la base de datos
 $quote_data = array(
     'cart_id' => $cart->id,
@@ -133,22 +190,24 @@ $quote_data = array(
     'pdf_url' => $pdf_url,
     'pdf_path' => $pdf_path,
     'status' => 'active',
-    'nombre_pdf' => 'Quote_' . date('Y-m-d_H-i-s')
+    'nombre_pdf' => 'Quote_' . date('Y-m-d_H-i-s'),
+    'debug_log_path' => $log_file // Guardar la ruta del log para referencia
 );
 
 $wpdb->insert(
     $wpdb->prefix . 'eq_quotes',
     $quote_data,
-    array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s')
+    array('%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s')
 );
 
 $quote_id = $wpdb->insert_id;
     
-// Devolver URL del PDF y el ID de la cotización
+// Devolver URL del PDF, ID de la cotización y la ruta del log
 wp_send_json_success(array(
     'pdf_url' => $pdf_url,
     'quote_id' => $quote_id,
-    'message' => 'Quote generated successfully'
+    'debug_log' => $log_file,
+    'message' => 'Quote generated successfully. Debug log saved.'
 ));
         } else{
             throw new Exception('DOMPDF not available');
@@ -163,19 +222,47 @@ wp_send_json_success(array(
  * Generar HTML para el PDF
  */
 private function generate_pdf_html($cart_items, $totals, $context = null) {
+    global $debug_log;
+    
     // Preparar datos
     $site_name = get_bloginfo('name');
     $date = date_i18n(get_option('date_format'));
     $user = wp_get_current_user();
     
+    // Log para la función generate_pdf_html
+    $debug_log .= "ENTRANDO A generate_pdf_html:\n";
+    $debug_log .= "  - Totales recibidos:\n";
+    $debug_log .= "    * Subtotal: " . $totals['subtotal'] . "\n";
+    $debug_log .= "    * Tax: " . $totals['tax'] . "\n";
+    $debug_log .= "    * Total: " . $totals['total'] . "\n";
+    if (isset($totals['total_raw'])) {
+        $debug_log .= "    * Total Raw: " . $totals['total_raw'] . "\n";
+    }
+    $debug_log .= "\n";
+    
     // Obtener datos detallados - solo usarlos para mostrar información de items, no para recalcular totales
     $detailed_items = $this->get_detailed_cart_items();
+    
+    // Log de los items detallados
+    $debug_log .= "ITEMS DETALLADOS PARA EL PDF:\n";
+    foreach ($detailed_items as $index => $item) {
+        $debug_log .= "Item Detallado #" . ($index + 1) . " (ID: " . $item->id . "):\n";
+        $debug_log .= "  - Base Price: " . $item->base_price . "\n";
+        $debug_log .= "  - Quantity: " . $item->quantity . "\n";
+        $debug_log .= "  - Subtotal (Base × Quantity): " . ($item->base_price * $item->quantity) . "\n";
+        $debug_log .= "  - Total Price: " . $item->total_price . "\n";
+    }
+    $debug_log .= "\n";
     
     // Asegurar que los totales sean los correctos
     $total_sum = 0;
     foreach ($cart_items as $item) {
         $total_sum += isset($item->total_price) ? floatval($item->total_price) : 0;
     }
+    
+    $debug_log .= "VERIFICACIÓN DE TOTALES EN PDF:\n";
+    $debug_log .= "  - Total sumando item->total_price: " . $total_sum . "\n";
+    $debug_log .= "  - Total de totals['total']: " . (isset($totals['total_raw']) ? $totals['total_raw'] : 'N/A') . "\n\n";
     
     // Iniciar buffer de salida
     ob_start();
@@ -477,16 +564,31 @@ foreach ($extras_without_desc as $extra):
             <td>TOTAL:</td>
             <td><?php 
                 // Verificar que estamos usando el total correcto
-                echo esc_html($totals['total']); 
+                global $debug_log;
                 
-                // Comparar con $total_sum como verificación
-                // Si no coinciden (con un pequeño margen de error), usar el valor correcto
-                if (isset($total_sum) && abs($total_sum - (isset($totals['total_raw']) ? $totals['total_raw'] : 0)) > 0.01) {
-                    // Recalcular en caso de discrepancia
+                // Detección de inconsistencias
+                $total_display = $totals['total'];
+                $total_raw = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+                
+                if (isset($total_sum) && abs($total_sum - $total_raw) > 0.01) {
+                    $debug_log .= "INCONSISTENCIA DETECTADA EN LOS TOTALES:\n";
+                    $debug_log .= "  - Total sumado ($total_sum) ≠ Total en totals ($total_raw)\n";
+                    $debug_log .= "  - Diferencia: " . abs($total_sum - $total_raw) . "\n";
+                    
+                    // Recalcular y usar el valor correcto
                     $tax_rate = floatval(get_option('eq_tax_rate', 16));
                     $subtotal = $total_sum / (1 + ($tax_rate / 100));
-                    echo esc_html(hivepress()->woocommerce->format_price($total_sum));
+                    $tax = $total_sum - $subtotal;
+                    $total_display = hivepress()->woocommerce->format_price($total_sum);
+                    
+                    $debug_log .= "  - Usando total recalculado: " . $total_sum . "\n";
+                    $debug_log .= "  - Formato para mostrar: " . $total_display . "\n\n";
+                } else {
+                    $debug_log .= "TOTALES CONSISTENTES\n";
+                    $debug_log .= "  - Usando total original: " . $total_raw . "\n\n";
                 }
+                
+                echo esc_html($total_display);
             ?></td>
         </tr>
     </table>
