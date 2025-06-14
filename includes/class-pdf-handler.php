@@ -71,6 +71,22 @@ if (!$context && !empty($cart_items)) {
 // Obtener el carrito activo para usar en la inserción de la cotización
 $cart = eq_get_active_cart();
 
+// Asegurar que totals tiene los valores correctos
+if (!isset($totals['total_raw'])) {
+    $total = 0;
+    foreach ($cart_items as $item) {
+        $total += isset($item->total_price) ? floatval($item->total_price) : 0;
+    }
+    
+    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    $subtotal = $total / (1 + ($tax_rate / 100));
+    $tax = $total - $subtotal;
+    
+    $totals['subtotal_raw'] = $subtotal;
+    $totals['tax_raw'] = $tax;
+    $totals['total_raw'] = $total;
+}
+
 // Generar HTML para el PDF
 $html = $this->generate_pdf_html($cart_items, $totals, $context);
             
@@ -152,8 +168,14 @@ private function generate_pdf_html($cart_items, $totals, $context = null) {
     $date = date_i18n(get_option('date_format'));
     $user = wp_get_current_user();
     
-    // Obtener datos detallados
+    // Obtener datos detallados - solo usarlos para mostrar información de items, no para recalcular totales
     $detailed_items = $this->get_detailed_cart_items();
+    
+    // Asegurar que los totales sean los correctos
+    $total_sum = 0;
+    foreach ($cart_items as $item) {
+        $total_sum += isset($item->total_price) ? floatval($item->total_price) : 0;
+    }
     
     // Iniciar buffer de salida
     ob_start();
@@ -442,7 +464,10 @@ foreach ($extras_without_desc as $extra):
     <table class="totals-table">
         <tr>
             <td>SUB TOTAL:</td>
-            <td><?php echo esc_html($totals['subtotal']); ?></td>
+            <td><?php 
+                // Usar los valores de $totals que ya contienen los cálculos correctos
+                echo esc_html($totals['subtotal']); 
+            ?></td>
         </tr>
         <tr>
             <td>TAX:</td>
@@ -450,7 +475,19 @@ foreach ($extras_without_desc as $extra):
         </tr>
         <tr class="total-row">
             <td>TOTAL:</td>
-            <td><?php echo esc_html($totals['total']); ?></td>
+            <td><?php 
+                // Verificar que estamos usando el total correcto
+                echo esc_html($totals['total']); 
+                
+                // Comparar con $total_sum como verificación
+                // Si no coinciden (con un pequeño margen de error), usar el valor correcto
+                if (isset($total_sum) && abs($total_sum - (isset($totals['total_raw']) ? $totals['total_raw'] : 0)) > 0.01) {
+                    // Recalcular en caso de discrepancia
+                    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+                    $subtotal = $total_sum / (1 + ($tax_rate / 100));
+                    echo esc_html(hivepress()->woocommerce->format_price($total_sum));
+                }
+            ?></td>
         </tr>
     </table>
     
@@ -646,6 +683,22 @@ private function markdown_to_html($text) {
         // Calcular totales
         $totals = eq_calculate_cart_totals($cart_items);
         
+        // Asegurar que totals tiene los valores correctos
+        if (!isset($totals['total_raw'])) {
+            $total = 0;
+            foreach ($cart_items as $item) {
+                $total += isset($item->total_price) ? floatval($item->total_price) : 0;
+            }
+            
+            $tax_rate = floatval(get_option('eq_tax_rate', 16));
+            $subtotal = $total / (1 + ($tax_rate / 100));
+            $tax = $total - $subtotal;
+            
+            $totals['subtotal_raw'] = $subtotal;
+            $totals['tax_raw'] = $tax;
+            $totals['total_raw'] = $total;
+        }
+        
         // Generar HTML para el PDF
         $html = $this->generate_pdf_html($cart_items, $totals);
         
@@ -747,7 +800,7 @@ $detailed_item = (object) array(
     'date' => $item->date,
     'quantity' => $item->quantity,
     'price_formatted' => $item->price_formatted,
-    'total_price' => isset($item->total_price) ? $item->total_price : 0,
+    'total_price' => isset($item->total_price) ? floatval($item->total_price) : 0,
     // Usar el precio base almacenado en form_data en lugar de obtenerlo nuevamente
     'base_price' => isset($form_data['base_price']) ? floatval($form_data['base_price']) : 
                    floatval(get_post_meta($listing_id, 'hp_price', true)),

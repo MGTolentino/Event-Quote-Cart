@@ -227,7 +227,7 @@ function eq_calculate_cart_totals($items) {
     
     foreach ($items as $item) {
         // Sumar los precios totales (que ya incluyen impuestos)
-        $total += isset($item->total_price) ? $item->total_price : 0;
+        $total += isset($item->total_price) ? floatval($item->total_price) : 0;
     }
     
     // Calcular el subtotal y los impuestos basados en el total
@@ -235,10 +235,14 @@ function eq_calculate_cart_totals($items) {
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
     
+    // Guardar los valores numéricos también para evitar recálculos
     return array(
         'subtotal' => hivepress()->woocommerce->format_price($subtotal),
         'tax' => hivepress()->woocommerce->format_price($tax),
-        'total' => hivepress()->woocommerce->format_price($total)
+        'total' => hivepress()->woocommerce->format_price($total),
+        'subtotal_raw' => $subtotal,
+        'tax_raw' => $tax,
+        'total_raw' => $total
     );
 }
 
