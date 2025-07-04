@@ -187,6 +187,7 @@ init: function() {
             
             if (self.data.isActive && self.data.leadId && self.data.eventId) {
                 // Tenemos datos válidos localmente, mantener sesión activa
+                console.log('DEBUG: Using valid local data');
                 self.renderPanel();
                 self.initEventListeners();
                 self.initModals();
@@ -196,23 +197,57 @@ init: function() {
                     self.showNotification('No se pudo verificar con el servidor, usando datos locales', 'warning');
                 }, 500);
             } else {
-                // No hay datos locales válidos, mostrar botón toggle
-                self.data = {
-                    isActive: false,
-                    isMinimized: false,
-                    leadId: null,
-                    leadName: null,
-                    eventId: null,
-                    eventDate: null,
-                    eventType: null,
-                    sessionToken: null
-                };
+                console.log('DEBUG: Local data is invalid or incomplete, clearing and showing toggle button');
+                // No hay datos locales válidos, limpiar sessionStorage corrupto
+                sessionStorage.removeItem('eqQuoteContext');
                 
-                self.saveToStorage();
-                $('.eq-context-panel').remove();
-                self.renderToggleButton();
-                self.initEventListeners();
-                self.initModals();
+                // Intentar reconectar una vez más después de limpiar datos corruptos
+                setTimeout(function() {
+                    console.log('DEBUG: Attempting retry after clearing corrupted data');
+                    self.checkServerContextWithErrorHandling(function(retrySuccess, retryResponse) {
+                        console.log('DEBUG: Retry result - success:', retrySuccess, 'response:', retryResponse);
+                        
+                        if (retrySuccess && retryResponse && retryResponse.success && retryResponse.data && retryResponse.data.isActive) {
+                            // Éxito en el retry, usar datos del servidor
+                            self.data.isActive = true;
+                            self.data.leadId = retryResponse.data.leadId;
+                            self.data.leadName = retryResponse.data.leadName;
+                            self.data.eventId = retryResponse.data.eventId;
+                            self.data.eventDate = retryResponse.data.eventDate;
+                            self.data.eventType = retryResponse.data.eventType;
+                            if (retryResponse.data.sessionToken) self.data.sessionToken = retryResponse.data.sessionToken;
+                            
+                            self.saveToStorage();
+                            $('.eq-context-panel').remove();
+                            $('.eq-context-toggle-button').remove();
+                            self.renderPanel();
+                            self.initEventListeners();
+                            self.initModals();
+                            
+                            console.log('DEBUG: Session recovered successfully with retry');
+                        } else {
+                            // Retry también falló, mostrar toggle button
+                            self.data = {
+                                isActive: false,
+                                isMinimized: false,
+                                leadId: null,
+                                leadName: null,
+                                eventId: null,
+                                eventDate: null,
+                                eventType: null,
+                                sessionToken: null
+                            };
+                            
+                            self.saveToStorage();
+                            $('.eq-context-panel').remove();
+                            self.renderToggleButton();
+                            self.initEventListeners();
+                            self.initModals();
+                            
+                            console.log('DEBUG: Retry also failed, showing toggle button');
+                        }
+                    });
+                }, 1000); // Esperar 1 segundo antes del retry
             }
             
             // Iniciar polling con menor frecuencia cuando hay problemas de conectividad
