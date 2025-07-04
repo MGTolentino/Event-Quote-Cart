@@ -67,9 +67,9 @@ init: function() {
     // Asegurar que el panel esté completamente oculto durante la verificación
     $('.eq-context-panel').addClass('eq-loading').addClass('eq-hidden');
     
-    // Verificar con el servidor si hay un contexto activo
-    this.checkServerContext(function(response) {
-        if (response && response.success) {
+    // Verificar con el servidor si hay un contexto activo con timeout mejorado
+    this.checkServerContextWithErrorHandling(function(success, response) {
+        if (success && response && response.success) {
 
             // Si el servidor dice que hay un contexto activo
             if (response.data && response.data.isActive) {
@@ -114,21 +114,11 @@ init: function() {
                 self.saveToStorage();
                 
                 // Limpiar elementos del DOM si existen Y FORZAR REMOCIÓN
-                // No solo eliminar, sino forzar remoción con mayor especificidad
-                $('.eq-context-panel').each(function() {
-                    $(this).remove();
-                });
+                $('.eq-context-panel').remove();
                 $('body').find('.eq-context-panel').remove();
                 
                 // Mostrar botón toggle
                 self.renderToggleButton();
-                
-                // Verificar una última vez que no hay panel visible
-                if ($('.eq-context-panel').length > 0) {
-                    setTimeout(function() {
-                        $('.eq-context-panel').remove();
-                    }, 100);
-                }
             }
             
             // Inicializar controladores de eventos
@@ -140,13 +130,28 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
-            console.error('Error checking context status');
+            console.warn('Server unavailable or timeout - using local data fallback');
             
-            // Si hay un error, solo mostrar botón toggle
-            self.data.isActive = false;
-            self.saveToStorage();
-            $('.eq-context-panel').remove();
-            self.renderToggleButton();
+            // Intentar cargar desde localStorage como fallback
+            self.loadFromStorage();
+            
+            if (self.data.isActive && self.data.leadId && self.data.eventId) {
+                // Hay datos locales válidos, usarlos
+                self.renderPanel();
+                self.initEventListeners();
+                self.initModals();
+            } else {
+                // No hay datos válidos, mostrar botón toggle
+                self.data.isActive = false;
+                self.saveToStorage();
+                $('.eq-context-panel').remove();
+                self.renderToggleButton();
+                self.initEventListeners();
+                self.initModals();
+            }
+            
+            // Iniciar polling con menor frecuencia cuando hay problemas de conectividad
+            self.startSessionPolling();
         }
     });
 },
@@ -478,6 +483,84 @@ checkServerContext: function(callback) {
         $('body').prepend(loadingPanelHtml);
         $('body').addClass('has-eq-context-panel');
     },
+
+    // Nueva función para manejar la completación de activación
+    handleActivationComplete: function(openModal) {
+        // Renderizar panel final
+        this.renderPanel();
+        
+        // Reinicializar eventos
+        this.initEventListeners();
+        
+        // Eliminar botón toggle solo después de éxito
+        $('.eq-context-toggle-button').remove();
+        
+        // Abrir modal de selección si es necesario
+        if (openModal && (!this.data.leadId || !this.data.eventId)) {
+            var self = this;
+            setTimeout(function() {
+                self.openLeadModal();
+            }, 300);
+        }
+    },
+
+    // Función para verificar servidor en background sin afectar UI
+    checkServerContextSilent: function(callback) {
+        $.ajax({
+            url: eqCartData.ajaxurl,
+            type: 'POST',
+            dataType: 'json',
+            timeout: 3000,
+            data: {
+                action: 'eq_check_context_status',
+                nonce: eqCartData.nonce,
+                timestamp: Date.now()
+            },
+            success: function(response) {
+                if (typeof callback === 'function') {
+                    callback(response);
+                }
+            },
+            error: function() {
+                // Ignorar errores en verificación silent
+                if (typeof callback === 'function') {
+                    callback(null);
+                }
+            }
+        });
+    },
+
+    // Función para verificar servidor con manejo completo de errores
+    checkServerContextWithErrorHandling: function(callback) {
+        var self = this;
+        
+        $.ajax({
+            url: eqCartData.ajaxurl,
+            type: 'POST',
+            dataType: 'json',
+            timeout: 3000,
+            data: {
+                action: 'eq_check_context_status',
+                nonce: eqCartData.nonce,
+                timestamp: Date.now()
+            },
+            success: function(response) {
+                if (typeof callback === 'function') {
+                    callback(true, response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.warn('Server context check failed:', status, error);
+                
+                // Intentar usar datos locales como fallback
+                self.loadFromStorage();
+                
+                if (typeof callback === 'function') {
+                    callback(false, null);
+                }
+            }
+        });
+    },
 		
 		renderToggleButton: function() {
     // Si ya existe el botón, no hacer nada
@@ -512,18 +595,23 @@ checkServerContext: function(callback) {
     self.data.isMinimized = false;
     self.renderLoadingPanel();
     
+    // TIMEOUT DE SEGURIDAD - siempre remover loading después de 5 segundos
+    var safetyTimeout = setTimeout(function() {
+        console.warn('Safety timeout reached - forcing panel to show');
+        self.handleActivationComplete(false);
+    }, 5000);
+    
     // Verificar si hay datos locales para fallback rápido
     self.loadFromStorage();
     var hasLocalData = self.data.leadId && self.data.eventId;
     
     if (hasLocalData) {
         // Si hay datos locales, mostrar panel inmediatamente y verificar en background
-        self.renderPanel();
-        self.initEventListeners();
-        $('.eq-context-toggle-button').remove();
+        clearTimeout(safetyTimeout);
+        self.handleActivationComplete(true);
         
-        // Verificar servidor en background para actualizar si es necesario
-        this.checkServerContext(function(response) {
+        // Verificar servidor en background para actualizar si es necesario (sin afectar UI)
+        this.checkServerContextSilent(function(response) {
             if (response && response.success && response.data && response.data.isActive) {
                 // Actualizar con datos del servidor si son diferentes
                 if (response.data.leadId !== self.data.leadId || response.data.eventId !== self.data.eventId) {
@@ -539,9 +627,11 @@ checkServerContext: function(callback) {
             }
         });
     } else {
-        // No hay datos locales, verificar servidor
-        this.checkServerContext(function(response) {
-            if (response && response.success && response.data && response.data.isActive) {
+        // No hay datos locales, verificar servidor con manejo de errores
+        this.checkServerContextWithErrorHandling(function(success, response) {
+            clearTimeout(safetyTimeout);
+            
+            if (success && response && response.success && response.data && response.data.isActive) {
                 // Hay contexto en servidor, restaurar datos
                 self.data.leadId = response.data.leadId;
                 self.data.leadName = response.data.leadName;
@@ -549,34 +639,11 @@ checkServerContext: function(callback) {
                 self.data.eventDate = response.data.eventDate;
                 self.data.eventType = response.data.eventType;
                 self.data.sessionToken = response.data.sessionToken;
-                
-                // Guardar estado restaurado
                 self.saveToStorage();
-                
-                // Renderizar panel con datos
-                self.renderPanel();
-                
-                // Reinicializar eventos
-                self.initEventListeners();
-                
-                // Eliminar botón toggle solo después de éxito
-                $('.eq-context-toggle-button').remove();
-                
-            } else {
-                // No hay contexto, mostrar panel vacío para seleccionar lead/evento
-                self.renderPanel();
-                
-                // Reinicializar eventos
-                self.initEventListeners();
-                
-                // Eliminar botón toggle solo después de éxito
-                $('.eq-context-toggle-button').remove();
-                
-                // Abrir modal de selección de lead automáticamente
-                setTimeout(function() {
-                    self.openLeadModal();
-                }, 300);
             }
+            
+            // Siempre completar la activación (con o sin datos del servidor)
+            self.handleActivationComplete(true);
         });
     }
 },
