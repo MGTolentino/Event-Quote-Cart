@@ -72,7 +72,46 @@ init: function() {
         $('.eq-context-panel').hide();
     }
     
-    // Retrasar la verificación inicial para evitar conflictos con eq_sync_context_session
+    // Primero intentar cargar datos locales si existen
+    self.loadFromStorage();
+    
+    // Si tenemos datos locales válidos, mostrar el panel inmediatamente
+    if (self.data.isActive && self.data.leadId && self.data.eventId) {
+        console.log('DEBUG: Found valid local data on init, showing panel immediately');
+        self.renderPanel();
+        self.initEventListeners();
+        self.initModals();
+        
+        // Verificar con servidor en background DESPUÉS de mostrar el panel
+        setTimeout(function() {
+            console.log('DEBUG: Background verification starting');
+            self.checkServerContextSilent(function(response) {
+                if (response && response.success && response.data && response.data.isActive) {
+                    // Solo actualizar si hay cambios significativos
+                    if (response.data.leadId !== self.data.leadId || 
+                        response.data.eventId !== self.data.eventId) {
+                        console.log('DEBUG: Server has different data, updating');
+                        self.data.leadId = response.data.leadId;
+                        self.data.leadName = response.data.leadName;
+                        self.data.eventId = response.data.eventId;
+                        self.data.eventDate = response.data.eventDate;
+                        self.data.eventType = response.data.eventType;
+                        self.saveToStorage();
+                        self.renderPanel();
+                    }
+                } else if (response && response.success && !response.data.isActive) {
+                    // Servidor dice que no hay sesión activa, limpiar
+                    console.log('DEBUG: Server says no active session, clearing');
+                    self.endSession();
+                }
+            });
+        }, 2000); // Esperar 2 segundos después de cargar la página
+        
+        return; // No hacer la verificación normal
+    }
+    
+    // Solo si NO hay datos locales, intentar cargar del servidor
+    console.log('DEBUG: No valid local data, checking server');
     setTimeout(function() {
         // Verificar con el servidor si hay un contexto activo con timeout mejorado
         self.checkServerContextWithErrorHandling(function(success, response) {
