@@ -132,7 +132,7 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
-            console.warn('Server unavailable or timeout - using local data fallback');
+            console.log('Server unavailable or timeout - using local data fallback');
             
             // Intentar cargar desde localStorage como fallback
             self.loadFromStorage();
@@ -420,7 +420,7 @@ checkServerContext: function(callback) {
             .removeClass('eq-loading')
             .removeClass('eq-hidden')
             .show()
-            .css('display', 'block')
+            .css('display', '')
             .css('visibility', 'visible');
             
         return;
@@ -469,7 +469,7 @@ checkServerContext: function(callback) {
         .removeClass('eq-loading')
         .removeClass('eq-hidden')
         .show()
-        .css('display', 'block')
+        .css('display', '')
         .css('visibility', 'visible');
     
     // Actualizar carrito si existe
@@ -526,7 +526,7 @@ checkServerContext: function(callback) {
                 }
             },
             error: function(xhr, status, error) {
-                console.warn('Server context check failed:', status, error);
+                console.log('Server context check failed:', status, error);
                 
                 // Intentar usar datos locales como fallback
                 self.loadFromStorage();
