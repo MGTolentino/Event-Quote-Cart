@@ -453,8 +453,28 @@ public function update_cart_event() {
             
             // Convertir fecha a timestamp
             error_log("DEBUG: create_event - Fecha recibida: " . $event_date);
-            $date_timestamp = strtotime($event_date);
-            error_log("DEBUG: create_event - Timestamp convertido: " . $date_timestamp);
+            error_log("DEBUG: create_event - Timezone del servidor: " . date_default_timezone_get());
+            error_log("DEBUG: create_event - Fecha actual: " . date('Y-m-d H:i:s'));
+            
+            // Intentar usar DateTime para conversión más robusta
+            try {
+                // Intentar crear DateTime con zona horaria específica
+                $timezone = new DateTimeZone(get_option('timezone_string') ?: 'America/Mexico_City');
+                $dateObj = new DateTime($event_date . ' 00:00:00', $timezone);
+                $date_timestamp = $dateObj->getTimestamp();
+                error_log("DEBUG: create_event - DateTime timestamp: " . $date_timestamp . " (timezone: " . $timezone->getName() . ")");
+            } catch (Exception $e) {
+                error_log("DEBUG: create_event - DateTime falló: " . $e->getMessage());
+                // Fallback a strtotime
+                $date_timestamp = strtotime($event_date . ' 00:00:00');
+                error_log("DEBUG: create_event - strtotime fallback: " . $date_timestamp);
+            }
+            
+            if ($date_timestamp === false || $date_timestamp === 0) {
+                error_log("DEBUG: create_event - ERROR: Conversión de fecha falló para: " . $event_date);
+                $date_timestamp = strtotime('+1 day'); // Usar mañana como fallback
+                error_log("DEBUG: create_event - Usando fallback timestamp: " . $date_timestamp);
+            }
             
             // Crear nuevo evento
             $result = $wpdb->insert(
@@ -2304,8 +2324,26 @@ public function update_event_date() {
         
         // Convertir fecha a timestamp si es necesario
         error_log("DEBUG: update_event_date - Fecha recibida: " . $new_date);
-        $date_timestamp = strtotime($new_date);
-        error_log("DEBUG: update_event_date - Timestamp convertido: " . $date_timestamp);
+        
+        // Intentar usar DateTime para conversión más robusta
+        try {
+            // Intentar crear DateTime con zona horaria específica
+            $timezone = new DateTimeZone(get_option('timezone_string') ?: 'America/Mexico_City');
+            $dateObj = new DateTime($new_date . ' 00:00:00', $timezone);
+            $date_timestamp = $dateObj->getTimestamp();
+            error_log("DEBUG: update_event_date - DateTime timestamp: " . $date_timestamp . " (timezone: " . $timezone->getName() . ")");
+        } catch (Exception $e) {
+            error_log("DEBUG: update_event_date - DateTime falló: " . $e->getMessage());
+            // Fallback a strtotime
+            $date_timestamp = strtotime($new_date . ' 00:00:00');
+            error_log("DEBUG: update_event_date - strtotime fallback: " . $date_timestamp);
+        }
+        
+        if ($date_timestamp === false || $date_timestamp === 0) {
+            error_log("DEBUG: update_event_date - ERROR: Conversión de fecha falló para: " . $new_date);
+            wp_send_json_error('Fecha inválida: ' . $new_date);
+            return;
+        }
         
         // Actualizar fecha del evento
         $updated = $wpdb->update(

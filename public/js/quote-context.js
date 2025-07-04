@@ -1038,6 +1038,22 @@ modalsHtml += '</select>' +
                     return;
                 }
                 
+                // Validar formato de fecha
+                var dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(date)) {
+                    alert('Formato de fecha inválido. Debe ser YYYY-MM-DD');
+                    console.error('Formato de fecha inválido:', date);
+                    return;
+                }
+                
+                // Validar que la fecha sea parseable
+                var testDate = new Date(date);
+                if (isNaN(testDate.getTime())) {
+                    alert('Fecha inválida');
+                    console.error('Fecha no parseable:', date);
+                    return;
+                }
+                
                 self.createEvent(type, date, guests);
             });
             
