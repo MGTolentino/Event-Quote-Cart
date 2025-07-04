@@ -1444,10 +1444,8 @@ $.ajax({
                 self.isCreatingNewEvent = false;
             }
             
-            // Forzar actualización del panel verificando con el servidor
-            setTimeout(function() {
-                self.forceRefreshPanel();
-            }, 500);
+            // Removed automatic forceRefreshPanel() to prevent race condition
+            // Panel is already updated correctly with local data above
         } else {
                     console.error('Error updating cart context:', response.data);
                     self.showNotification('Error al actualizar contexto', 'error');
