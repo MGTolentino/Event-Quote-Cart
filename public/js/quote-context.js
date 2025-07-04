@@ -57,6 +57,9 @@ init: function() {
         return;
     }
     
+    // Limpiar datos obsoletos antes de verificar con el servidor
+    this.clearStaleDataOnInit();
+    
     // Iniciar sistema de sincronización entre pestañas primero
     this.initTabsSynchronization();
     
@@ -167,30 +170,80 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
-            console.log('Server unavailable or timeout - using local data fallback');
+            console.log('Server unavailable or timeout - clearing stale data and showing fresh panel');
             
-            // Intentar cargar desde localStorage como fallback
-            self.loadFromStorage();
+            // NO usar datos locales obsoletos cuando hay timeout del servidor
+            // En su lugar, limpiar todo y mostrar panel vacío
+            self.data = {
+                isActive: false,
+                isMinimized: false,
+                leadId: null,
+                leadName: null,
+                eventId: null,
+                eventDate: null,
+                eventType: null,
+                sessionToken: null
+            };
             
-            if (self.data.isActive && self.data.leadId && self.data.eventId) {
-                // Hay datos locales válidos, usarlos
-                self.renderPanel();
-                self.initEventListeners();
-                self.initModals();
-            } else {
-                // No hay datos válidos, mostrar botón toggle
-                self.data.isActive = false;
-                self.saveToStorage();
-                $('.eq-context-panel').remove();
-                self.renderToggleButton();
-                self.initEventListeners();
-                self.initModals();
-            }
+            // Limpiar storage para evitar datos obsoletos
+            self.saveToStorage();
+            
+            // Eliminar cualquier panel existente y mostrar botón toggle
+            $('.eq-context-panel').remove();
+            self.renderToggleButton();
+            self.initEventListeners();
+            self.initModals();
             
             // Iniciar polling con menor frecuencia cuando hay problemas de conectividad
             self.startSessionPolling();
         }
     });
+},
+
+clearStaleDataOnInit: function() {
+    console.log('[EQ Context] Clearing potentially stale data on init');
+    
+    // Verificar si hay datos en sessionStorage
+    var savedData = sessionStorage.getItem('eqQuoteContext');
+    if (savedData) {
+        try {
+            var parsedData = JSON.parse(savedData);
+            var currentTime = Date.now();
+            
+            // Si los datos son muy antiguos (más de 1 hora), limpiarlos
+            if (parsedData.lastUpdate && (currentTime - parsedData.lastUpdate) > 3600000) {
+                console.log('[EQ Context] Data is older than 1 hour, clearing');
+                sessionStorage.removeItem('eqQuoteContext');
+                this.data = {
+                    isActive: false,
+                    isMinimized: false,
+                    leadId: null,
+                    leadName: null,
+                    eventId: null,
+                    eventDate: null,
+                    eventType: null,
+                    sessionToken: null
+                };
+            }
+        } catch (e) {
+            console.error('[EQ Context] Error parsing saved data, clearing:', e);
+            sessionStorage.removeItem('eqQuoteContext');
+            this.data = {
+                isActive: false,
+                isMinimized: false,
+                leadId: null,
+                leadName: null,
+                eventId: null,
+                eventDate: null,
+                eventType: null,
+                sessionToken: null
+            };
+        }
+    }
+    
+    // Eliminar cualquier panel existente para empezar limpio
+    $('.eq-context-panel').remove();
+    $('.eq-context-toggle-button').remove();
 },
 
 initTabsSynchronization: function() {
@@ -380,7 +433,7 @@ checkServerContext: function(callback) {
         url: eqCartData.ajaxurl,
         type: 'POST',
         dataType: 'json',
-        timeout: 3000, // 3 segundos timeout
+        timeout: 8000, // 8 segundos timeout
         data: {
             action: 'eq_check_context_status',
             nonce: eqCartData.nonce,
@@ -525,7 +578,7 @@ checkServerContext: function(callback) {
             url: eqCartData.ajaxurl,
             type: 'POST',
             dataType: 'json',
-            timeout: 3000,
+            timeout: 8000,
             data: {
                 action: 'eq_check_context_status',
                 nonce: eqCartData.nonce,
@@ -553,7 +606,7 @@ checkServerContext: function(callback) {
             url: eqCartData.ajaxurl,
             type: 'POST',
             dataType: 'json',
-            timeout: 3000,
+            timeout: 8000,
             data: {
                 action: 'eq_check_context_status',
                 nonce: eqCartData.nonce,
