@@ -64,8 +64,10 @@ init: function() {
     
     var self = this;
     
-    // Asegurar que el panel esté completamente oculto durante la verificación
-    $('.eq-context-panel').addClass('eq-loading').addClass('eq-hidden');
+    // Solo ocultar panel si ya existe durante la inicialización
+    if ($('.eq-context-panel').length > 0) {
+        $('.eq-context-panel').hide();
+    }
     
     // Verificar con el servidor si hay un contexto activo con timeout mejorado
     this.checkServerContextWithErrorHandling(function(success, response) {
@@ -405,18 +407,22 @@ checkServerContext: function(callback) {
         },
         
   renderPanel: function() {
-      // Verificación más rigurosa antes de mostrar el panel
-    if (!this.data.isActive) {
-        this.renderToggleButton();
-        return;
-    }
+      // Removida verificación innecesaria de isActive para permitir mostrar panel siempre
     
     // Si ya existe el panel, actualizar información y no recrear
     if ($('.eq-context-panel').length > 0) {
+        console.log('[EQ Context] Panel exists, updating and ensuring visibility');
         $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
         $('#eq-context-event-info').text(this.formatEventInfo());
-        // Asegurar que el panel sea visible
-        $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
+        
+        // FORZAR visibilidad del panel con múltiples métodos
+        $('.eq-context-panel')
+            .removeClass('eq-loading')
+            .removeClass('eq-hidden')
+            .show()
+            .css('display', 'block')
+            .css('visibility', 'visible');
+            
         return;
     }
     
@@ -450,14 +456,21 @@ checkServerContext: function(callback) {
 	 
         
     // Eliminar panel anterior si existe (seguridad adicional)
+    console.log('[EQ Context] Removing any existing panels');
     $('.eq-context-panel').remove();
     
     // Añadir panel al body
+    console.log('[EQ Context] Adding new panel to body');
     $('body').prepend(panelHtml);
     $('body').addClass('has-eq-context-panel');
     
     // FORZAR visibilidad del panel inmediatamente después de crearlo
-    $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
+    $('.eq-context-panel')
+        .removeClass('eq-loading')
+        .removeClass('eq-hidden')
+        .show()
+        .css('display', 'block')
+        .css('visibility', 'visible');
     
     // Actualizar carrito si existe
     if (this.data.isActive) {
@@ -546,6 +559,7 @@ checkServerContext: function(callback) {
 },
 		
 		activatePanel: function() {
+    console.log('[EQ Context] activatePanel called');
     var self = this;
     
     // Limpiar todas las señales de sesión finalizada
@@ -555,11 +569,13 @@ checkServerContext: function(callback) {
     
     // Cargar datos locales si existen
     self.loadFromStorage();
+    console.log('[EQ Context] Data after loadFromStorage:', self.data);
     
     // Activar panel y mostrar INMEDIATAMENTE
     self.data.isActive = true;
     self.data.isMinimized = false;
     self.saveToStorage();
+    console.log('[EQ Context] Data after activation:', self.data);
     
     // Renderizar panel con datos actuales (vacío o con datos)
     self.renderPanel();
@@ -567,6 +583,20 @@ checkServerContext: function(callback) {
     
     // Eliminar botón toggle
     $('.eq-context-toggle-button').remove();
+    
+    // Verificar que el panel realmente se esté mostrando
+    setTimeout(function() {
+        if (!$('.eq-context-panel').is(':visible')) {
+            console.error('[EQ Context] Panel not visible after activation!');
+            // Intentar forzar visibilidad una vez más
+            $('.eq-context-panel')
+                .removeClass('eq-hidden')
+                .removeClass('eq-loading')
+                .css({'display': 'flex', 'visibility': 'visible', 'opacity': '1'});
+        } else {
+            console.log('[EQ Context] Panel successfully activated and visible');
+        }
+    }, 100);
     
     // Si no hay datos completos, abrir modal de lead automáticamente
     if (!self.data.leadId || !self.data.eventId) {
