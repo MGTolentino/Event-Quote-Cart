@@ -1827,25 +1827,38 @@ public function clear_context_meta() {
 }
 	
 	public function check_context_status() {
-    check_ajax_referer('eq_cart_public_nonce', 'nonce');
+    error_log('DEBUG check_context_status: START - User ID: ' . get_current_user_id());
+    
+    try {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        error_log('DEBUG check_context_status: Nonce verification passed');
+    } catch (Exception $e) {
+        error_log('DEBUG check_context_status: Nonce verification failed: ' . $e->getMessage());
+        wp_send_json_error('Nonce verification failed');
+        return;
+    }
     
     if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
+        error_log('DEBUG check_context_status: Permission check failed');
         wp_send_json_error('Unauthorized');
         return;
     }
+    error_log('DEBUG check_context_status: Permission check passed');
     
     global $wpdb;
     $user_id = get_current_user_id();
     $response = array('isActive' => false);
     
-    
     // Verificar primero si hay cookie de sesión finalizada
     if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
+        error_log('DEBUG check_context_status: Session ended cookie found, returning false');
         wp_send_json_success(array('isActive' => false));
         return;
     }
+    error_log('DEBUG check_context_status: No session ended cookie found');
     
     // Query simplificada: obtener solo sesión primero
+    error_log('DEBUG check_context_status: About to query sessions table for user ' . $user_id);
     $session = $wpdb->get_row($wpdb->prepare(
         "SELECT id, lead_id, event_id, session_token 
         FROM {$wpdb->prefix}eq_context_sessions 
@@ -1854,14 +1867,23 @@ public function clear_context_meta() {
         LIMIT 1",
         $user_id
     ));
+    
+    if ($wpdb->last_error) {
+        error_log('DEBUG check_context_status: Database error in session query: ' . $wpdb->last_error);
+        wp_send_json_error('Database error');
+        return;
+    }
+    
+    error_log('DEBUG check_context_status: Session query completed. Found session: ' . ($session ? 'YES' : 'NO'));
 
     if (!$session) {
         // Si no hay sesión en BD pero sí en PHP, limpiarla
         if (isset($_SESSION['eq_quote_context'])) {
-            error_log('check_context_status: Session in PHP but not in DB, clearing PHP session');
+            error_log('DEBUG check_context_status: Session in PHP but not in DB, clearing PHP session');
             unset($_SESSION['eq_quote_context']);
         }
         
+        error_log('DEBUG check_context_status: No session found, returning false');
         wp_send_json_success(array(
             'isActive' => false,
             'message' => 'No active session found in database',
@@ -1870,7 +1892,10 @@ public function clear_context_meta() {
         return;
     }
     
+    error_log('DEBUG check_context_status: Session found - Lead ID: ' . $session->lead_id . ', Event ID: ' . $session->event_id);
+    
     // Queries rápidas separadas solo si necesitamos los datos
+    error_log('DEBUG check_context_status: About to query lead name for lead_id: ' . $session->lead_id);
     $lead_name = $wpdb->get_var($wpdb->prepare(
         "SELECT CONCAT(lead_nombre, ' ', lead_apellido) 
         FROM {$wpdb->prefix}jet_cct_leads 
@@ -1878,6 +1903,15 @@ public function clear_context_meta() {
         $session->lead_id
     ));
     
+    if ($wpdb->last_error) {
+        error_log('DEBUG check_context_status: Database error in lead query: ' . $wpdb->last_error);
+        wp_send_json_error('Database error in lead query');
+        return;
+    }
+    
+    error_log('DEBUG check_context_status: Lead query completed. Lead name: ' . ($lead_name ? $lead_name : 'NOT FOUND'));
+    
+    error_log('DEBUG check_context_status: About to query event data for event_id: ' . $session->event_id);
     $event_data = $wpdb->get_row($wpdb->prepare(
         "SELECT tipo_de_evento, fecha_de_evento 
         FROM {$wpdb->prefix}jet_cct_eventos 
@@ -1885,8 +1919,17 @@ public function clear_context_meta() {
         $session->event_id
     ));
     
+    if ($wpdb->last_error) {
+        error_log('DEBUG check_context_status: Database error in event query: ' . $wpdb->last_error);
+        wp_send_json_error('Database error in event query');
+        return;
+    }
+    
+    error_log('DEBUG check_context_status: Event query completed. Event found: ' . ($event_data ? 'YES' : 'NO'));
+    
     // Verificar que lead y evento existen
     if (!$lead_name || !$event_data) {
+        error_log('DEBUG check_context_status: Lead or event not found, cleaning invalid session');
         // Eliminar sesión inválida
         $wpdb->delete(
             $wpdb->prefix . 'eq_context_sessions',
@@ -1899,9 +1942,12 @@ public function clear_context_meta() {
             unset($_SESSION['eq_quote_context']);
         }
         
+        error_log('DEBUG check_context_status: Invalid session cleaned, returning false');
         wp_send_json_success(array('isActive' => false));
         return;
     }
+    
+    error_log('DEBUG check_context_status: All data valid, preparing response');
     
     // Sesión válida encontrada, devolver datos completos
     $response = array(
@@ -1915,6 +1961,8 @@ public function clear_context_meta() {
         'sessionToken' => $session->session_token
     );
     
+    error_log('DEBUG check_context_status: Response prepared: ' . json_encode($response));
+    
     // Actualizar sesión PHP para mantener sincronización
     $_SESSION['eq_quote_context'] = array(
         'lead_id' => $session->lead_id,
@@ -1927,7 +1975,9 @@ public function clear_context_meta() {
         'last_update' => time()
     );
     
+    error_log('DEBUG check_context_status: About to send success response');
     wp_send_json_success($response);
+    error_log('DEBUG check_context_status: Response sent successfully');
 }
 	
 	/**
