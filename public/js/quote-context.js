@@ -72,8 +72,10 @@ init: function() {
         $('.eq-context-panel').hide();
     }
     
-    // Verificar con el servidor si hay un contexto activo con timeout mejorado
-    this.checkServerContextWithErrorHandling(function(success, response) {
+    // Retrasar la verificación inicial para evitar conflictos con eq_sync_context_session
+    setTimeout(function() {
+        // Verificar con el servidor si hay un contexto activo con timeout mejorado
+        self.checkServerContextWithErrorHandling(function(success, response) {
         // Debug: log what we're getting from server
         console.log('DEBUG: Server response:', response);
         
@@ -254,6 +256,7 @@ init: function() {
             self.startSessionPolling();
         }
     });
+    }, 500); // Esperar 500ms antes de verificar para evitar conflictos de session lock
 },
 
 clearStaleDataOnInit: function() {

@@ -1884,6 +1884,12 @@ public function clear_context_meta() {
         }
         
         error_log('DEBUG check_context_status: No session found, returning false');
+        
+        // Cerrar sesión antes de enviar respuesta
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        
         wp_send_json_success(array(
             'isActive' => false,
             'message' => 'No active session found in database',
@@ -1943,6 +1949,12 @@ public function clear_context_meta() {
         }
         
         error_log('DEBUG check_context_status: Invalid session cleaned, returning false');
+        
+        // Cerrar sesión antes de enviar respuesta
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        
         wp_send_json_success(array('isActive' => false));
         return;
     }
@@ -1976,6 +1988,13 @@ public function clear_context_meta() {
     );
     
     error_log('DEBUG check_context_status: About to send success response');
+    
+    // IMPORTANTE: Cerrar la sesión PHP para liberar el lock antes de enviar la respuesta
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+        error_log('DEBUG check_context_status: Session closed to release lock');
+    }
+    
     wp_send_json_success($response);
     error_log('DEBUG check_context_status: Response sent successfully');
 }
