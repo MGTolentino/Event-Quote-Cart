@@ -1811,6 +1811,7 @@ public function clear_context_meta() {
         "SELECT id, lead_id, event_id, session_token 
         FROM {$wpdb->prefix}eq_context_sessions 
         WHERE user_id = %d 
+        ORDER BY id DESC 
         LIMIT 1",
         $user_id
     ));

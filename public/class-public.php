@@ -772,7 +772,7 @@ public function get_lead_events() {
     
     $table_name = $wpdb->prefix . 'jet_cct_eventos';
     
-   // Obtener eventos del lead
+   // Obtener eventos del lead (solo futuros o recientes)
 $eventos = $wpdb->get_results($wpdb->prepare(
     "SELECT 
         _ID as evento_id,
@@ -784,6 +784,7 @@ $eventos = $wpdb->get_results($wpdb->prepare(
     FROM $table_name
     WHERE lead_id = %d
     AND cct_status = 'publish'
+    AND (fecha_de_evento >= UNIX_TIMESTAMP(CURDATE()) OR fecha_de_evento >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 30 DAY)))
     ORDER BY fecha_de_evento DESC",
     $lead_id
 ));

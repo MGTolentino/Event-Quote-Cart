@@ -76,15 +76,37 @@ init: function() {
             // Si el servidor dice que hay un contexto activo
             if (response.data && response.data.isActive) {
                 
-                // Actualizar datos locales con los del servidor
-                self.data.isActive = true;
-                self.data.leadId = response.data.leadId;
-                self.data.leadName = response.data.leadName;
-                self.data.eventId = response.data.eventId;
-                self.data.eventDate = response.data.eventDate;
-                self.data.eventType = response.data.eventType;
-
-                if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
+                // Cargar datos locales para comparar
+                var localData = JSON.parse(sessionStorage.getItem('eqQuoteContext') || '{}');
+                var useServerData = true;
+                
+                // Si hay datos locales más recientes, usar esos en lugar del servidor
+                if (localData.lastUpdate && response.data.lastUpdate) {
+                    useServerData = response.data.lastUpdate >= localData.lastUpdate;
+                } else if (localData.leadId && localData.eventId) {
+                    // Si hay datos locales válidos pero servidor no tiene timestamp, usar locales
+                    useServerData = false;
+                }
+                
+                if (useServerData) {
+                    // Actualizar datos locales con los del servidor
+                    self.data.isActive = true;
+                    self.data.leadId = response.data.leadId;
+                    self.data.leadName = response.data.leadName;
+                    self.data.eventId = response.data.eventId;
+                    self.data.eventDate = response.data.eventDate;
+                    self.data.eventType = response.data.eventType;
+                    if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
+                } else {
+                    // Usar datos locales más recientes
+                    self.data.isActive = true;
+                    self.data.leadId = localData.leadId;
+                    self.data.leadName = localData.leadName;
+                    self.data.eventId = localData.eventId;
+                    self.data.eventDate = localData.eventDate;
+                    self.data.eventType = localData.eventType;
+                    if (localData.sessionToken) self.data.sessionToken = localData.sessionToken;
+                }
                 
                 // Guardar en sessionStorage
                 self.saveToStorage();
@@ -400,6 +422,8 @@ checkServerContext: function(callback) {
         // Guardar datos en sessionStorage
         saveToStorage: function() {
             try {
+                // Agregar timestamp de última actualización
+                this.data.lastUpdate = Date.now();
                 sessionStorage.setItem('eqQuoteContext', JSON.stringify(this.data));
             } catch (e) {
                 console.error('Error saving context to sessionStorage', e);
@@ -650,7 +674,7 @@ togglePanel: function() {
 },
 		// Función para formatear fechas en formato amigable
 formatFriendlyDate: function(date) {
-    if (!date) return '';
+    if (!date || date === '0' || date === 0 || date === '0000-00-00') return '';
     
     
     let dateObj;
@@ -661,6 +685,12 @@ formatFriendlyDate: function(date) {
          !date.includes('-') && date.length > 8)) {
         
         let timestamp = parseInt(date);
+        
+        // Validar que el timestamp no sea 0 o inválido
+        if (timestamp === 0 || timestamp < 86400) {
+            return '';
+        }
+        
         if (timestamp < 10000000000) {
             timestamp = timestamp * 1000;
         }
