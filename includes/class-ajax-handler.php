@@ -1806,48 +1806,46 @@ public function clear_context_meta() {
         return;
     }
     
-    // PRIORIDAD MÁXIMA: Verificar la tabla de sesiones en la BD
-$session = $wpdb->get_row($wpdb->prepare(
-    "SELECT * FROM {$wpdb->prefix}eq_context_sessions 
-    WHERE user_id = %d 
-    LIMIT 1",
-    $user_id
-));
+    // Query optimizada: obtener sesión con datos de lead y evento en una sola consulta
+    $session_data = $wpdb->get_row($wpdb->prepare(
+        "SELECT 
+            s.id as session_id,
+            s.lead_id,
+            s.event_id,
+            s.session_token,
+            l.lead_nombre,
+            l.lead_apellido,
+            e.tipo_de_evento,
+            e.fecha_de_evento
+        FROM {$wpdb->prefix}eq_context_sessions s
+        LEFT JOIN {$wpdb->prefix}jet_cct_leads l ON s.lead_id = l._ID
+        LEFT JOIN {$wpdb->prefix}jet_cct_eventos e ON s.event_id = e._ID
+        WHERE s.user_id = %d 
+        LIMIT 1",
+        $user_id
+    ));
 
-
-if (!$session) {
-    
-    // Si no hay sesión en BD pero sí en PHP, limpiarla
-    if (isset($_SESSION['eq_quote_context'])) {
-        error_log('check_context_status: Session in PHP but not in DB, clearing PHP session');
-        unset($_SESSION['eq_quote_context']);
+    if (!$session_data) {
+        // Si no hay sesión en BD pero sí en PHP, limpiarla
+        if (isset($_SESSION['eq_quote_context'])) {
+            error_log('check_context_status: Session in PHP but not in DB, clearing PHP session');
+            unset($_SESSION['eq_quote_context']);
+        }
+        
+        wp_send_json_success(array(
+            'isActive' => false,
+            'message' => 'No active session found in database',
+            'timestamp' => time()
+        ));
+        return;
     }
     
-    wp_send_json_success(array(
-        'isActive' => false,
-        'message' => 'No active session found in database',
-        'timestamp' => time()
-    ));
-    return;
-}
-    
-    // Si hay sesión en BD, verificar que los IDs son válidos
-    $lead = $wpdb->get_row($wpdb->prepare(
-        "SELECT lead_nombre, lead_apellido FROM {$wpdb->prefix}jet_cct_leads WHERE _ID = %d",
-        $session->lead_id
-    ));
-    
-    $event = $wpdb->get_row($wpdb->prepare(
-        "SELECT tipo_de_evento, fecha_de_evento FROM {$wpdb->prefix}jet_cct_eventos WHERE _ID = %d",
-        $session->event_id
-    ));
-    
-    if (!$lead || !$event) {
-        
+    // Verificar que lead y evento existen
+    if (!$session_data->lead_nombre || !$session_data->tipo_de_evento) {
         // Eliminar sesión inválida
         $wpdb->delete(
             $wpdb->prefix . 'eq_context_sessions',
-            array('id' => $session->id),
+            array('id' => $session_data->session_id),
             array('%d')
         );
         
@@ -1863,21 +1861,21 @@ if (!$session) {
     // Sesión válida encontrada, devolver datos completos
     $response = array(
         'isActive' => true,
-        'leadId' => $session->lead_id,
-        'leadName' => $lead->lead_nombre . ' ' . $lead->lead_apellido,
-        'eventId' => $session->event_id,
-        'eventType' => $event->tipo_de_evento,
-        'eventDate' => is_numeric($event->fecha_de_evento) ? 
-            date('Y-m-d', $event->fecha_de_evento) : $event->fecha_de_evento,
-        'sessionToken' => $session->session_token
+        'leadId' => $session_data->lead_id,
+        'leadName' => $session_data->lead_nombre . ' ' . $session_data->lead_apellido,
+        'eventId' => $session_data->event_id,
+        'eventType' => $session_data->tipo_de_evento,
+        'eventDate' => is_numeric($session_data->fecha_de_evento) ? 
+            date('Y-m-d', $session_data->fecha_de_evento) : $session_data->fecha_de_evento,
+        'sessionToken' => $session_data->session_token
     );
     
     // Actualizar sesión PHP para mantener sincronización
     $_SESSION['eq_quote_context'] = array(
-        'lead_id' => $session->lead_id,
-        'event_id' => $session->event_id,
+        'lead_id' => $session_data->lead_id,
+        'event_id' => $session_data->event_id,
         'user_id' => $user_id,
-        'session_token' => $session->session_token
+        'session_token' => $session_data->session_token
     );
     
     wp_send_json_success($response);

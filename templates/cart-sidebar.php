@@ -118,14 +118,7 @@ defined('ABSPATH') || exit;
             </div>
         </div>
 
-        <!-- Botones de acción -->
-        <div class="eq-cart-actions">
-            <button type="button" 
-                    class="eq-view-quote-button" 
-                    disabled>
-                    <?php esc_html_e('View Complete Quote', 'event-quote-cart'); ?>                
-            </button>
-        </div>
+        <!-- Botones de acción removidos - ahora en menú -->
 
         <!-- Indicador de items -->
         <div class="eq-cart-summary">

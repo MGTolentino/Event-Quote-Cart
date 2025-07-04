@@ -1883,5 +1883,8 @@ validateCartDateChange: function(date, callback) {
        EQContext.init();
    });
    
+   // Exponer como variable global para acceso desde otros scripts
+   window.EQQuoteContext = EQContext;
+   
 })(jQuery);
 					

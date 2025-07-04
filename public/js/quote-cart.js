@@ -31,7 +31,6 @@ init() {
     // Obtener items existentes solo si el usuario ha iniciado sesión
     if (eqCartData.userLoggedIn) {
         this.loadCartItems();
-        this.createHeaderViewQuotesButton();
     } else {
         // Ocultar o desactivar elementos para usuarios no logueados
         this.headerCart.addClass('eq-hide-cart');
@@ -539,8 +538,7 @@ this.content.on('click', '.eq-include-button', (e) => {
 					this.handleFilterDateChange(date);
 				});
 
-            // View Quote button
-			this.footer.on('click', '.eq-view-quote-button', (e) => this.handleViewQuote(e));
+            // View Quote button removido - ahora en menú
 			
 			
             // Extras y cantidad
@@ -1382,10 +1380,9 @@ collectExtrasData() {
 
     this.footer.find('.eq-cart-total-amount').text(this.formatPrice(total));
     this.footer.find('.eq-cart-items-count').text(this.state.items.length);
-			    this.footer.find('.eq-view-quote-button').prop('disabled', this.state.items.length === 0);
-			    
-			    // Actualizar botón del header también
-			    this.updateHeaderViewQuotesButton();
+    
+    // Actualizar visibilidad del menú dinámicamente
+    this.updateMenuVisibility();
 
 }
 
@@ -1399,6 +1396,17 @@ collectExtrasData() {
         window.location.href = eqCartData.cartUrl;
     }
 }
+
+        updateMenuVisibility() {
+            const menuItem = $('.eq-view-quotes-menu-item');
+            if (menuItem.length > 0) {
+                if (this.state.items.length === 0) {
+                    menuItem.addClass('eq-hide-when-empty');
+                } else {
+                    menuItem.removeClass('eq-hide-when-empty');
+                }
+            }
+        }
 
         handleFilterDateChange(date) {
     if (!date) return;
@@ -1537,33 +1545,6 @@ window.updateHeaderCartCount = function(count) {
         }
     } else {
         headerCount.remove();
-    }
-    
-    createHeaderViewQuotesButton() {
-        // Solo crear si no existe ya
-        if ($('.eq-header-view-quotes-button').length > 0) {
-            return;
-        }
-        
-        const buttonText = eqCartData.i18n.viewQuotes || 'View Quotes';
-        const button = `<button type="button" class="eq-header-view-quotes-button" disabled>
-            <i class="fas fa-file-alt"></i>
-            ${buttonText}
-        </button>`;
-        
-        this.headerCart.append(button);
-        
-        // Agregar event listener
-        $('.eq-header-view-quotes-button').on('click', (e) => {
-            this.handleViewQuote(e);
-        });
-    }
-    
-    updateHeaderViewQuotesButton() {
-        const button = $('.eq-header-view-quotes-button');
-        if (button.length > 0) {
-            button.prop('disabled', this.state.items.length === 0);
-        }
     }
 };
 

@@ -608,6 +608,11 @@
     opacity: 0.6;
 }
 
+/* Clases dinámicas para menú */
+.eq-hide-when-empty {
+    display: none !important;
+}
+
 .eq-cart-count {
     display: flex;
     align-items: center;

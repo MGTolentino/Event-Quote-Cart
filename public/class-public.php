@@ -260,6 +260,9 @@ add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
 
     add_action('wp_ajax_eq_remove_from_cart', array($this, 'remove_from_cart'));
     
+    // Hook para sistema dinámico del menú
+    add_filter('wp_nav_menu_objects', array($this, 'dynamic_menu_classes'), 10, 2);
+    
     if (!session_id() && !headers_sent()) {
         session_start();
     }
@@ -866,6 +869,33 @@ public function create_event() {
         'message' => 'Evento creado correctamente'
     ));
 }
+
+    /**
+     * Agregar clases dinámicas al menú basadas en el estado del carrito
+     */
+    public function dynamic_menu_classes($items, $args) {
+        if (!is_user_logged_in()) {
+            return $items;
+        }
+        
+        // Obtener número de items en carrito
+        $cart_items = eq_get_cart_items();
+        $cart_empty = empty($cart_items);
+        
+        foreach ($items as $item) {
+            // Buscar el item que tiene la clase CSS personalizada
+            if (in_array('eq-view-quotes-menu-item', $item->classes)) {
+                if ($cart_empty) {
+                    $item->classes[] = 'eq-hide-when-empty';
+                } else {
+                    // Remover la clase si existe
+                    $item->classes = array_diff($item->classes, array('eq-hide-when-empty'));
+                }
+            }
+        }
+        
+        return $items;
+    }
 
 	
 }
