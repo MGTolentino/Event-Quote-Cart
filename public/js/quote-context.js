@@ -271,16 +271,28 @@ initTabsSynchronization: function() {
             try {
                 var syncData = JSON.parse(e.newValue || '{}');
                 if (syncData.leadId && syncData.eventId && syncData.lastUpdate) {
-                    // Verificar si los datos son más recientes
-                    if (!self.data.lastUpdate || syncData.lastUpdate > self.data.lastUpdate) {
+                    // Verificar si los datos son más recientes (con margen de tolerancia)
+                    if (!self.data.lastUpdate || syncData.lastUpdate > (self.data.lastUpdate + 1000)) {
                         self.data = syncData;
-                        self.saveToStorage();
+                        self.saveToStorage(true); // skipSync para evitar loop
                         self.renderPanel();
-                        console.log('Context synchronized from another tab');
                     }
                 }
             } catch (e) {
                 console.error('Error synchronizing context from another tab:', e);
+            }
+        } else if (e.key === 'eq_context_force_sync') {
+            // Sincronización forzada (después de cambios de lead/evento)
+            try {
+                var syncData = JSON.parse(e.newValue || '{}');
+                if (syncData.leadId && syncData.eventId) {
+                    // Actualización forzada sin verificación de timestamp
+                    self.data = syncData;
+                    self.saveToStorage(true); // skipSync para evitar loop
+                    self.renderPanel();
+                }
+            } catch (e) {
+                console.error('Error in forced sync from another tab:', e);
             }
         }
     });
@@ -367,7 +379,7 @@ verifySessionToken: function(token) {
             if (response.success) {
                 // Solo registrar el estado pero NO recargar
                 if (!response.data.isActive && self.data.isActive) {
-                    console.log('Session may have changed on server, but not forcing reload');
+                    // Session change detected but not forcing reload
                 }
             }
         }
@@ -487,18 +499,21 @@ checkServerContext: function(callback) {
 },
         
         // Guardar datos en sessionStorage
-        saveToStorage: function() {
+        saveToStorage: function(skipSync) {
             try {
                 // Agregar timestamp de última actualización
                 this.data.lastUpdate = Date.now();
                 sessionStorage.setItem('eqQuoteContext', JSON.stringify(this.data));
                 
-                // Sincronizar con otras pestañas usando localStorage temporal
-                localStorage.setItem('eq_context_data_sync', JSON.stringify(this.data));
-                // Eliminar inmediatamente para evitar acumulación
-                setTimeout(function() {
-                    localStorage.removeItem('eq_context_data_sync');
-                }, 100);
+                // Solo sincronizar si no se especifica skipSync
+                if (!skipSync) {
+                    // Sincronizar con otras pestañas usando localStorage temporal
+                    localStorage.setItem('eq_context_data_sync', JSON.stringify(this.data));
+                    // Eliminar inmediatamente para evitar acumulación
+                    setTimeout(function() {
+                        localStorage.removeItem('eq_context_data_sync');
+                    }, 100);
+                }
             } catch (e) {
                 console.error('Error saving context to sessionStorage', e);
             }
@@ -607,7 +622,10 @@ checkServerContext: function(callback) {
                 }
             },
             error: function(xhr, status, error) {
-                console.log('Server context check failed:', status, error);
+                // Solo loggear errores no-timeout para debug
+                if (status !== 'timeout') {
+                    console.error('Context server error:', status);
+                }
                 
                 // Intentar usar datos locales como fallback
                 self.loadFromStorage();
@@ -1082,8 +1100,6 @@ modalsHtml += '</select>' +
                 var date = $('#eq-new-event-date').val();
                 var guests = $('#eq-new-event-guests').val();
                 
-                console.log('DEBUG: Creando evento con fecha:', date);
-                
                 if (!type || !date) {
                     alert('Tipo y fecha son obligatorios');
                     return;
@@ -1093,7 +1109,6 @@ modalsHtml += '</select>' +
                 var dateRegex = /^\d{4}-\d{2}-\d{2}$/;
                 if (!dateRegex.test(date)) {
                     alert('Formato de fecha inválido. Debe ser YYYY-MM-DD');
-                    console.error('Formato de fecha inválido:', date);
                     return;
                 }
                 
@@ -1101,7 +1116,6 @@ modalsHtml += '</select>' +
                 var testDate = new Date(date);
                 if (isNaN(testDate.getTime())) {
                     alert('Fecha inválida');
-                    console.error('Fecha no parseable:', date);
                     return;
                 }
                 
@@ -1424,23 +1438,16 @@ $.ajax({
                 eventDate: eventDate
             }]);
             
+            // NO recargar página automáticamente - mantener actualización en tiempo real
+            if (self.isCreatingNewEvent) {
+                // Limpiar el flag
+                self.isCreatingNewEvent = false;
+            }
+            
+            // Forzar actualización del panel verificando con el servidor
             setTimeout(function() {
-                // Verificar si venimos de crear un nuevo evento
-                if (self.isCreatingNewEvent) {
-                    // Limpiar el flag
-                    self.isCreatingNewEvent = false;
-                    
-                    // Para nuevos eventos, esperar antes de recargar
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    // Para eventos existentes, recargar después de un pequeño retraso
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 300);
-                }
-            }, 200);
+                self.forceRefreshPanel();
+            }, 500);
         } else {
                     console.error('Error updating cart context:', response.data);
                     self.showNotification('Error al actualizar contexto', 'error');
@@ -1660,7 +1667,7 @@ updateDateDisplays: function(formattedDate, dateObj) {
             
             updatedAny = true;
         } else {
-            console.log('Skipping hidden input:', input);
+            // Skipping hidden input
         }
     });
     
@@ -1705,7 +1712,7 @@ updateDateDisplays: function(formattedDate, dateObj) {
                 
                 updatedAny = true;
             } else {
-                console.log('BookingForm inputs are hidden, skipping update');
+                // BookingForm inputs are hidden, skipping update
             }
         } catch (e) {
             console.error('Error updating BookingForm:', e);
@@ -1724,15 +1731,11 @@ updateDateDisplays: function(formattedDate, dateObj) {
             force: true // Indicar que debe tener prioridad
         }]);
         
-    } else {
-        console.log('No visible date inputs found to update');
     }
 },
         
      createEvent: function(type, date, guests) {
     var self = this;
-    
-    console.log('DEBUG: createEvent llamada con fecha:', date);
     
     if (!this.data.leadId) {
         alert('Primero debe seleccionar un lead');
@@ -1748,8 +1751,6 @@ updateDateDisplays: function(formattedDate, dateObj) {
     var categoria = $('#eq-new-event-categoria').val() || '';
     var direccion = $('#eq-new-event-direccion').val() || '';
     var comentarios = $('#eq-new-event-comentarios').val() || '';
-    
-    console.log('DEBUG: Enviando AJAX con fecha:', date);
     
     $.ajax({
         url: eqCartData.ajaxurl,
@@ -2055,11 +2056,43 @@ verifyContextCleared: function() {
         }
     });
 },
+
+forceRefreshPanel: function() {
+    var self = this;
+    
+    // Verificar con el servidor para obtener datos más recientes
+    this.checkServerContextWithErrorHandling(function(success, response) {
+        if (success && response && response.success && response.data && response.data.isActive) {
+            // Actualizar datos locales con datos del servidor
+            self.data.leadId = response.data.leadId;
+            self.data.leadName = response.data.leadName;
+            self.data.eventId = response.data.eventId;
+            self.data.eventDate = response.data.eventDate;
+            self.data.eventType = response.data.eventType;
+            if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
+            
+            // Guardar datos actualizados
+            self.saveToStorage();
+            
+            // Recrear panel con datos frescos del servidor
+            self.renderPanel();
+            
+            // Sincronizar con otras pestañas
+            localStorage.setItem('eq_context_force_sync', JSON.stringify({
+                ...self.data,
+                timestamp: Date.now()
+            }));
+            setTimeout(function() {
+                localStorage.removeItem('eq_context_force_sync');
+            }, 100);
+        }
+    });
+},
 		
 validateCartDateChange: function(date, callback) {
     // Verificar que callback sea una función antes de usarlo
     if (typeof callback !== 'function') {
-        console.error('validateCartDateChange called without a valid callback function');
+        console.error('EQ Context: validateCartDateChange called without callback');
         return;
     }
     

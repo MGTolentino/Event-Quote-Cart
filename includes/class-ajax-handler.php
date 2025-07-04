@@ -1920,7 +1920,11 @@ public function clear_context_meta() {
         'lead_id' => $session->lead_id,
         'event_id' => $session->event_id,
         'user_id' => $user_id,
-        'session_token' => $session->session_token
+        'session_token' => $session->session_token,
+        'lead_name' => $lead_name,
+        'event_type' => $event_data->tipo_de_evento,
+        'event_date' => $event_data->fecha_de_evento,
+        'last_update' => time()
     );
     
     wp_send_json_success($response);
