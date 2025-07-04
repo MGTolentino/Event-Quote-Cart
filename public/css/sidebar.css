@@ -1,3 +1,27 @@
+/* Modal Footer with Back Button */
+.eq-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+}
+
+.eq-modal-footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.eq-back-to-lead {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.eq-back-to-lead i {
+    font-size: 14px;
+}
+
 /* No Events Message */
 .eq-no-events-message {
     text-align: center;

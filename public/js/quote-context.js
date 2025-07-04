@@ -1126,9 +1126,14 @@ modalsHtml += '</select>' +
         '</div>' +
     '</div>' +
     '<div class="eq-modal-footer">' +
-        '<button type="button" class="button" id="eq-event-cancel">Cancelar</button>' +
-        '<button type="button" class="button button-primary" id="eq-event-create">Crear Evento</button>' +
-        '<button type="button" class="button button-primary" id="eq-event-select">' + (eqCartData.texts?.select || 'Select') + '</button>' +
+        '<button type="button" class="button eq-back-to-lead" id="eq-back-to-lead">' +
+            '<i class="fas fa-arrow-left"></i> Cambiar Lead' +
+        '</button>' +
+        '<div class="eq-modal-footer-actions">' +
+            '<button type="button" class="button" id="eq-event-cancel">Cancelar</button>' +
+            '<button type="button" class="button button-primary" id="eq-event-create">Crear Evento</button>' +
+            '<button type="button" class="button button-primary" id="eq-event-select">' + (eqCartData.texts?.select || 'Select') + '</button>' +
+        '</div>' +
     '</div>' +
 '</div>';
                 
@@ -1146,6 +1151,12 @@ modalsHtml += '</select>' +
             // Cerrar modales
             $('.eq-modal-close, #eq-lead-cancel, #eq-event-cancel').on('click', function() {
                 self.closeModals();
+            });
+            
+            // Botón para regresar a selección de lead
+            $('#eq-back-to-lead').on('click', function() {
+                $('#eq-event-modal-backdrop, #eq-event-modal').hide();
+                self.openLeadModal();
             });
             
             // Cerrar al hacer clic en el backdrop
