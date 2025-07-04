@@ -43,11 +43,14 @@ if ($show_context_banner):
             <?php if (!empty($context['event']->fecha_de_evento)): ?>
                 - <?php 
                     if (is_numeric($context['event']->fecha_de_evento)) {
-                        echo esc_html(date('Y-m-d', intval($context['event']->fecha_de_evento)));
+                        $timestamp = intval($context['event']->fecha_de_evento);
+                        if ($timestamp > 0) {
+                            echo esc_html(date_i18n('j \d\e F, Y', $timestamp));
+                        }
                     } else {
                         $timestamp = strtotime($context['event']->fecha_de_evento);
                         if ($timestamp !== false && $timestamp > 0) {
-                            echo esc_html(date('Y-m-d', $timestamp));
+                            echo esc_html(date_i18n('j \d\e F, Y', $timestamp));
                         }
                     }
                 ?>

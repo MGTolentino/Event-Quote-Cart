@@ -130,27 +130,12 @@ init: function() {
                 // Guardar en sessionStorage
                 self.saveToStorage();
                 
-                // Si el panel ya existe, actualizarlo y mostrarlo
-                if ($('.eq-context-panel').length > 0) {
-                    // Verificar elementos antes de actualizar
-                    var leadEl = $('#eq-context-lead-name');
-                    var eventEl = $('#eq-context-event-info');
-                    
-                    if (leadEl.length > 0 && eventEl.length > 0) {
-                        // Actualizar contenido
-                        leadEl.text(self.data.leadName || 'No seleccionado');
-                        eventEl.text(self.formatEventInfo());
-                        
-                        // Mostrar el panel
-                        $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
-                    } else {
-                        // Elementos dañados, recrear panel
-                        self.renderPanel();
-                    }
-                } else {
-                    // Renderizar nuevo panel
-                    self.renderPanel();
-                }
+                // SIEMPRE recrear el panel para evitar datos obsoletos
+                console.log('[EQ Context] Removing existing panel to prevent stale data');
+                $('.eq-context-panel').remove();
+                
+                // Renderizar panel completamente nuevo con datos actualizados
+                self.renderPanel();
             } else {
                 
                 // Limpiar datos locales
@@ -473,38 +458,11 @@ checkServerContext: function(callback) {
         },
         
   renderPanel: function() {
-      // Removida verificación innecesaria de isActive para permitir mostrar panel siempre
+    console.log('[EQ Context] renderPanel called with data:', this.data);
     
-    // Si ya existe el panel, actualizar información y no recrear
-    if ($('.eq-context-panel').length > 0) {
-        // Verificar que los elementos críticos existen antes de actualizar
-        var leadNameEl = $('#eq-context-lead-name');
-        var eventInfoEl = $('#eq-context-event-info');
-        
-        if (leadNameEl.length > 0) {
-            leadNameEl.text(this.data.leadName || 'No seleccionado');
-        }
-        
-        if (eventInfoEl.length > 0) {
-            eventInfoEl.text(this.formatEventInfo());
-        }
-        
-        // Si elementos críticos no existen, forzar recreación
-        if (leadNameEl.length === 0 || eventInfoEl.length === 0) {
-            $('.eq-context-panel').remove();
-            // Continuar con creación del panel nuevo
-        } else {
-            // FORZAR visibilidad del panel con múltiples métodos
-            $('.eq-context-panel')
-                .removeClass('eq-loading')
-                .removeClass('eq-hidden')
-                .show()
-                .css('display', '')
-                .css('visibility', 'visible');
-                
-            return;
-        }
-    }
+    // SIEMPRE eliminar panel existente para evitar datos obsoletos
+    $('.eq-context-panel').remove();
+    console.log('[EQ Context] Removed any existing panels for fresh render');
     
     
     
@@ -1259,14 +1217,11 @@ if (typeof flatpickr !== 'undefined') {
             this.data.eventId = null;
             this.data.eventDate = null;
             this.data.eventType = null;
+            this.data.isActive = true;
             
-            if (!this.data.isActive) {
-                this.data.isActive = true;
-                this.renderPanel();
-            } else {
-                $('#eq-context-lead-name').text(leadName);
-                $('#eq-context-event-info').text('No seleccionado');
-            }
+            // SIEMPRE recrear panel para mostrar datos actualizados inmediatamente
+            console.log('[EQ Context] selectLead - Recreating panel with new lead data');
+            this.renderPanel();
             
             this.saveToStorage();
         },
@@ -1382,17 +1337,9 @@ if (typeof flatpickr !== 'undefined') {
     this.data.eventDate = eventDate;
     this.data.eventType = eventType;
     
-    // Actualizar UI
-    $('#eq-context-event-info').text(this.formatEventInfo());
-	   
-// Asegurarnos de que el panel esté visible y actualizado
-if ($('.eq-context-panel').length === 0) {
+    // SIEMPRE recrear panel para mostrar datos actualizados inmediatamente
+    console.log('[EQ Context] selectEvent - Recreating panel with new event data');
     this.renderPanel();
-} else {
-    // Forzar actualización del DOM
-    $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
-    $('#eq-context-event-info').text(this.formatEventInfo());
-}
     
     // Crear sesión de contexto en el servidor
     $.ajax({
