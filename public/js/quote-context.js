@@ -170,27 +170,38 @@ init: function() {
             self.startSessionPolling();
         } else {
             
-            // NO usar datos locales obsoletos cuando hay timeout del servidor
-            // En su lugar, limpiar todo y mostrar panel vacío
-            self.data = {
-                isActive: false,
-                isMinimized: false,
-                leadId: null,
-                leadName: null,
-                eventId: null,
-                eventDate: null,
-                eventType: null,
-                sessionToken: null
-            };
+            // Server timeout or error - mantener datos locales si existen
+            self.loadFromStorage();
             
-            // Limpiar storage para evitar datos obsoletos
-            self.saveToStorage();
-            
-            // Eliminar cualquier panel existente y mostrar botón toggle
-            $('.eq-context-panel').remove();
-            self.renderToggleButton();
-            self.initEventListeners();
-            self.initModals();
+            if (self.data.isActive && self.data.leadId && self.data.eventId) {
+                // Tenemos datos válidos localmente, mantener sesión activa
+                self.renderPanel();
+                self.initEventListeners();
+                self.initModals();
+                
+                // Mostrar notificación de que no se pudo verificar con servidor
+                setTimeout(function() {
+                    self.showNotification('No se pudo verificar con el servidor, usando datos locales', 'warning');
+                }, 500);
+            } else {
+                // No hay datos locales válidos, mostrar botón toggle
+                self.data = {
+                    isActive: false,
+                    isMinimized: false,
+                    leadId: null,
+                    leadName: null,
+                    eventId: null,
+                    eventDate: null,
+                    eventType: null,
+                    sessionToken: null
+                };
+                
+                self.saveToStorage();
+                $('.eq-context-panel').remove();
+                self.renderToggleButton();
+                self.initEventListeners();
+                self.initModals();
+            }
             
             // Iniciar polling con menor frecuencia cuando hay problemas de conectividad
             self.startSessionPolling();
