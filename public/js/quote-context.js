@@ -451,12 +451,13 @@ checkServerContext: function(callback) {
     $('body').prepend(panelHtml);
     $('body').addClass('has-eq-context-panel');
     
+    // FORZAR visibilidad del panel inmediatamente después de crearlo
+    $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
+    
     // Actualizar carrito si existe
     if (this.data.isActive) {
         this.updateCartWithContext();
     }
-	  
-	      $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
 
 },
 		
@@ -521,6 +522,9 @@ checkServerContext: function(callback) {
             
             // Renderizar panel vacío
             self.renderPanel();
+            
+            // ASEGURAR que el panel sea visible removiendo clases ocultas
+            $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
             
             // Reinicializar eventos
             self.initEventListeners();
