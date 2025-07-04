@@ -127,24 +127,56 @@ if (!$has_active_context) {
     
     // PASO 3: Si tenemos contexto válido, buscar el carrito correspondiente
     if ($has_valid_context) {
-        $context_cart_id = $wpdb->get_var($wpdb->prepare(
+        // Limpiar carritos duplicados para este contexto
+        $duplicates = $wpdb->get_results($wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}eq_carts 
             WHERE user_id = %d AND lead_id = %d AND event_id = %d AND status = 'active'
-            ORDER BY created_at DESC LIMIT 1",
+            ORDER BY created_at DESC",
             $user_id, $context_lead_id, $context_event_id
         ));
         
+        if (count($duplicates) > 1) {
+            // Mantener solo el más reciente, desactivar el resto
+            $keep_cart = array_shift($duplicates);
+            $context_cart_id = $keep_cart->id;
+            
+            foreach ($duplicates as $duplicate) {
+                $wpdb->update(
+                    $wpdb->prefix . 'eq_carts',
+                    array('status' => 'inactive'),
+                    array('id' => $duplicate->id)
+                );
+            }
+        } else {
+            $context_cart_id = $duplicates ? $duplicates[0]->id : null;
+        }
+        
         if ($context_cart_id) {
-                
             // Actualizar meta de usuario para consistencia
             update_user_meta($user_id, 'eq_active_cart_id', $context_cart_id);
             
             // Usar este carrito específico
             $active_cart_id = $context_cart_id;
         } else {
-            
+            // Si no existe un carrito para este contexto, crear uno
             if ($is_privileged) {
-                return array();
+                $new_cart_id = $wpdb->get_var($wpdb->prepare(
+                    "INSERT INTO {$wpdb->prefix}eq_carts (user_id, lead_id, event_id, status, created_at) 
+                    VALUES (%d, %d, %d, 'active', NOW()) 
+                    ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",
+                    $user_id, $context_lead_id, $context_event_id
+                ));
+                
+                if (!$new_cart_id) {
+                    $new_cart_id = $wpdb->insert_id;
+                }
+                
+                if ($new_cart_id) {
+                    update_user_meta($user_id, 'eq_active_cart_id', $new_cart_id);
+                    $active_cart_id = $new_cart_id;
+                } else {
+                    return array();
+                }
             }
         }
     } 
@@ -293,7 +325,7 @@ function eq_get_active_context() {
         else if ($is_sales) {
             $lead = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}jet_cct_leads 
-                WHERE _ID = %d AND (usuario_asignado = %d OR usuario_asignado IS NULL)",
+                WHERE _ID = %d AND usuario_asignado = %d",
                 $lead_id, $user_id
             ));
             

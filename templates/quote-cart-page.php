@@ -32,22 +32,21 @@ $show_context_banner = isset($context) && $context &&
 if ($show_context_banner): 
 ?>
 <div class="quote-context-banner">
-    <div class="quote-context-banner">
-        <div class="quote-context-info">
-            <span class="quote-context-label"><?php esc_html_e('Quoting for:', 'event-quote-cart'); ?></span>
-            <span class="quote-context-lead">
-                <?php echo esc_html($context['lead']->lead_nombre . ' ' . $context['lead']->lead_apellido); ?>
-            </span>
-            <span class="quote-context-separator">|</span>
-            <span class="quote-context-event">
-                <?php echo esc_html($context['event']->tipo_de_evento); ?>
-                <?php if (!empty($context['event']->fecha_formateada)): ?>
-                    - <?php echo esc_html($context['event']->fecha_formateada); ?>
-                <?php endif; ?>
-            </span>
-        </div>
+    <div class="quote-context-info">
+        <span class="quote-context-label"><?php esc_html_e('Quoting for:', 'event-quote-cart'); ?></span>
+        <span class="quote-context-lead">
+            <?php echo esc_html($context['lead']->lead_nombre . ' ' . $context['lead']->lead_apellido); ?>
+        </span>
+        <span class="quote-context-separator">|</span>
+        <span class="quote-context-event">
+            <?php echo esc_html($context['event']->tipo_de_evento); ?>
+            <?php if (!empty($context['event']->fecha_de_evento)): ?>
+                - <?php echo esc_html(date('Y-m-d', strtotime($context['event']->fecha_de_evento))); ?>
+            <?php endif; ?>
+        </span>
     </div>
-    <?php endif; ?>
+</div>
+<?php endif; ?>
     <!-- Header -->
 <div class="eq-cart-header">
     <h1><?php esc_html_e('Your Quote Cart', 'event-quote-cart'); ?></h1>

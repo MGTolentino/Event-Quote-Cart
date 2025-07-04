@@ -46,6 +46,9 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
     add_action('wp_ajax_eq_verify_context_session', array($this, 'verify_context_session'));
 		add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
 		add_action('wp_ajax_eq_check_item_in_cart', array($this, 'check_item_in_cart'));
+		
+		// Hook para limpiar contexto al hacer logout
+		add_action('wp_logout', array($this, 'clear_context_on_logout'));
 }
 
     public function get_listing_data() {
@@ -2133,7 +2136,7 @@ public function update_cart_context() {
     else if ($is_sales) {
         $lead = $wpdb->get_row($wpdb->prepare(
             "SELECT _ID FROM {$wpdb->prefix}jet_cct_leads 
-            WHERE _ID = %d AND (usuario_asignado = %d OR usuario_asignado IS NULL)",
+            WHERE _ID = %d AND usuario_asignado = %d",
             $lead_id, $user_id
         ));
         
@@ -2695,5 +2698,35 @@ public function validate_all_cart_items() {
         wp_send_json_error($e->getMessage());
     }
 }
+
+    /**
+     * Limpiar contexto al hacer logout
+     */
+    public function clear_context_on_logout() {
+        $user_id = get_current_user_id();
+        if (!$user_id) return;
+        
+        global $wpdb;
+        
+        // Limpiar sesión PHP
+        if (isset($_SESSION['eq_quote_context'])) {
+            unset($_SESSION['eq_quote_context']);
+        }
+        
+        // Limpiar contexto de sesiones en BD
+        $wpdb->delete(
+            $wpdb->prefix . 'eq_context_sessions',
+            array('user_id' => $user_id),
+            array('%d')
+        );
+        
+        // Limpiar meta de usuario
+        delete_user_meta($user_id, 'eq_quote_context');
+        delete_user_meta($user_id, 'eq_context_session_token');
+        
+        // Establecer cookies para que el frontend sepa que debe limpiar
+        setcookie('eq_session_ended', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
+        setcookie('eq_context_force_clear', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
+    }
 	
 }

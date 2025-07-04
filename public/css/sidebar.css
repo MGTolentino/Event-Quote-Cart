@@ -558,6 +558,8 @@
     position: relative;
     margin-left: auto;
     z-index: 100;
+    display: flex;
+    gap: 8px;
 }
 
 .eq-header-cart-button {
@@ -577,6 +579,33 @@
     background: #b5a348;
     color: white;
     text-decoration: none;
+}
+
+.eq-header-view-quotes-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #007cba;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.eq-header-view-quotes-button:hover {
+    background: #005a87;
+    color: white;
+    text-decoration: none;
+}
+
+.eq-header-view-quotes-button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .eq-cart-count {

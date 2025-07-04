@@ -28,6 +28,35 @@ init: function() {
         return; // No inicializar si el usuario no tiene permisos
     }
     
+    // Verificar si hay cookies que indican que se debe limpiar el contexto
+    if (document.cookie.indexOf('eq_session_ended=true') !== -1 || 
+        document.cookie.indexOf('eq_context_force_clear=true') !== -1) {
+        
+        // Limpiar completamente el contexto
+        sessionStorage.removeItem('eqQuoteContext');
+        localStorage.removeItem('eq_context_session_ended');
+        localStorage.removeItem('eq_context_session_force_clear');
+        
+        // Limpiar datos locales
+        this.data = {
+            isActive: false,
+            isMinimized: false,
+            leadId: null,
+            leadName: null,
+            eventId: null,
+            eventDate: null,
+            eventType: null,
+            sessionToken: null
+        };
+        
+        // Limpiar cookies
+        document.cookie = 'eq_session_ended=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+        document.cookie = 'eq_context_force_clear=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+        
+        // No continuar con la inicialización del contexto
+        return;
+    }
+    
     // Iniciar sistema de sincronización entre pestañas primero
     this.initTabsSynchronization();
     
@@ -40,10 +69,10 @@ init: function() {
     
     // Verificar con el servidor si hay un contexto activo
     this.checkServerContext(function(response) {
-        if (response.success) {
+        if (response && response.success) {
 
             // Si el servidor dice que hay un contexto activo
-            if (response.data.isActive) {
+            if (response.data && response.data.isActive) {
                 
                 // Actualizar datos locales con los del servidor
                 self.data.isActive = true;
@@ -296,11 +325,13 @@ clearLocalState: function() {
 
 // Método para verificar contexto en el servidor
 checkServerContext: function(callback) {
+    var self = this;
     
     $.ajax({
         url: eqCartData.ajaxurl,
         type: 'POST',
         dataType: 'json',
+        timeout: 10000, // 10 segundos timeout
         data: {
             action: 'eq_check_context_status',
             nonce: eqCartData.nonce,
@@ -313,8 +344,30 @@ checkServerContext: function(callback) {
         },
         error: function(xhr, status, error) {
             console.error('Error checking context status:', status, error);
-            if (typeof callback === 'function') {
-                callback({success: false, error: error});
+            
+            // Si hay error, intentar cargar desde sessionStorage como fallback
+            self.loadFromStorage();
+            
+            // Si tenemos datos válidos en sessionStorage, usarlos
+            if (self.data.isActive && self.data.leadId && self.data.eventId) {
+                if (typeof callback === 'function') {
+                    callback({
+                        success: true,
+                        data: {
+                            isActive: self.data.isActive,
+                            leadId: self.data.leadId,
+                            leadName: self.data.leadName,
+                            eventId: self.data.eventId,
+                            eventDate: self.data.eventDate,
+                            eventType: self.data.eventType,
+                            sessionToken: self.data.sessionToken
+                        }
+                    });
+                }
+            } else {
+                if (typeof callback === 'function') {
+                    callback({success: false, error: error});
+                }
             }
         }
     });
@@ -417,7 +470,7 @@ checkServerContext: function(callback) {
     var buttonHtml = 
         '<button class="eq-context-toggle-button">' +
             '<i class="fas fa-clipboard-list"></i> ' +
-            '<span>Cotizar</span>' +
+            '<span>' + (eqCartData.texts?.quote || 'Quote') + '</span>' +
         '</button>';
         
     // Añadir botón al body
@@ -609,26 +662,26 @@ formatFriendlyDate: function(date) {
         '<div class="eq-modal-backdrop" id="eq-lead-modal-backdrop"></div>' +
         '<div class="eq-modal" id="eq-lead-modal">' +
             '<div class="eq-modal-header">' +
-                '<h3 class="eq-modal-title">Seleccionar Lead</h3>' +
+                '<h3 class="eq-modal-title">' + (eqCartData.texts?.selectLead || 'Select Lead') + '</h3>' +
                 '<button type="button" class="eq-modal-close">&times;</button>' +
             '</div>' +
             '<div class="eq-modal-body">' +
-                '<input type="text" class="eq-search-input" id="eq-lead-search" placeholder="Buscar lead...">' +
+                '<input type="text" class="eq-search-input" id="eq-lead-search" placeholder="' + (eqCartData.texts?.searchLead || 'Search lead...') + '">' +
                 '<div class="eq-search-results" id="eq-lead-results"></div>' +
                 '<div class="eq-create-new">' +
-                    '<h4>Crear nuevo lead</h4>' +
+                    '<h4>' + (eqCartData.texts?.createNewLead || 'Create new lead') + '</h4>' +
                     '<div class="eq-form-row eq-form-two-columns">' +
                         '<div class="eq-form-column">' +
                             '<div class="eq-form-field">' +
-                                '<label class="eq-form-label">Razón Social</label>' +
+                                '<label class="eq-form-label">' + (eqCartData.texts?.companyName || 'Company Name') + '</label>' +
                                 '<input type="text" class="eq-form-input" id="eq-new-lead-razon-social">' +
                             '</div>' +
                             '<div class="eq-form-field">' +
-                                '<label class="eq-form-label">Nombre</label>' +
+                                '<label class="eq-form-label">' + (eqCartData.texts?.firstName || 'First Name') + '</label>' +
                                 '<input type="text" class="eq-form-input" id="eq-new-lead-name">' +
                             '</div>' +
                             '<div class="eq-form-field">' +
-                                '<label class="eq-form-label">Apellido</label>' +
+                                '<label class="eq-form-label">' + (eqCartData.texts?.lastName || 'Last Name') + '</label>' +
                                 '<input type="text" class="eq-form-input" id="eq-new-lead-apellido">' +
                             '</div>' +
                         '</div>' +
@@ -649,7 +702,7 @@ formatFriendlyDate: function(date) {
             '<div class="eq-modal-footer">' +
                 '<button type="button" class="button" id="eq-lead-cancel">Cancelar</button>' +
                 '<button type="button" class="button button-primary" id="eq-lead-create">Crear Lead</button>' +
-                '<button type="button" class="button button-primary" id="eq-lead-select">Seleccionar</button>' +
+                '<button type="button" class="button button-primary" id="eq-lead-select">' + (eqCartData.texts?.select || 'Select') + '</button>' +
             '</div>' +
         '</div>' +
                 
@@ -657,7 +710,7 @@ formatFriendlyDate: function(date) {
 '<div class="eq-modal-backdrop" id="eq-event-modal-backdrop"></div>' +
 '<div class="eq-modal" id="eq-event-modal">' +
     '<div class="eq-modal-header">' +
-        '<h3 class="eq-modal-title">Seleccionar Evento</h3>' +
+        '<h3 class="eq-modal-title">' + (eqCartData.texts?.selectEvent || 'Select Event') + '</h3>' +
         '<button type="button" class="eq-modal-close">&times;</button>' +
     '</div>' +
     '<div class="eq-modal-body">' +
@@ -729,7 +782,7 @@ modalsHtml += '</select>' +
     '<div class="eq-modal-footer">' +
         '<button type="button" class="button" id="eq-event-cancel">Cancelar</button>' +
         '<button type="button" class="button button-primary" id="eq-event-create">Crear Evento</button>' +
-        '<button type="button" class="button button-primary" id="eq-event-select">Seleccionar</button>' +
+        '<button type="button" class="button button-primary" id="eq-event-select">' + (eqCartData.texts?.select || 'Select') + '</button>' +
     '</div>' +
 '</div>';
                 
@@ -852,6 +905,32 @@ if (typeof flatpickr !== 'undefined') {
                     calendar.style.visibility = "visible";
                 }
             }, 100);
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            // Validar si la fecha seleccionada es pasada
+            if (selectedDates.length > 0) {
+                var selectedDate = selectedDates[0];
+                var today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (selectedDate < today) {
+                    // Mostrar warning para fechas pasadas
+                    var warning = document.getElementById('eq-past-date-warning');
+                    if (!warning) {
+                        warning = document.createElement('div');
+                        warning.id = 'eq-past-date-warning';
+                        warning.style.cssText = 'color: #d63384; font-size: 12px; margin-top: 5px; font-weight: bold;';
+                        warning.textContent = (eqCartData.texts?.pastDateWarning || 'Warning: This date is in the past. Please ensure all information is completed.');
+                        instance.input.parentNode.appendChild(warning);
+                    }
+                } else {
+                    // Remover warning si existe
+                    var warning = document.getElementById('eq-past-date-warning');
+                    if (warning) {
+                        warning.remove();
+                    }
+                }
+            }
         }
     });
 }

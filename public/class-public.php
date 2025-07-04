@@ -108,8 +108,28 @@ class Event_Quote_Cart_Public {
                     'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
 					'viewQuotes' => get_locale() === 'es_ES' ? 'Ver Cotizaciones' : 'View Quotes',
 					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote'
-
-
+                ),
+                'texts' => array(
+                    'showContextPanel' => __('Show context panel', 'event-quote-cart'),
+                    'quotingFor' => __('Quoting for', 'event-quote-cart'),
+                    'lead' => __('Lead', 'event-quote-cart'),
+                    'event' => __('Event', 'event-quote-cart'),
+                    'changeLead' => __('Change Lead', 'event-quote-cart'),
+                    'changeEvent' => __('Change Event', 'event-quote-cart'),
+                    'endSession' => __('End Session', 'event-quote-cart'),
+                    'minimize' => __('Minimize', 'event-quote-cart'),
+                    'quote' => __('Quote', 'event-quote-cart'),
+                    'selectLead' => __('Select Lead', 'event-quote-cart'),
+                    'selectEvent' => __('Select Event', 'event-quote-cart'),
+                    'searchLead' => __('Search lead...', 'event-quote-cart'),
+                    'createNewLead' => __('Create new lead', 'event-quote-cart'),
+                    'companyName' => __('Company Name', 'event-quote-cart'),
+                    'firstName' => __('First Name', 'event-quote-cart'),
+                    'lastName' => __('Last Name', 'event-quote-cart'),
+                    'select' => __('Select', 'event-quote-cart'),
+                    'cancel' => __('Cancel', 'event-quote-cart'),
+                    'create' => __('Create', 'event-quote-cart'),
+                    'pastDateWarning' => __('Warning: This date is in the past. Please ensure all information is completed.', 'event-quote-cart')
                 ),
 				'isPrivilegedUser' => current_user_can('administrator') || current_user_can('ejecutivo_de_ventas'),
        				 'hasContextPanel' => $this->is_context_panel_active(),
@@ -638,6 +658,10 @@ public function search_leads() {
     }
     
     $term = isset($_POST['term']) ? sanitize_text_field($_POST['term']) : '';
+    $user_id = get_current_user_id();
+    $user = wp_get_current_user();
+    $is_admin = in_array('administrator', $user->roles);
+    $is_sales = in_array('ejecutivo_de_ventas', $user->roles);
     
     require_once WP_PLUGIN_DIR . '/leads-management/includes/class-leads-query.php';
     $leads_query = new LTB_Leads_Query();
@@ -645,6 +669,11 @@ public function search_leads() {
     $args = array();
     if ($term) {
         $args['search'] = $term;
+    }
+    
+    // Para ejecutivos de ventas, solo mostrar leads asignados a ellos
+    if ($is_sales && !$is_admin) {
+        $args['usuario_asignado'] = $user_id;
     }
     
     try {
@@ -715,12 +744,30 @@ public function get_lead_events() {
     }
     
     $lead_id = isset($_POST['lead_id']) ? intval($_POST['lead_id']) : 0;
+    $user_id = get_current_user_id();
+    $user = wp_get_current_user();
+    $is_admin = in_array('administrator', $user->roles);
+    $is_sales = in_array('ejecutivo_de_ventas', $user->roles);
     
     if (!$lead_id) {
         wp_send_json_error('ID de lead inválido');
     }
     
     global $wpdb;
+    
+    // Verificar que el usuario tenga acceso al lead
+    if ($is_sales && !$is_admin) {
+        $lead_access = $wpdb->get_var($wpdb->prepare(
+            "SELECT _ID FROM {$wpdb->prefix}jet_cct_leads 
+            WHERE _ID = %d AND usuario_asignado = %d",
+            $lead_id, $user_id
+        ));
+        
+        if (!$lead_access) {
+            wp_send_json_error('No tienes acceso a este lead');
+        }
+    }
+    
     $table_name = $wpdb->prefix . 'jet_cct_eventos';
     
    // Obtener eventos del lead
