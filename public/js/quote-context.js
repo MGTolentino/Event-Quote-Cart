@@ -331,7 +331,7 @@ checkServerContext: function(callback) {
         url: eqCartData.ajaxurl,
         type: 'POST',
         dataType: 'json',
-        timeout: 10000, // 10 segundos timeout
+        timeout: 3000, // 3 segundos timeout
         data: {
             action: 'eq_check_context_status',
             nonce: eqCartData.nonce,
@@ -460,6 +460,24 @@ checkServerContext: function(callback) {
     }
 
 },
+
+    renderLoadingPanel: function() {
+        // Eliminar panel anterior si existe
+        $('.eq-context-panel').remove();
+        
+        // Crear HTML del panel con estado loading
+        var loadingPanelHtml = 
+            '<div class="eq-context-panel eq-loading-state">' +
+                '<div class="eq-context-panel-info">' +
+                    '<div class="eq-loading-spinner"></div>' +
+                    '<div class="eq-loading-text">' + (eqCartData.texts?.verifying || 'Verificando contexto...') + '</div>' +
+                '</div>' +
+            '</div>';
+        
+        // Añadir panel al body
+        $('body').prepend(loadingPanelHtml);
+        $('body').addClass('has-eq-context-panel');
+    },
 		
 		renderToggleButton: function() {
     // Si ya existe el botón, no hacer nada
@@ -489,55 +507,78 @@ checkServerContext: function(callback) {
     localStorage.removeItem('eq_context_session_force_clear');
     localStorage.removeItem('eq_context_session_ended');
     
-    // Verificar si hay contexto en el servidor para restaurar
-    this.checkServerContext(function(response) {
-        if (response && response.success && response.data && response.data.isActive) {
-            // Hay contexto en servidor, restaurar datos
-            self.data.isActive = true;
-            self.data.leadId = response.data.leadId;
-            self.data.leadName = response.data.leadName;
-            self.data.eventId = response.data.eventId;
-            self.data.eventDate = response.data.eventDate;
-            self.data.eventType = response.data.eventType;
-            self.data.sessionToken = response.data.sessionToken;
-            self.data.isMinimized = false;
-            
-            // Guardar estado restaurado
-            self.saveToStorage();
-            
-            // Renderizar panel con datos
-            self.renderPanel();
-            
-            // Reinicializar eventos
-            self.initEventListeners();
-            
-            // Eliminar botón toggle solo después de éxito
-            $('.eq-context-toggle-button').remove();
-            
-        } else {
-            // No hay contexto, activar panel vacío para seleccionar lead/evento
-            self.data.isActive = true;
-            self.data.isMinimized = false;
-            self.saveToStorage();
-            
-            // Renderizar panel vacío
-            self.renderPanel();
-            
-            // ASEGURAR que el panel sea visible removiendo clases ocultas
-            $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
-            
-            // Reinicializar eventos
-            self.initEventListeners();
-            
-            // Eliminar botón toggle solo después de éxito
-            $('.eq-context-toggle-button').remove();
-            
-            // Abrir modal de selección de lead automáticamente
-            setTimeout(function() {
-                self.openLeadModal();
-            }, 300);
-        }
-    });
+    // MOSTRAR PANEL INMEDIATAMENTE con estado loading
+    self.data.isActive = true;
+    self.data.isMinimized = false;
+    self.renderLoadingPanel();
+    
+    // Verificar si hay datos locales para fallback rápido
+    self.loadFromStorage();
+    var hasLocalData = self.data.leadId && self.data.eventId;
+    
+    if (hasLocalData) {
+        // Si hay datos locales, mostrar panel inmediatamente y verificar en background
+        self.renderPanel();
+        self.initEventListeners();
+        $('.eq-context-toggle-button').remove();
+        
+        // Verificar servidor en background para actualizar si es necesario
+        this.checkServerContext(function(response) {
+            if (response && response.success && response.data && response.data.isActive) {
+                // Actualizar con datos del servidor si son diferentes
+                if (response.data.leadId !== self.data.leadId || response.data.eventId !== self.data.eventId) {
+                    self.data.leadId = response.data.leadId;
+                    self.data.leadName = response.data.leadName;
+                    self.data.eventId = response.data.eventId;
+                    self.data.eventDate = response.data.eventDate;
+                    self.data.eventType = response.data.eventType;
+                    self.data.sessionToken = response.data.sessionToken;
+                    self.saveToStorage();
+                    self.renderPanel();
+                }
+            }
+        });
+    } else {
+        // No hay datos locales, verificar servidor
+        this.checkServerContext(function(response) {
+            if (response && response.success && response.data && response.data.isActive) {
+                // Hay contexto en servidor, restaurar datos
+                self.data.leadId = response.data.leadId;
+                self.data.leadName = response.data.leadName;
+                self.data.eventId = response.data.eventId;
+                self.data.eventDate = response.data.eventDate;
+                self.data.eventType = response.data.eventType;
+                self.data.sessionToken = response.data.sessionToken;
+                
+                // Guardar estado restaurado
+                self.saveToStorage();
+                
+                // Renderizar panel con datos
+                self.renderPanel();
+                
+                // Reinicializar eventos
+                self.initEventListeners();
+                
+                // Eliminar botón toggle solo después de éxito
+                $('.eq-context-toggle-button').remove();
+                
+            } else {
+                // No hay contexto, mostrar panel vacío para seleccionar lead/evento
+                self.renderPanel();
+                
+                // Reinicializar eventos
+                self.initEventListeners();
+                
+                // Eliminar botón toggle solo después de éxito
+                $('.eq-context-toggle-button').remove();
+                
+                // Abrir modal de selección de lead automáticamente
+                setTimeout(function() {
+                    self.openLeadModal();
+                }, 300);
+            }
+        });
+    }
 },
 togglePanel: function() {
     var self = this;

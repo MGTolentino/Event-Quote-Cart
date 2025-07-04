@@ -324,6 +324,38 @@ body.has-eq-context-panel {
     display: none !important;
 }
 
+/* Loading state styles */
+.eq-context-panel.eq-loading-state {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eq-context-panel.eq-loading-state .eq-context-panel-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.eq-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e9ecef;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* Mejoras de diseño para modales */
 .eq-modal {
     width: 90%;
