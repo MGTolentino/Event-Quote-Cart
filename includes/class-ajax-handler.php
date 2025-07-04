@@ -1827,13 +1827,25 @@ public function clear_context_meta() {
 }
 	
 	public function check_context_status() {
+    // Primero, cerrar cualquier output buffer que pueda estar interfiriendo
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    
     error_log('DEBUG check_context_status: START - User ID: ' . get_current_user_id());
+    
+    // Verificar si session_start ya fue llamado
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+        error_log('DEBUG check_context_status: Session started');
+    }
     
     try {
         check_ajax_referer('eq_cart_public_nonce', 'nonce');
         error_log('DEBUG check_context_status: Nonce verification passed');
     } catch (Exception $e) {
         error_log('DEBUG check_context_status: Nonce verification failed: ' . $e->getMessage());
+        session_write_close();
         wp_send_json_error('Nonce verification failed');
         return;
     }
@@ -1995,8 +2007,32 @@ public function clear_context_meta() {
         error_log('DEBUG check_context_status: Session closed to release lock');
     }
     
-    wp_send_json_success($response);
-    error_log('DEBUG check_context_status: Response sent successfully');
+    // Limpiar cualquier output buffer antes de enviar
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    
+    // Enviar headers manualmente para evitar problemas
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        header('X-Content-Type-Options: nosniff');
+    }
+    
+    // Construir respuesta manualmente para debug
+    $json_response = json_encode(array(
+        'success' => true,
+        'data' => $response
+    ));
+    
+    error_log('DEBUG check_context_status: JSON response: ' . $json_response);
+    
+    echo $json_response;
+    
+    // Usar die() en lugar de wp_die() para evitar interferencias
+    die();
+    
+    // wp_send_json_success($response);
+    // error_log('DEBUG check_context_status: Response sent successfully');
 }
 	
 	/**
