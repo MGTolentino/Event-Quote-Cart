@@ -249,7 +249,6 @@ public function init() {
     add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
 
     add_action('wp_footer', array($this, 'render_cart_sidebar'));
-    add_action('wp_footer', array($this, 'render_header_cart'));
     add_action('wp_footer', array($this, 'render_context_panel')); 
     add_action('eq_cart_add_quote_button', array($this, 'render_quote_button'));
 	

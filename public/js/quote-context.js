@@ -488,9 +488,6 @@ checkServerContext: function(callback) {
     localStorage.removeItem('eq_context_session_force_clear');
     localStorage.removeItem('eq_context_session_ended');
     
-    // Eliminar botón toggle
-    $('.eq-context-toggle-button').remove();
-    
     // Verificar si hay contexto en el servidor para restaurar
     this.checkServerContext(function(response) {
         if (response && response.success && response.data && response.data.isActive) {
@@ -513,6 +510,9 @@ checkServerContext: function(callback) {
             // Reinicializar eventos
             self.initEventListeners();
             
+            // Eliminar botón toggle solo después de éxito
+            $('.eq-context-toggle-button').remove();
+            
         } else {
             // No hay contexto, activar panel vacío para seleccionar lead/evento
             self.data.isActive = true;
@@ -524,6 +524,9 @@ checkServerContext: function(callback) {
             
             // Reinicializar eventos
             self.initEventListeners();
+            
+            // Eliminar botón toggle solo después de éxito
+            $('.eq-context-toggle-button').remove();
             
             // Abrir modal de selección de lead automáticamente
             setTimeout(function() {
