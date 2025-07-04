@@ -452,7 +452,9 @@ public function update_cart_event() {
             }
             
             // Convertir fecha a timestamp
+            error_log("DEBUG: create_event - Fecha recibida: " . $event_date);
             $date_timestamp = strtotime($event_date);
+            error_log("DEBUG: create_event - Timestamp convertido: " . $date_timestamp);
             
             // Crear nuevo evento
             $result = $wpdb->insert(
@@ -2301,7 +2303,9 @@ public function update_event_date() {
         }
         
         // Convertir fecha a timestamp si es necesario
+        error_log("DEBUG: update_event_date - Fecha recibida: " . $new_date);
         $date_timestamp = strtotime($new_date);
+        error_log("DEBUG: update_event_date - Timestamp convertido: " . $date_timestamp);
         
         // Actualizar fecha del evento
         $updated = $wpdb->update(

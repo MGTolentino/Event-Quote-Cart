@@ -1031,6 +1031,8 @@ modalsHtml += '</select>' +
                 var date = $('#eq-new-event-date').val();
                 var guests = $('#eq-new-event-guests').val();
                 
+                console.log('DEBUG: Creando evento con fecha:', date);
+                
                 if (!type || !date) {
                     alert('Tipo y fecha son obligatorios');
                     return;
@@ -1676,6 +1678,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
      createEvent: function(type, date, guests) {
     var self = this;
     
+    console.log('DEBUG: createEvent llamada con fecha:', date);
+    
     if (!this.data.leadId) {
         alert('Primero debe seleccionar un lead');
         return;
@@ -1690,6 +1694,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
     var categoria = $('#eq-new-event-categoria').val() || '';
     var direccion = $('#eq-new-event-direccion').val() || '';
     var comentarios = $('#eq-new-event-comentarios').val() || '';
+    
+    console.log('DEBUG: Enviando AJAX con fecha:', date);
     
     $.ajax({
         url: eqCartData.ajaxurl,

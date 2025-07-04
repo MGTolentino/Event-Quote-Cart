@@ -791,8 +791,13 @@ $eventos = $wpdb->get_results($wpdb->prepare(
 
 // Formatear fechas para cada evento
 foreach ($eventos as $evento) {
+    error_log("DEBUG: get_lead_events - Fecha raw de BD: " . $evento->fecha_de_evento);
     if (is_numeric($evento->fecha_de_evento)) {
+        error_log("DEBUG: get_lead_events - Fecha es numérica, convirtiendo...");
         $evento->fecha_formateada = date_i18n(get_option('date_format'), $evento->fecha_de_evento);
+        error_log("DEBUG: get_lead_events - Fecha formateada: " . $evento->fecha_formateada);
+    } else {
+        error_log("DEBUG: get_lead_events - Fecha NO es numérica");
     }
 }
     
@@ -827,8 +832,11 @@ public function create_event() {
     }
     
     // IMPORTANTE: Convertir fecha a timestamp
+    error_log("DEBUG: create_event_public - Fecha recibida: " . $fecha_evento);
     $fecha_timestamp = strtotime($fecha_evento);
+    error_log("DEBUG: create_event_public - Timestamp convertido: " . $fecha_timestamp);
     if ($fecha_timestamp === false) {
+        error_log("DEBUG: create_event_public - strtotime falló, usando timestamp actual");
         $fecha_timestamp = time(); // Usar timestamp actual como fallback
     }
     
