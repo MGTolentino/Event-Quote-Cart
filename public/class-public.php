@@ -36,7 +36,7 @@ class Event_Quote_Cart_Public {
         $this->plugin_name . '-context-panel',
         EQ_CART_PLUGIN_URL . 'public/css/quote-context.css',
         array(),
-        $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/css/quote-context.css')
+        $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/quote-context.css')
     );
 		
 		wp_enqueue_style(
@@ -50,7 +50,7 @@ class Event_Quote_Cart_Public {
                 $this->plugin_name . '-stripe',
                 EQ_CART_PLUGIN_URL . 'public/css/stripe-integration.css',
                 array(),
-                $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/css/stripe-integration.css')
+                $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/stripe-integration.css')
             );
         }
 		
@@ -70,7 +70,7 @@ class Event_Quote_Cart_Public {
             $this->plugin_name,
             EQ_CART_PLUGIN_URL . 'public/js/quote-cart.js',
             array('jquery', 'flatpickr'),
-            $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-cart.js'),
+            $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/quote-cart.js'),
             true
         );
 		
@@ -78,7 +78,7 @@ class Event_Quote_Cart_Public {
     'eq-cart-validation-js',
     EQ_CART_PLUGIN_URL . 'public/js/quote-cart-validation.js',
     array('jquery'),
-    $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-cart-validation.js'),
+    $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/quote-cart-validation.js'),
     true
 );
 		
@@ -86,7 +86,7 @@ class Event_Quote_Cart_Public {
         $this->plugin_name . '-context-panel',
         EQ_CART_PLUGIN_URL . 'public/js/quote-context.js',
         array('jquery', 'flatpickr'),
-        $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-context.js'),
+        $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/quote-context.js'),
         true
     );
 
@@ -181,7 +181,7 @@ wp_localize_script(
 					$this->plugin_name . '-single',
 					EQ_CART_PLUGIN_URL . 'public/js/single-integration.js',
 					array('jquery', 'flatpickr'),
-					$this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/single-integration.js'),
+					$this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/single-integration.js'),
 					true
 				);
 
@@ -216,7 +216,7 @@ wp_localize_script(
             $this->plugin_name . '-stripe',
             EQ_CART_PLUGIN_URL . 'public/js/stripe-integration.js',
             array('jquery', 'stripe-js'),
-            $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/stripe-integration.js'),
+            $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/stripe-integration.js'),
             true
         );
         
