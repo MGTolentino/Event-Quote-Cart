@@ -74,10 +74,14 @@ init: function() {
     
     // Verificar con el servidor si hay un contexto activo con timeout mejorado
     this.checkServerContextWithErrorHandling(function(success, response) {
+        // Debug: log what we're getting from server
+        console.log('DEBUG: Server response:', response);
+        
         if (success && response && response.success) {
 
             // Si el servidor dice que hay un contexto activo
             if (response.data && response.data.isActive) {
+                console.log('DEBUG: Active session found with data:', response.data);
                 
                 // Cargar datos locales para comparar
                 var localData = JSON.parse(sessionStorage.getItem('eqQuoteContext') || '{}');
@@ -110,6 +114,9 @@ init: function() {
                     }
                 }
                 
+                console.log('DEBUG: useServerData decision:', useServerData);
+                console.log('DEBUG: localData:', localData);
+                
                 if (useServerData) {
                     // Actualizar datos locales con los del servidor
                     self.data.isActive = true;
@@ -119,6 +126,7 @@ init: function() {
                     self.data.eventDate = response.data.eventDate;
                     self.data.eventType = response.data.eventType;
                     if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
+                    console.log('DEBUG: Using server data. Final data:', self.data);
                 } else {
                     // Usar datos locales más recientes
                     self.data.isActive = true;
@@ -128,6 +136,7 @@ init: function() {
                     self.data.eventDate = localData.eventDate;
                     self.data.eventType = localData.eventType;
                     if (localData.sessionToken) self.data.sessionToken = localData.sessionToken;
+                    console.log('DEBUG: Using local data. Final data:', self.data);
                 }
                 
                 // Guardar en sessionStorage
@@ -137,6 +146,7 @@ init: function() {
                 $('.eq-context-panel').remove();
                 
                 // Renderizar panel completamente nuevo con datos actualizados
+                console.log('DEBUG: About to render panel with data:', self.data);
                 self.renderPanel();
             } else {
                 
@@ -169,9 +179,11 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
+            console.log('DEBUG: Server timeout/error. success:', success, 'response:', response);
             
             // Server timeout or error - mantener datos locales si existen
             self.loadFromStorage();
+            console.log('DEBUG: After loadFromStorage, data is:', self.data);
             
             if (self.data.isActive && self.data.leadId && self.data.eventId) {
                 // Tenemos datos válidos localmente, mantener sesión activa
