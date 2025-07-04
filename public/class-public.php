@@ -36,13 +36,13 @@ class Event_Quote_Cart_Public {
         $this->plugin_name . '-context-panel',
         EQ_CART_PLUGIN_URL . 'public/css/quote-context.css',
         array(),
-        $this->version
+        $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/css/quote-context.css')
     );
 		
 		wp_enqueue_style(
 			'eq-notifications', 
 			plugin_dir_url(__FILE__) . 'css/notifications.css', 
-			array(), $this->version, 'all'
+			array(), $this->get_file_version(plugin_dir_path(__FILE__) . 'css/notifications.css'), 'all'
 		);
 
         if (get_option('eq_stripe_enabled') === 'yes') {
@@ -50,7 +50,7 @@ class Event_Quote_Cart_Public {
                 $this->plugin_name . '-stripe',
                 EQ_CART_PLUGIN_URL . 'public/css/stripe-integration.css',
                 array(),
-                $this->version
+                $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/css/stripe-integration.css')
             );
         }
 		
@@ -70,7 +70,7 @@ class Event_Quote_Cart_Public {
             $this->plugin_name,
             EQ_CART_PLUGIN_URL . 'public/js/quote-cart.js',
             array('jquery', 'flatpickr'),
-            $this->version,
+            $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-cart.js'),
             true
         );
 		
@@ -78,7 +78,7 @@ class Event_Quote_Cart_Public {
     'eq-cart-validation-js',
     EQ_CART_PLUGIN_URL . 'public/js/quote-cart-validation.js',
     array('jquery'),
-    $this->version,
+    $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-cart-validation.js'),
     true
 );
 		
@@ -86,7 +86,7 @@ class Event_Quote_Cart_Public {
         $this->plugin_name . '-context-panel',
         EQ_CART_PLUGIN_URL . 'public/js/quote-context.js',
         array('jquery', 'flatpickr'),
-        $this->version,
+        $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/quote-context.js'),
         true
     );
 
@@ -181,7 +181,7 @@ wp_localize_script(
 					$this->plugin_name . '-single',
 					EQ_CART_PLUGIN_URL . 'public/js/single-integration.js',
 					array('jquery', 'flatpickr'),
-					$this->version,
+					$this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/single-integration.js'),
 					true
 				);
 
@@ -216,7 +216,7 @@ wp_localize_script(
             $this->plugin_name . '-stripe',
             EQ_CART_PLUGIN_URL . 'public/js/stripe-integration.js',
             array('jquery', 'stripe-js'),
-            $this->version,
+            $this->get_file_version(EQ_CART_PLUGIN_PATH . 'public/js/stripe-integration.js'),
             true
         );
         
@@ -772,7 +772,7 @@ public function get_lead_events() {
     
     $table_name = $wpdb->prefix . 'jet_cct_eventos';
     
-   // Obtener eventos del lead (solo futuros o recientes)
+   // Obtener eventos del lead (solo futuros o recientes válidos)
 $eventos = $wpdb->get_results($wpdb->prepare(
     "SELECT 
         _ID as evento_id,
@@ -784,6 +784,8 @@ $eventos = $wpdb->get_results($wpdb->prepare(
     FROM $table_name
     WHERE lead_id = %d
     AND cct_status = 'publish'
+    AND fecha_de_evento > 0
+    AND fecha_de_evento IS NOT NULL
     AND (fecha_de_evento >= UNIX_TIMESTAMP(CURDATE()) OR fecha_de_evento >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 30 DAY)))
     ORDER BY fecha_de_evento DESC",
     $lead_id
@@ -919,5 +921,14 @@ public function create_event() {
         return $items;
     }
 
+    /**
+     * Get file version based on modification time for cache busting
+     */
+    private function get_file_version($file_path) {
+        if (file_exists($file_path)) {
+            return $this->version . '.' . filemtime($file_path);
+        }
+        return $this->version;
+    }
 	
 }

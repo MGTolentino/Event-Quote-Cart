@@ -41,7 +41,16 @@ if ($show_context_banner):
         <span class="quote-context-event">
             <?php echo esc_html($context['event']->tipo_de_evento); ?>
             <?php if (!empty($context['event']->fecha_de_evento)): ?>
-                - <?php echo esc_html(date('Y-m-d', strtotime($context['event']->fecha_de_evento))); ?>
+                - <?php 
+                    if (is_numeric($context['event']->fecha_de_evento)) {
+                        echo esc_html(date('Y-m-d', intval($context['event']->fecha_de_evento)));
+                    } else {
+                        $timestamp = strtotime($context['event']->fecha_de_evento);
+                        if ($timestamp !== false && $timestamp > 0) {
+                            echo esc_html(date('Y-m-d', $timestamp));
+                        }
+                    }
+                ?>
             <?php endif; ?>
         </span>
     </div>

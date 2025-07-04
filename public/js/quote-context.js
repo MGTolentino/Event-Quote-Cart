@@ -80,12 +80,31 @@ init: function() {
                 var localData = JSON.parse(sessionStorage.getItem('eqQuoteContext') || '{}');
                 var useServerData = true;
                 
-                // Si hay datos locales más recientes, usar esos en lugar del servidor
-                if (localData.lastUpdate && response.data.lastUpdate) {
-                    useServerData = response.data.lastUpdate >= localData.lastUpdate;
-                } else if (localData.leadId && localData.eventId) {
-                    // Si hay datos locales válidos pero servidor no tiene timestamp, usar locales
-                    useServerData = false;
+                // Algoritmo robusto para evitar race conditions
+                var localTimestamp = localData.lastUpdate || 0;
+                var serverTimestamp = response.data.lastUpdate || 0;
+                var currentTime = Date.now();
+                
+                // Verificar validez de timestamps (no futuro, no muy viejo)
+                var localValid = localTimestamp > 0 && localTimestamp <= currentTime && (currentTime - localTimestamp) < 3600000; // < 1 hora
+                var serverValid = serverTimestamp > 0 && serverTimestamp <= currentTime && (currentTime - serverTimestamp) < 3600000; // < 1 hora
+                
+                if (localValid && serverValid) {
+                    // Ambos válidos: usar el más reciente con margen de tolerancia
+                    useServerData = serverTimestamp > (localTimestamp + 1000); // 1 segundo de tolerancia
+                } else if (localValid && !serverValid) {
+                    // Solo local válido: usar local si es reciente
+                    useServerData = (currentTime - localTimestamp) > 300000; // 5 minutos
+                } else if (!localValid && serverValid) {
+                    // Solo servidor válido: usar servidor
+                    useServerData = true;
+                } else {
+                    // Ninguno válido: usar servidor si tiene datos, sino local
+                    useServerData = response.data.leadId && response.data.eventId;
+                    if (!useServerData && !localData.leadId) {
+                        // Ninguno tiene datos válidos
+                        useServerData = false;
+                    }
                 }
                 
                 if (useServerData) {
@@ -113,12 +132,21 @@ init: function() {
                 
                 // Si el panel ya existe, actualizarlo y mostrarlo
                 if ($('.eq-context-panel').length > 0) {
-                    // Actualizar contenido
-                    $('#eq-context-lead-name').text(self.data.leadName || 'No seleccionado');
-                    $('#eq-context-event-info').text(self.formatEventInfo());
+                    // Verificar elementos antes de actualizar
+                    var leadEl = $('#eq-context-lead-name');
+                    var eventEl = $('#eq-context-event-info');
                     
-                    // Mostrar el panel (quitar clase de carga y eliminar display:none inline)
-                    $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
+                    if (leadEl.length > 0 && eventEl.length > 0) {
+                        // Actualizar contenido
+                        leadEl.text(self.data.leadName || 'No seleccionado');
+                        eventEl.text(self.formatEventInfo());
+                        
+                        // Mostrar el panel
+                        $('.eq-context-panel').removeClass('eq-loading').removeClass('eq-hidden');
+                    } else {
+                        // Elementos dañados, recrear panel
+                        self.renderPanel();
+                    }
                 } else {
                     // Renderizar nuevo panel
                     self.renderPanel();
@@ -197,10 +225,33 @@ initTabsSynchronization: function() {
     
     // Escuchar cambios en localStorage de otras pestañas
     window.addEventListener('storage', function(e) {
-        // Ignorar eventos que no son de nuestro contexto
-        if (e.key !== 'eq_context_session_ended') {
-            return;
+        // Manejar diferentes tipos de eventos de sincronización
+        if (e.key === 'eq_context_session_ended') {
+            // Manejo de sesión finalizada
+            self.data.isActive = false;
+            self.clearLocalState();
+            $('.eq-context-panel').remove();
+            $('body').removeClass('has-eq-context-panel');
+            self.renderToggleButton();
+            self.showNotification('Sesión finalizada en otra pestaña', 'info');
+        } else if (e.key === 'eq_context_data_sync') {
+            // Sincronización de datos del contexto entre pestañas
+            try {
+                var syncData = JSON.parse(e.newValue || '{}');
+                if (syncData.leadId && syncData.eventId && syncData.lastUpdate) {
+                    // Verificar si los datos son más recientes
+                    if (!self.data.lastUpdate || syncData.lastUpdate > self.data.lastUpdate) {
+                        self.data = syncData;
+                        self.saveToStorage();
+                        self.renderPanel();
+                        console.log('Context synchronized from another tab');
+                    }
+                }
+            } catch (e) {
+                console.error('Error synchronizing context from another tab:', e);
+            }
         }
+    });
         
         
         // Limpiar estado local sin recargar
@@ -425,6 +476,13 @@ checkServerContext: function(callback) {
                 // Agregar timestamp de última actualización
                 this.data.lastUpdate = Date.now();
                 sessionStorage.setItem('eqQuoteContext', JSON.stringify(this.data));
+                
+                // Sincronizar con otras pestañas usando localStorage temporal
+                localStorage.setItem('eq_context_data_sync', JSON.stringify(this.data));
+                // Eliminar inmediatamente para evitar acumulación
+                setTimeout(function() {
+                    localStorage.removeItem('eq_context_data_sync');
+                }, 100);
             } catch (e) {
                 console.error('Error saving context to sessionStorage', e);
             }
@@ -435,45 +493,60 @@ checkServerContext: function(callback) {
     
     // Si ya existe el panel, actualizar información y no recrear
     if ($('.eq-context-panel').length > 0) {
-        console.log('[EQ Context] Panel exists, updating and ensuring visibility');
-        $('#eq-context-lead-name').text(this.data.leadName || 'No seleccionado');
-        $('#eq-context-event-info').text(this.formatEventInfo());
+        // Verificar que los elementos críticos existen antes de actualizar
+        var leadNameEl = $('#eq-context-lead-name');
+        var eventInfoEl = $('#eq-context-event-info');
         
-        // FORZAR visibilidad del panel con múltiples métodos
-        $('.eq-context-panel')
-            .removeClass('eq-loading')
-            .removeClass('eq-hidden')
-            .show()
-            .css('display', '')
-            .css('visibility', 'visible');
-            
-        return;
+        if (leadNameEl.length > 0) {
+            leadNameEl.text(this.data.leadName || 'No seleccionado');
+        }
+        
+        if (eventInfoEl.length > 0) {
+            eventInfoEl.text(this.formatEventInfo());
+        }
+        
+        // Si elementos críticos no existen, forzar recreación
+        if (leadNameEl.length === 0 || eventInfoEl.length === 0) {
+            $('.eq-context-panel').remove();
+            // Continuar con creación del panel nuevo
+        } else {
+            // FORZAR visibilidad del panel con múltiples métodos
+            $('.eq-context-panel')
+                .removeClass('eq-loading')
+                .removeClass('eq-hidden')
+                .show()
+                .css('display', '')
+                .css('visibility', 'visible');
+                
+            return;
+        }
     }
     
     
     
-    // Crear HTML del panel
+    // Crear HTML del panel usando traducciones
+    var texts = eqCartData.texts || {};
     var panelHtml = 
         '<div class="eq-context-panel">' +
             '<div class="eq-context-panel-info">' +
                 '<div class="eq-context-panel-section">' +
-                    '<span class="eq-context-panel-label">Lead:</span>' +
+                    '<span class="eq-context-panel-label">' + (texts.lead || 'Lead') + ':</span>' +
                     '<span class="eq-context-panel-value" id="eq-context-lead-name">' + 
-                        (this.data.leadName || 'No seleccionado') + 
+                        (this.data.leadName || texts.notSelected || 'No seleccionado') + 
                     '</span>' +
                 '</div>' +
                 '<div class="eq-context-panel-section">' +
-                    '<span class="eq-context-panel-label">Evento:</span>' +
+                    '<span class="eq-context-panel-label">' + (texts.event || 'Evento') + ':</span>' +
                     '<span class="eq-context-panel-value" id="eq-context-event-info">' + 
                         this.formatEventInfo() + 
                     '</span>' +
                 '</div>' +
             '</div>' +
             '<div class="eq-context-panel-actions">' +
-                '<button type="button" class="eq-context-panel-button change-lead">Seleccionar Lead</button>' +
-                '<button type="button" class="eq-context-panel-button change-event' + (this.data.leadId ? '' : ' disabled') + '">Seleccionar Evento</button>' +
-                '<button type="button" class="eq-context-panel-button end-session' + (this.data.isActive ? '' : ' disabled') + '">Finalizar Sesión</button>' +
-                '<button type="button" class="eq-context-panel-button toggle-panel">Minimizar</button>' +
+                '<button type="button" class="eq-context-panel-button change-lead">' + (texts.changeLead || 'Seleccionar Lead') + '</button>' +
+                '<button type="button" class="eq-context-panel-button change-event' + (this.data.leadId ? '' : ' disabled') + '">' + (texts.changeEvent || 'Seleccionar Evento') + '</button>' +
+                '<button type="button" class="eq-context-panel-button end-session' + (this.data.isActive ? '' : ' disabled') + '">' + (texts.endSession || 'Finalizar Sesión') + '</button>' +
+                '<button type="button" class="eq-context-panel-button toggle-panel">' + (texts.minimize || 'Minimizar') + '</button>' +
             '</div>' +
         '</div>';
 	  
@@ -736,7 +809,7 @@ formatFriendlyDate: function(date) {
 		   
 
     if (!this.data.eventId) {
-        return 'No seleccionado';
+        return eqCartData.texts?.notSelected || 'No seleccionado';
     }
     
     var info = '';
