@@ -477,6 +477,7 @@ public function update_cart_event() {
             }
             
             // Crear nuevo evento
+            error_log("DEBUG: create_event - Insertando en BD con timestamp: " . $date_timestamp);
             $result = $wpdb->insert(
                 $wpdb->prefix . 'jet_cct_eventos',
                 array(
@@ -492,11 +493,27 @@ public function update_cart_event() {
                 array('%d', '%d', '%s', '%d', '%s', '%s', '%s', '%s')
             );
             
+            error_log("DEBUG: create_event - Query ejecutada: " . $wpdb->last_query);
+            error_log("DEBUG: create_event - Resultado insert: " . ($result ? 'SUCCESS' : 'FAIL'));
+            if (!$result) {
+                error_log("DEBUG: create_event - Error BD: " . $wpdb->last_error);
+            }
+            
             if (!$result) {
                 throw new Exception($wpdb->last_error);
             }
             
             $event_id = $wpdb->insert_id;
+            error_log("DEBUG: create_event - Evento creado con ID: " . $event_id);
+            
+            // Verificar qué se guardó realmente en la BD
+            $saved_event = $wpdb->get_row($wpdb->prepare(
+                "SELECT fecha_de_evento FROM {$wpdb->prefix}jet_cct_eventos WHERE _ID = %d",
+                $event_id
+            ));
+            if ($saved_event) {
+                error_log("DEBUG: create_event - Fecha guardada en BD: " . $saved_event->fecha_de_evento);
+            }
         }
         
         // Actualizar carrito con el nuevo evento
@@ -2324,6 +2341,24 @@ public function update_event_date() {
         
         // Convertir fecha a timestamp si es necesario
         error_log("DEBUG: update_event_date - Fecha recibida: " . $new_date);
+        
+        // Test múltiples métodos de conversión
+        error_log("DEBUG: TEST strtotime('" . $new_date . "'): " . strtotime($new_date));
+        error_log("DEBUG: TEST strtotime('" . $new_date . " 00:00:00'): " . strtotime($new_date . ' 00:00:00'));
+        error_log("DEBUG: TEST strtotime('" . $new_date . " 12:00:00'): " . strtotime($new_date . ' 12:00:00'));
+        
+        // Test específico para 2025-09-26
+        if ($new_date === '2025-09-26') {
+            error_log("DEBUG: SPECIAL TEST para 2025-09-26");
+            error_log("DEBUG: date_parse('2025-09-26'): " . print_r(date_parse('2025-09-26'), true));
+            error_log("DEBUG: mktime(0,0,0,9,26,2025): " . mktime(0,0,0,9,26,2025));
+            try {
+                $test_dt = new DateTime('2025-09-26');
+                error_log("DEBUG: DateTime('2025-09-26')->getTimestamp(): " . $test_dt->getTimestamp());
+            } catch (Exception $e) {
+                error_log("DEBUG: DateTime test falló: " . $e->getMessage());
+            }
+        }
         
         // Intentar usar DateTime para conversión más robusta
         try {
