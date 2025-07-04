@@ -78,19 +78,34 @@ init: function() {
     // Si tenemos datos locales válidos, mostrar el panel inmediatamente
     if (self.data.isActive && self.data.leadId && self.data.eventId) {
         console.log('DEBUG: Found valid local data on init, showing panel immediately');
+        
+        // Marcar que estamos sincronizando
+        self.data.isSyncing = true;
+        
         self.renderPanel();
         self.initEventListeners();
         self.initModals();
+        
+        // Mostrar indicador de sincronización
+        self.showSyncIndicator();
         
         // Verificar con servidor en background DESPUÉS de mostrar el panel
         setTimeout(function() {
             console.log('DEBUG: Background verification starting');
             self.checkServerContextSilent(function(response) {
+                // Ocultar indicador de sincronización
+                self.hideSyncIndicator();
+                self.data.isSyncing = false;
+                
                 if (response && response.success && response.data && response.data.isActive) {
                     // Solo actualizar si hay cambios significativos
                     if (response.data.leadId !== self.data.leadId || 
                         response.data.eventId !== self.data.eventId) {
                         console.log('DEBUG: Server has different data, updating');
+                        
+                        // Mostrar notificación de actualización
+                        self.showNotification('Contexto actualizado con datos del servidor', 'info');
+                        
                         self.data.leadId = response.data.leadId;
                         self.data.leadName = response.data.leadName;
                         self.data.eventId = response.data.eventId;
@@ -102,10 +117,13 @@ init: function() {
                 } else if (response && response.success && !response.data.isActive) {
                     // Servidor dice que no hay sesión activa, limpiar
                     console.log('DEBUG: Server says no active session, clearing');
-                    self.endSession();
+                    self.showNotification('La sesión ya no está activa en el servidor', 'warning');
+                    setTimeout(function() {
+                        self.endSession();
+                    }, 1000);
                 }
             });
-        }, 2000); // Esperar 2 segundos después de cargar la página
+        }, 1000); // Reducido a 1 segundo para respuesta más rápida
         
         return; // No hacer la verificación normal
     }
@@ -970,6 +988,12 @@ formatFriendlyDate: function(date) {
             
             // Interceptar añadir al carrito para incluir contexto
             $(document).on('click', '.eq-quote-button', function() {
+                // Si estamos sincronizando, prevenir acciones
+                if (self.data.isSyncing) {
+                    self.showNotification('Por favor espere mientras se sincroniza el contexto', 'warning');
+                    return false;
+                }
+                
                 // Si hay un contexto activo, verificar que estemos listos para añadir al carrito
                 if (self.data.isActive && (!self.data.leadId || !self.data.eventId)) {
                     alert('Debe seleccionar un lead y un evento antes de añadir productos al carrito');
@@ -1934,6 +1958,23 @@ showNotification: function(message, type) {
             notification.remove();
         }, 300);
     }, 3000);
+},
+
+// Mostrar indicador de sincronización
+showSyncIndicator: function() {
+    if ($('.eq-sync-indicator').length === 0) {
+        var indicator = $('<div class="eq-sync-indicator">' +
+            '<i class="fas fa-sync fa-spin"></i> Sincronizando...' +
+        '</div>');
+        $('.eq-context-panel').append(indicator);
+    }
+},
+
+// Ocultar indicador de sincronización
+hideSyncIndicator: function() {
+    $('.eq-sync-indicator').fadeOut(300, function() {
+        $(this).remove();
+    });
 },
         
  endSession: function() {
