@@ -1,3 +1,29 @@
+/* No Events Message */
+.eq-no-events-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.eq-no-events-icon {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.eq-no-events-text strong {
+    color: #333;
+    font-size: 16px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.eq-no-events-text small {
+    color: #999;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
 /* Sync Indicator */
 .eq-sync-indicator {
     position: absolute;

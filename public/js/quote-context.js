@@ -1471,7 +1471,13 @@ if (typeof flatpickr !== 'undefined') {
             var resultsHtml = '';
             
             if (eventos.length === 0) {
-                resultsHtml = '<div class="eq-no-results">No hay eventos para este lead</div>';
+                resultsHtml = '<div class="eq-no-events-message">' +
+                    '<div class="eq-no-events-icon"><i class="fas fa-calendar-times"></i></div>' +
+                    '<div class="eq-no-events-text">' +
+                        '<strong>No hay eventos futuros asignados</strong><br>' +
+                        '<small>Los eventos pasados no se muestran para nuevas cotizaciones</small>' +
+                    '</div>' +
+                '</div>';
             } else {
                 for (var i = 0; i < eventos.length; i++) {
                     var evento = eventos[i];
