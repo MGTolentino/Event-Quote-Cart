@@ -252,22 +252,6 @@ initTabsSynchronization: function() {
             }
         }
     });
-        
-        
-        // Limpiar estado local sin recargar
-        self.data.isActive = false;
-        self.clearLocalState();
-        
-        // Eliminar panel del DOM
-        $('.eq-context-panel').remove();
-        $('body').removeClass('has-eq-context-panel');
-        
-        // Mostrar botón toggle
-        self.renderToggleButton();
-        
-        // Mostrar notificación
-        self.showNotification('Sesión finalizada en otra pestaña', 'info');
-    });
 },
 		
 		// Obtener datos del listing actual si estamos en una página de listing
