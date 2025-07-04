@@ -466,43 +466,6 @@ checkServerContext: function(callback) {
 
 },
 
-    renderLoadingPanel: function() {
-        // Eliminar panel anterior si existe
-        $('.eq-context-panel').remove();
-        
-        // Crear HTML del panel con estado loading
-        var loadingPanelHtml = 
-            '<div class="eq-context-panel eq-loading-state">' +
-                '<div class="eq-context-panel-info">' +
-                    '<div class="eq-loading-spinner"></div>' +
-                    '<div class="eq-loading-text">' + (eqCartData.texts?.verifying || 'Verificando contexto...') + '</div>' +
-                '</div>' +
-            '</div>';
-        
-        // Añadir panel al body
-        $('body').prepend(loadingPanelHtml);
-        $('body').addClass('has-eq-context-panel');
-    },
-
-    // Nueva función para manejar la completación de activación
-    handleActivationComplete: function(openModal) {
-        // Renderizar panel final
-        this.renderPanel();
-        
-        // Reinicializar eventos
-        this.initEventListeners();
-        
-        // Eliminar botón toggle solo después de éxito
-        $('.eq-context-toggle-button').remove();
-        
-        // Abrir modal de selección si es necesario
-        if (openModal && (!this.data.leadId || !this.data.eventId)) {
-            var self = this;
-            setTimeout(function() {
-                self.openLeadModal();
-            }, 300);
-        }
-    },
 
     // Función para verificar servidor en background sin afectar UI
     checkServerContextSilent: function(callback) {
@@ -590,49 +553,34 @@ checkServerContext: function(callback) {
     localStorage.removeItem('eq_context_session_force_clear');
     localStorage.removeItem('eq_context_session_ended');
     
-    // MOSTRAR PANEL INMEDIATAMENTE con estado loading
+    // Cargar datos locales si existen
+    self.loadFromStorage();
+    
+    // Activar panel y mostrar INMEDIATAMENTE
     self.data.isActive = true;
     self.data.isMinimized = false;
-    self.renderLoadingPanel();
+    self.saveToStorage();
     
-    // TIMEOUT DE SEGURIDAD - siempre remover loading después de 5 segundos
-    var safetyTimeout = setTimeout(function() {
-        console.warn('Safety timeout reached - forcing panel to show');
-        self.handleActivationComplete(false);
-    }, 5000);
+    // Renderizar panel con datos actuales (vacío o con datos)
+    self.renderPanel();
+    self.initEventListeners();
     
-    // Verificar si hay datos locales para fallback rápido
-    self.loadFromStorage();
-    var hasLocalData = self.data.leadId && self.data.eventId;
+    // Eliminar botón toggle
+    $('.eq-context-toggle-button').remove();
     
-    if (hasLocalData) {
-        // Si hay datos locales, mostrar panel inmediatamente y verificar en background
-        clearTimeout(safetyTimeout);
-        self.handleActivationComplete(true);
-        
-        // Verificar servidor en background para actualizar si es necesario (sin afectar UI)
-        this.checkServerContextSilent(function(response) {
-            if (response && response.success && response.data && response.data.isActive) {
-                // Actualizar con datos del servidor si son diferentes
-                if (response.data.leadId !== self.data.leadId || response.data.eventId !== self.data.eventId) {
-                    self.data.leadId = response.data.leadId;
-                    self.data.leadName = response.data.leadName;
-                    self.data.eventId = response.data.eventId;
-                    self.data.eventDate = response.data.eventDate;
-                    self.data.eventType = response.data.eventType;
-                    self.data.sessionToken = response.data.sessionToken;
-                    self.saveToStorage();
-                    self.renderPanel();
-                }
-            }
-        });
-    } else {
-        // No hay datos locales, verificar servidor con manejo de errores
-        this.checkServerContextWithErrorHandling(function(success, response) {
-            clearTimeout(safetyTimeout);
-            
-            if (success && response && response.success && response.data && response.data.isActive) {
-                // Hay contexto en servidor, restaurar datos
+    // Si no hay datos completos, abrir modal de lead automáticamente
+    if (!self.data.leadId || !self.data.eventId) {
+        setTimeout(function() {
+            self.openLeadModal();
+        }, 100);
+    }
+    
+    // Verificar servidor en BACKGROUND sin bloquear UI (opcional)
+    self.checkServerContextSilent(function(response) {
+        if (response && response.success && response.data && response.data.isActive) {
+            // Solo actualizar si hay diferencias significativas
+            if (response.data.leadId !== self.data.leadId || 
+                response.data.eventId !== self.data.eventId) {
                 self.data.leadId = response.data.leadId;
                 self.data.leadName = response.data.leadName;
                 self.data.eventId = response.data.eventId;
@@ -640,12 +588,10 @@ checkServerContext: function(callback) {
                 self.data.eventType = response.data.eventType;
                 self.data.sessionToken = response.data.sessionToken;
                 self.saveToStorage();
+                self.renderPanel();
             }
-            
-            // Siempre completar la activación (con o sin datos del servidor)
-            self.handleActivationComplete(true);
-        });
-    }
+        }
+    });
 },
 togglePanel: function() {
     var self = this;
