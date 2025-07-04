@@ -134,7 +134,6 @@ init: function() {
                 self.saveToStorage();
                 
                 // SIEMPRE recrear el panel para evitar datos obsoletos
-                console.log('[EQ Context] Removing existing panel to prevent stale data');
                 $('.eq-context-panel').remove();
                 
                 // Renderizar panel completamente nuevo con datos actualizados
@@ -170,7 +169,6 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
-            console.log('Server unavailable or timeout - clearing stale data and showing fresh panel');
             
             // NO usar datos locales obsoletos cuando hay timeout del servidor
             // En su lugar, limpiar todo y mostrar panel vacío
@@ -201,18 +199,15 @@ init: function() {
 },
 
 clearStaleDataOnInit: function() {
-    console.log('[EQ Context] Clearing potentially stale data on init');
-    
-    // Verificar si hay datos en sessionStorage
+    // Verificar si hay datos en sessionStorage  
     var savedData = sessionStorage.getItem('eqQuoteContext');
     if (savedData) {
         try {
             var parsedData = JSON.parse(savedData);
             var currentTime = Date.now();
             
-            // Si los datos son muy antiguos (más de 1 hora), limpiarlos
-            if (parsedData.lastUpdate && (currentTime - parsedData.lastUpdate) > 3600000) {
-                console.log('[EQ Context] Data is older than 1 hour, clearing');
+            // Si los datos son muy antiguos (más de 30 minutos), limpiarlos
+            if (parsedData.lastUpdate && (currentTime - parsedData.lastUpdate) > 1800000) {
                 sessionStorage.removeItem('eqQuoteContext');
                 this.data = {
                     isActive: false,
@@ -226,7 +221,6 @@ clearStaleDataOnInit: function() {
                 };
             }
         } catch (e) {
-            console.error('[EQ Context] Error parsing saved data, clearing:', e);
             sessionStorage.removeItem('eqQuoteContext');
             this.data = {
                 isActive: false,
@@ -433,7 +427,7 @@ checkServerContext: function(callback) {
         url: eqCartData.ajaxurl,
         type: 'POST',
         dataType: 'json',
-        timeout: 8000, // 8 segundos timeout
+        timeout: 5000, // 5 segundos timeout
         data: {
             action: 'eq_check_context_status',
             nonce: eqCartData.nonce,
@@ -511,11 +505,8 @@ checkServerContext: function(callback) {
         },
         
   renderPanel: function() {
-    console.log('[EQ Context] renderPanel called with data:', this.data);
-    
     // SIEMPRE eliminar panel existente para evitar datos obsoletos
     $('.eq-context-panel').remove();
-    console.log('[EQ Context] Removed any existing panels for fresh render');
     
     
     
@@ -548,11 +539,9 @@ checkServerContext: function(callback) {
 	 
         
     // Eliminar panel anterior si existe (seguridad adicional)
-    console.log('[EQ Context] Removing any existing panels');
     $('.eq-context-panel').remove();
     
     // Añadir panel al body
-    console.log('[EQ Context] Adding new panel to body');
     $('body').prepend(panelHtml);
     $('body').addClass('has-eq-context-panel');
     
@@ -578,7 +567,7 @@ checkServerContext: function(callback) {
             url: eqCartData.ajaxurl,
             type: 'POST',
             dataType: 'json',
-            timeout: 8000,
+            timeout: 5000,
             data: {
                 action: 'eq_check_context_status',
                 nonce: eqCartData.nonce,
@@ -606,7 +595,7 @@ checkServerContext: function(callback) {
             url: eqCartData.ajaxurl,
             type: 'POST',
             dataType: 'json',
-            timeout: 8000,
+            timeout: 5000,
             data: {
                 action: 'eq_check_context_status',
                 nonce: eqCartData.nonce,
@@ -651,7 +640,6 @@ checkServerContext: function(callback) {
 },
 		
 		activatePanel: function() {
-    console.log('[EQ Context] activatePanel called');
     var self = this;
     
     // Limpiar todas las señales de sesión finalizada
@@ -661,13 +649,11 @@ checkServerContext: function(callback) {
     
     // Cargar datos locales si existen
     self.loadFromStorage();
-    console.log('[EQ Context] Data after loadFromStorage:', self.data);
     
     // Activar panel y mostrar INMEDIATAMENTE
     self.data.isActive = true;
     self.data.isMinimized = false;
     self.saveToStorage();
-    console.log('[EQ Context] Data after activation:', self.data);
     
     // Renderizar panel con datos actuales (vacío o con datos)
     self.renderPanel();
@@ -679,14 +665,11 @@ checkServerContext: function(callback) {
     // Verificar que el panel realmente se esté mostrando
     setTimeout(function() {
         if (!$('.eq-context-panel').is(':visible')) {
-            console.error('[EQ Context] Panel not visible after activation!');
             // Intentar forzar visibilidad una vez más
             $('.eq-context-panel')
                 .removeClass('eq-hidden')
                 .removeClass('eq-loading')
                 .css({'display': 'flex', 'visibility': 'visible', 'opacity': '1'});
-        } else {
-            console.log('[EQ Context] Panel successfully activated and visible');
         }
     }, 100);
     
@@ -1273,7 +1256,6 @@ if (typeof flatpickr !== 'undefined') {
             this.data.isActive = true;
             
             // SIEMPRE recrear panel para mostrar datos actualizados inmediatamente
-            console.log('[EQ Context] selectLead - Recreating panel with new lead data');
             this.renderPanel();
             
             this.saveToStorage();
@@ -1391,7 +1373,6 @@ if (typeof flatpickr !== 'undefined') {
     this.data.eventType = eventType;
     
     // SIEMPRE recrear panel para mostrar datos actualizados inmediatamente
-    console.log('[EQ Context] selectEvent - Recreating panel with new event data');
     this.renderPanel();
     
     // Crear sesión de contexto en el servidor
