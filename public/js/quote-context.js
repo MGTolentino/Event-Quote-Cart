@@ -481,24 +481,56 @@ checkServerContext: function(callback) {
 },
 		
 		activatePanel: function() {
+    var self = this;
     
     // Limpiar todas las señales de sesión finalizada
     document.cookie = 'eq_session_ended=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
     localStorage.removeItem('eq_context_session_force_clear');
     localStorage.removeItem('eq_context_session_ended');
     
-    // Activar panel
-    this.data.isActive = true;
-    this.saveToStorage();
-    
     // Eliminar botón toggle
     $('.eq-context-toggle-button').remove();
     
-    // Forzar reinicialización de eventos
-    this.initEventListeners();
-    
-    // Renderizar panel
-    this.renderPanel();
+    // Verificar si hay contexto en el servidor para restaurar
+    this.checkServerContext(function(response) {
+        if (response && response.success && response.data && response.data.isActive) {
+            // Hay contexto en servidor, restaurar datos
+            self.data.isActive = true;
+            self.data.leadId = response.data.leadId;
+            self.data.leadName = response.data.leadName;
+            self.data.eventId = response.data.eventId;
+            self.data.eventDate = response.data.eventDate;
+            self.data.eventType = response.data.eventType;
+            self.data.sessionToken = response.data.sessionToken;
+            self.data.isMinimized = false;
+            
+            // Guardar estado restaurado
+            self.saveToStorage();
+            
+            // Renderizar panel con datos
+            self.renderPanel();
+            
+            // Reinicializar eventos
+            self.initEventListeners();
+            
+        } else {
+            // No hay contexto, activar panel vacío para seleccionar lead/evento
+            self.data.isActive = true;
+            self.data.isMinimized = false;
+            self.saveToStorage();
+            
+            // Renderizar panel vacío
+            self.renderPanel();
+            
+            // Reinicializar eventos
+            self.initEventListeners();
+            
+            // Abrir modal de selección de lead automáticamente
+            setTimeout(function() {
+                self.openLeadModal();
+            }, 300);
+        }
+    });
 },
 togglePanel: function() {
     var self = this;
