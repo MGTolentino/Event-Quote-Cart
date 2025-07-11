@@ -1069,11 +1069,12 @@ formatFriendlyDate: function(date) {
                         '<label class="eq-form-label">Tipo de Evento</label>' +
                         '<select class="eq-form-input" id="eq-new-event-type">' +
                             '<option value="">Seleccione...</option>' +
-                            '<option value="Boda">Boda</option>' +
-                            '<option value="Corporativo">Corporativo</option>' +
-                            '<option value="Social">Social</option>' +
+                            '<option value="Bodas">Bodas</option>' +
+                            '<option value="XV años">XV años</option>' +
                             '<option value="Cumpleaños">Cumpleaños</option>' +
-                            '<option value="Otro">Otro</option>' +
+                            '<option value="Graduaciones">Graduaciones</option>' +
+                            '<option value="Empresarial">Empresarial</option>' +
+                            '<option value="Otros">Otros</option>' +
                         '</select>' +
                     '</div>' +
                     '<div class="eq-form-field">' +
