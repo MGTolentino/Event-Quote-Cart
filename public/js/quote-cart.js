@@ -107,10 +107,36 @@ checkContextPanelState() {
 
 updateDateDisplay(dateString) {
     try {
-        // Convertir a objeto Date para formateo
-        const dateObj = new Date(dateString);
+        let dateObj;
+        
+        // Manejar diferentes formatos de fecha
+        if (!dateString) {
+            console.error('Fecha vacía recibida');
+            return;
+        }
+        
+        // Si es un timestamp numérico (Unix timestamp)
+        if (typeof dateString === 'number' || (typeof dateString === 'string' && /^\d+$/.test(dateString))) {
+            const timestamp = parseInt(dateString);
+            // Si es timestamp en segundos (10 dígitos)
+            if (timestamp.toString().length === 10) {
+                dateObj = new Date(timestamp * 1000);
+            }
+            // Si es timestamp en milisegundos (13 dígitos)
+            else if (timestamp.toString().length === 13) {
+                dateObj = new Date(timestamp);
+            }
+            else {
+                dateObj = new Date(dateString);
+            }
+        } else {
+            // Es una fecha en formato string
+            dateObj = new Date(dateString);
+        }
+        
         if (isNaN(dateObj.getTime())) {
             console.error('Fecha inválida:', dateString);
+            $('.eq-date-value').text('Invalid date');
             return;
         }
         
@@ -124,12 +150,17 @@ updateDateDisplay(dateString) {
         // Si hay un datepicker flatpickr, actualizarlo también
         const datePicker = $('.eq-date-picker');
         if (datePicker.length && datePicker[0]._flatpickr) {
-            datePicker[0]._flatpickr.setDate(dateString);
+            // Para flatpickr, usar formato Y-m-d
+            const formattedForPicker = dateObj.getFullYear() + '-' + 
+                String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(dateObj.getDate()).padStart(2, '0');
+            datePicker[0]._flatpickr.setDate(formattedForPicker);
         }
         
-        console.log('Date display updated to:', formattedDate);
+        console.log('Date display updated to:', formattedDate, 'from input:', dateString);
     } catch (e) {
         console.error('Error updating date display:', e);
+        $('.eq-date-value').text('Error displaying date');
     }
 }
 		
@@ -332,12 +363,38 @@ proceedWithAddToCart(form, submitButton, originalText) {
    const formData = new FormData(form);
    const listingId = formData.get('listing_id');
    
+   // Validar y formatear la fecha antes de enviarla
+   let dateToSend = formData.get('_dates');
+   if (dateToSend) {
+       // Si es un timestamp, convertirlo a formato Y-m-d
+       if (typeof dateToSend === 'string' && /^\d+$/.test(dateToSend)) {
+           const timestamp = parseInt(dateToSend);
+           let dateObj;
+           
+           if (timestamp.toString().length === 10) {
+               // Timestamp en segundos
+               dateObj = new Date(timestamp * 1000);
+           } else if (timestamp.toString().length === 13) {
+               // Timestamp en milisegundos
+               dateObj = new Date(timestamp);
+           } else {
+               dateObj = new Date(dateToSend);
+           }
+           
+           if (!isNaN(dateObj.getTime())) {
+               dateToSend = dateObj.getFullYear() + '-' + 
+                           String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(dateObj.getDate()).padStart(2, '0');
+           }
+       }
+   }
+   
    // Preparar datos para el servidor
    const data = {
        action: 'eq_add_to_cart',
        nonce: eqCartData.nonce,
        listing_id: listingId,
-       date: formData.get('_dates'),
+       date: dateToSend,
        quantity: formData.get('_quantity') || 1,
        extras: this.getExtrasData(form)
    };

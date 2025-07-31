@@ -131,6 +131,23 @@ public function add_to_cart() {
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     $extras = isset($_POST['extras']) ? $_POST['extras'] : array();
 
+    // Validar y convertir fecha si es timestamp
+    if (!empty($date)) {
+        if (is_numeric($date) && strlen($date) == 10) {
+            // Es un timestamp Unix, convertir a fecha Y-m-d
+            $date = date('Y-m-d', intval($date));
+        } elseif (is_numeric($date) && strlen($date) == 13) {
+            // Es un timestamp en milisegundos, convertir a fecha Y-m-d
+            $date = date('Y-m-d', intval($date) / 1000);
+        }
+        
+        // Validar que la fecha tenga formato correcto
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            wp_send_json_error('Invalid date format. Expected Y-m-d format.');
+            return;
+        }
+    }
+
     if (!$listing_id || !$date) {
         wp_send_json_error('Missing required data');
     }
