@@ -35,6 +35,14 @@ init() {
         // Ocultar o desactivar elementos para usuarios no logueados
         this.headerCart.addClass('eq-hide-cart');
     }
+    
+    // Asegurar que la fecha se muestre correctamente en la inicialización
+    if (this.state.selectedDate) {
+        // Usar timeout para asegurar que el DOM esté listo
+        setTimeout(() => {
+            this.updateDateDisplay(this.state.selectedDate);
+        }, 100);
+    }
 }
 		
 bindContextEvents() {
@@ -170,6 +178,9 @@ updateDateDisplay(dateString) {
         this.state.selectedDate = date;
         localStorage.setItem('eq_selected_date', date);
         
+        // Actualizar la visualización de la fecha
+        this.updateDateDisplay(date);
+        
         // Actualizar datepicker si existe
         const dateInput = this.content.find('.eq-date-picker');
         if (dateInput.length && dateInput[0]._flatpickr) {
@@ -187,6 +198,9 @@ updateDateDisplay(dateString) {
         }
         
         this.state.selectedDate = date;
+        
+        // Actualizar la visualización de la fecha
+        this.updateDateDisplay(date);
         
         // Update datepicker if it exists
         const dateInput = this.content.find('.eq-date-picker');
@@ -208,6 +222,9 @@ updateDateDisplay(dateString) {
         }
         
         this.state.selectedDate = date;
+        
+        // Actualizar la visualización de la fecha
+        this.updateDateDisplay(date);
         
         // Update datepicker if it exists
         const dateInput = this.content.find('.eq-date-picker');
@@ -689,6 +706,15 @@ for (let i = 0; i < this.state.items.length; i++) {
         }
 
         this.renderAddForm();
+        
+        // Asegurar que la fecha se muestre correctamente después de renderizar el formulario
+        setTimeout(() => {
+            const dateValue = this.state.selectedDate || localStorage.getItem('eq_selected_date');
+            if (dateValue) {
+                this.updateDateDisplay(dateValue);
+            }
+        }, 100);
+        
         this.openSidebar();
     } catch (error) {
         alert('Error loading product data');
@@ -732,13 +758,50 @@ renderAddForm() {
 
     const existingDate = formData.date || null;
     const storedDate = localStorage.getItem('eq_selected_date');
-    const dateValue = existingDate || storedDate || '';
+    let rawDateValue = existingDate || storedDate || '';
     
+    // Convertir timestamp a formato de fecha si es necesario
+    let dateValue = '';
     let dateDisplay = 'Select date';
-    if (dateValue) {
-        const [year, month, day] = dateValue.split('-');
-        const localDate = new Date(year, month - 1, day);
-        dateDisplay = localDate.toLocaleDateString();
+    
+    if (rawDateValue) {
+        // Si es un timestamp numérico
+        if (typeof rawDateValue === 'string' && /^\d+$/.test(rawDateValue)) {
+            const timestamp = parseInt(rawDateValue);
+            let dateObj;
+            
+            if (timestamp.toString().length === 10) {
+                // Timestamp en segundos
+                dateObj = new Date(timestamp * 1000);
+            } else if (timestamp.toString().length === 13) {
+                // Timestamp en milisegundos
+                dateObj = new Date(timestamp);
+            } else {
+                dateObj = new Date(rawDateValue);
+            }
+            
+            if (!isNaN(dateObj.getTime())) {
+                // Convertir a formato Y-m-d para el input
+                dateValue = dateObj.getFullYear() + '-' + 
+                           String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(dateObj.getDate()).padStart(2, '0');
+                // Formato local para mostrar
+                dateDisplay = dateObj.toLocaleDateString();
+            }
+        } else {
+            // Es una fecha en formato string
+            dateValue = rawDateValue;
+            try {
+                const [year, month, day] = rawDateValue.split('-');
+                const localDate = new Date(year, month - 1, day);
+                if (!isNaN(localDate.getTime())) {
+                    dateDisplay = localDate.toLocaleDateString();
+                }
+            } catch (e) {
+                console.error('Error parsing date:', rawDateValue, e);
+                dateDisplay = 'Invalid date';
+            }
+        }
     }
 
     // Obtener cantidad de forma segura
