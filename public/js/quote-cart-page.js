@@ -418,7 +418,6 @@ formatPrice(amount) {
                     }
                 },
                 error: (xhr, status, error) => {
-                    console.error('AJAX error:', status, error);
                     this.showNotification('Error updating item', 'error');
                 },
                 complete: () => {
@@ -472,7 +471,6 @@ formatPrice(amount) {
             }
         },
         error: (xhr, status, error) => {
-            console.error('Error removing item:', status, error);
             this.showNotification('Error removing item', 'error');
             button.prop('disabled', false).text('Remove');
         }
@@ -517,11 +515,11 @@ formatPrice(amount) {
                 }
                 
             } else {
-                console.error('Error updating cart totals:', response.data);
+                // Error updating cart totals
             }
         },
         error: (xhr, status, error) => {
-            console.error('AJAX error when updating totals:', status, error);
+            // AJAX error when updating totals
         }
     });
 }

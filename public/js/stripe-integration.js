@@ -264,7 +264,6 @@ function init() {
                 showPaymentError(error.message);
             });
         } catch (error) {
-            console.error('Error initializing Stripe:', error);
             showPaymentError('Error initializing payment system. Please try again later.');
         }
     });
@@ -360,7 +359,7 @@ function init() {
                     showPaymentSuccess(status.order_id);
                 }
             })
-            .catch(error => console.error('Error checking payment status:', error));
+            .catch(error => { /* Error checking payment status */ });
     }
 }
 

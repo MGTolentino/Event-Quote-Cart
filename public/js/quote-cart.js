@@ -48,7 +48,6 @@ init() {
 bindContextEvents() {
     // Escuchar cambios en el contexto
     $(document).on('eqContextChanged', (e, contextData) => {
-        console.log('Context changed event received:', contextData);
         
         // Actualizar estado interno si es necesario
         if (contextData && contextData.eventDate) {
@@ -119,7 +118,6 @@ updateDateDisplay(dateString) {
         
         // Manejar diferentes formatos de fecha
         if (!dateString) {
-            console.error('Fecha vacía recibida');
             return;
         }
         
@@ -143,7 +141,6 @@ updateDateDisplay(dateString) {
         }
         
         if (isNaN(dateObj.getTime())) {
-            console.error('Fecha inválida:', dateString);
             $('.eq-date-value').text('Invalid date');
             return;
         }
@@ -165,9 +162,7 @@ updateDateDisplay(dateString) {
             datePicker[0]._flatpickr.setDate(formattedForPicker);
         }
         
-        console.log('Date display updated to:', formattedDate, 'from input:', dateString);
     } catch (e) {
-        console.error('Error updating date display:', e);
         $('.eq-date-value').text('Error displaying date');
     }
 }
@@ -262,7 +257,6 @@ updateDateDisplay(dateString) {
 
    form = form || (e && e.target);
    if (!form) {
-       console.error('No form found');
        return;
    }
 
@@ -426,7 +420,7 @@ proceedWithAddToCart(form, submitButton, originalText) {
         }
     }
 } catch (e) {
-    console.error('Error reading context from sessionStorage', e);
+    // Error reading context from sessionStorage
 }
 
    // Llamada AJAX
@@ -468,7 +462,6 @@ proceedWithAddToCart(form, submitButton, originalText) {
            }
        },
        error: (jqXHR, textStatus, errorThrown) => {
-           console.error('Error adding to cart:', textStatus, errorThrown);
            alert(eqCartData.i18n.errorAdding);
        },
        complete: () => {
@@ -632,7 +625,6 @@ this.content.on('click', '.eq-include-button', (e) => {
         async loadCartItems() {
             // Verificar si el usuario ha iniciado sesión
             if (!eqCartData.userLoggedIn) {
-                console.log('User not logged in, skipping cart load');
                 return;
             }
             
@@ -653,7 +645,7 @@ this.content.on('click', '.eq-include-button', (e) => {
                     this.updateHeaderCart();
                 }
             } catch (error) {
-                console.error('Error loading cart items:', error);
+                // Error loading cart items
             }
         }
 
@@ -741,7 +733,6 @@ for (let i = 0; i < this.state.items.length; i++) {
 
                 return response.data;
             } catch (error) {
-                console.error('Error in fetchListingData:', error);
                 throw error;
             }
         }
@@ -798,7 +789,6 @@ renderAddForm() {
                     dateDisplay = localDate.toLocaleDateString();
                 }
             } catch (e) {
-                console.error('Error parsing date:', rawDateValue, e);
                 dateDisplay = 'Invalid date';
             }
         }
@@ -1284,7 +1274,7 @@ collectExtrasData() {
 
                 this.calculateTotals();
             } catch (error) {
-                console.error('Error validating date:', error);
+                // Error validating date
             }
         }
 
@@ -1482,7 +1472,6 @@ collectExtrasData() {
                     });
                 }
             } catch (error) {
-                console.error('Error removing item:', error);
                 alert(eqCartData.i18n.errorRemoving);
             }
         }

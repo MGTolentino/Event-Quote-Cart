@@ -77,7 +77,6 @@ init: function() {
     
     // Si tenemos datos locales válidos, mostrar el panel inmediatamente
     if (self.data.isActive && self.data.leadId && self.data.eventId) {
-        console.log('DEBUG: Found valid local data on init, showing panel immediately');
         
         // Marcar que estamos sincronizando
         self.data.isSyncing = true;
@@ -91,7 +90,6 @@ init: function() {
         
         // Verificar con servidor en background DESPUÉS de mostrar el panel
         setTimeout(function() {
-            console.log('DEBUG: Background verification starting');
             self.checkServerContextSilent(function(response) {
                 // Ocultar indicador de sincronización
                 self.hideSyncIndicator();
@@ -101,7 +99,6 @@ init: function() {
                     // Solo actualizar si hay cambios significativos
                     if (response.data.leadId !== self.data.leadId || 
                         response.data.eventId !== self.data.eventId) {
-                        console.log('DEBUG: Server has different data, updating');
                         
                         // Mostrar notificación de actualización
                         self.showNotification('Contexto actualizado con datos del servidor', 'info');
@@ -116,7 +113,6 @@ init: function() {
                     }
                 } else if (response && response.success && !response.data.isActive) {
                     // Servidor dice que no hay sesión activa, limpiar
-                    console.log('DEBUG: Server says no active session, clearing');
                     self.showNotification('La sesión ya no está activa en el servidor', 'warning');
                     setTimeout(function() {
                         self.endSession();
@@ -129,18 +125,14 @@ init: function() {
     }
     
     // Solo si NO hay datos locales, intentar cargar del servidor
-    console.log('DEBUG: No valid local data, checking server');
     setTimeout(function() {
         // Verificar con el servidor si hay un contexto activo con timeout mejorado
         self.checkServerContextWithErrorHandling(function(success, response) {
-        // Debug: log what we're getting from server
-        console.log('DEBUG: Server response:', response);
         
         if (success && response && response.success) {
 
             // Si el servidor dice que hay un contexto activo
             if (response.data && response.data.isActive) {
-                console.log('DEBUG: Active session found with data:', response.data);
                 
                 // Cargar datos locales para comparar
                 var localData = JSON.parse(sessionStorage.getItem('eqQuoteContext') || '{}');
@@ -173,8 +165,6 @@ init: function() {
                     }
                 }
                 
-                console.log('DEBUG: useServerData decision:', useServerData);
-                console.log('DEBUG: localData:', localData);
                 
                 if (useServerData) {
                     // Actualizar datos locales con los del servidor
@@ -185,7 +175,6 @@ init: function() {
                     self.data.eventDate = response.data.eventDate;
                     self.data.eventType = response.data.eventType;
                     if (response.data.sessionToken) self.data.sessionToken = response.data.sessionToken;
-                    console.log('DEBUG: Using server data. Final data:', self.data);
                 } else {
                     // Usar datos locales más recientes
                     self.data.isActive = true;
@@ -195,7 +184,6 @@ init: function() {
                     self.data.eventDate = localData.eventDate;
                     self.data.eventType = localData.eventType;
                     if (localData.sessionToken) self.data.sessionToken = localData.sessionToken;
-                    console.log('DEBUG: Using local data. Final data:', self.data);
                 }
                 
                 // Guardar en sessionStorage
@@ -205,7 +193,6 @@ init: function() {
                 $('.eq-context-panel').remove();
                 
                 // Renderizar panel completamente nuevo con datos actualizados
-                console.log('DEBUG: About to render panel with data:', self.data);
                 self.renderPanel();
             } else {
                 
@@ -238,15 +225,12 @@ init: function() {
             // Iniciar verificación periódica del estado del servidor (con menor frecuencia)
             self.startSessionPolling();
         } else {
-            console.log('DEBUG: Server timeout/error. success:', success, 'response:', response);
             
             // Server timeout or error - mantener datos locales si existen
             self.loadFromStorage();
-            console.log('DEBUG: After loadFromStorage, data is:', self.data);
             
             if (self.data.isActive && self.data.leadId && self.data.eventId) {
                 // Tenemos datos válidos localmente, mantener sesión activa
-                console.log('DEBUG: Using valid local data');
                 self.renderPanel();
                 self.initEventListeners();
                 self.initModals();
@@ -256,15 +240,12 @@ init: function() {
                     self.showNotification('No se pudo verificar con el servidor, usando datos locales', 'warning');
                 }, 500);
             } else {
-                console.log('DEBUG: Local data is invalid or incomplete, clearing and showing toggle button');
                 // No hay datos locales válidos, limpiar sessionStorage corrupto
                 sessionStorage.removeItem('eqQuoteContext');
                 
                 // Intentar reconectar una vez más después de limpiar datos corruptos
                 setTimeout(function() {
-                    console.log('DEBUG: Attempting retry after clearing corrupted data');
                     self.checkServerContextWithErrorHandling(function(retrySuccess, retryResponse) {
-                        console.log('DEBUG: Retry result - success:', retrySuccess, 'response:', retryResponse);
                         
                         if (retrySuccess && retryResponse && retryResponse.success && retryResponse.data && retryResponse.data.isActive) {
                             // Éxito en el retry, usar datos del servidor
@@ -283,7 +264,6 @@ init: function() {
                             self.initEventListeners();
                             self.initModals();
                             
-                            console.log('DEBUG: Session recovered successfully with retry');
                         } else {
                             // Retry también falló, mostrar toggle button
                             self.data = {
@@ -303,7 +283,6 @@ init: function() {
                             self.initEventListeners();
                             self.initModals();
                             
-                            console.log('DEBUG: Retry also failed, showing toggle button');
                         }
                     });
                 }, 1000); // Esperar 1 segundo antes del retry
@@ -397,7 +376,7 @@ initTabsSynchronization: function() {
                     }
                 }
             } catch (e) {
-                console.error('Error synchronizing context from another tab:', e);
+                // Error synchronizing context
             }
         } else if (e.key === 'eq_context_force_sync') {
             // Sincronización forzada (después de cambios de lead/evento)
@@ -410,7 +389,7 @@ initTabsSynchronization: function() {
                     self.renderPanel();
                 }
             } catch (e) {
-                console.error('Error in forced sync from another tab:', e);
+                // Error in forced sync
             }
         }
     });
@@ -569,7 +548,6 @@ checkServerContext: function(callback) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error checking context status:', status, error);
             
             // Si hay error, intentar cargar desde sessionStorage como fallback
             self.loadFromStorage();
@@ -612,7 +590,7 @@ checkServerContext: function(callback) {
             }
         }
     } catch (e) {
-        console.error('Error loading context from sessionStorage', e);
+        // Error loading context from sessionStorage
     }
 },
         
@@ -633,7 +611,7 @@ checkServerContext: function(callback) {
                     }, 100);
                 }
             } catch (e) {
-                console.error('Error saving context to sessionStorage', e);
+                // Error saving context to sessionStorage
             }
         },
         
@@ -740,9 +718,9 @@ checkServerContext: function(callback) {
                 }
             },
             error: function(xhr, status, error) {
-                // Solo loggear errores no-timeout para debug
+                // Handle non-timeout errors
                 if (status !== 'timeout') {
-                    console.error('Context server error:', status);
+                    // Server error
                 }
                 
                 // Intentar usar datos locales como fallback
@@ -898,7 +876,6 @@ formatFriendlyDate: function(date) {
     
     
     if (isNaN(dateObj.getTime())) {
-        console.error('Fecha inválida:', date);
         return date;
     }
     
@@ -913,7 +890,6 @@ formatFriendlyDate: function(date) {
         const formatted = dateObj.toLocaleDateString('es-ES', options);
         return formatted;
     } catch (e) {
-        console.error('Error al formatear fecha:', e);
         return date;
     }
 },
@@ -1544,7 +1520,6 @@ if (typeof flatpickr !== 'undefined') {
         },
         success: function(response) {
     if (response.success) {
-        
         // Guardar token de sesión
         self.data.sessionToken = response.data.session_token;
         
@@ -1567,7 +1542,6 @@ $.ajax({
     },
     success: function(response) {
         if (response.success) {
-            
             // Notificar al usuario
             self.showNotification('Evento seleccionado y contexto actualizado', 'success');
             
@@ -1589,22 +1563,20 @@ $.ajax({
             // Removed automatic forceRefreshPanel() to prevent race condition
             // Panel is already updated correctly with local data above
         } else {
-                    console.error('Error updating cart context:', response.data);
+                    // Error updating cart context
                     self.showNotification('Error al actualizar contexto', 'error');
                 }
             },
             error: function() {
-                console.error('Error connecting to server');
                 self.showNotification('Error de conexión', 'error');
             }
         });
     } else {
-        console.error('Error creating context session:', response.data);
+        // Error creating context session
         self.showNotification('Error al crear sesión de contexto', 'error');
     }
 },
         error: function() {
-            console.error('Error connecting to server');
             self.showNotification('Error de conexión', 'error');
         }
     });
@@ -1653,11 +1625,9 @@ syncEventDate: function(date) {
                 dateObj = new Date(Date.UTC(year, month, day, 12, 0, 0));
                 
             } else {
-                console.error('Error parseando partes de la fecha:', parts);
                 return;
             }
         } else {
-            console.error('Formato de fecha no reconocido:', date);
             return;
         }
     }
@@ -1676,13 +1646,11 @@ syncEventDate: function(date) {
                           String(month + 1).padStart(2, '0') + '-' + 
                           String(day).padStart(2, '0');
         } else {
-            console.error('No se pudo parsear la fecha:', date);
             return;
         }
     }
 
     if (!dateObj) {
-        console.error('Unable to parse date:', date);
         return; // No continuar si no podemos parsear la fecha
     }
 
@@ -1772,12 +1740,10 @@ checkDateAvailability: function(listingId, date, callback) {
             if (response.success) {
                 callback(response.data.available);
             } else {
-                console.error('Error validating date:', response.data);
                 callback(false); // Asumir que no está disponible en caso de error
             }
         },
         error: function() {
-            console.error('AJAX error checking date availability');
             callback(false); // Asumir que no está disponible en caso de error
         }
     });
@@ -1855,7 +1821,7 @@ updateDateDisplays: function(formattedDate, dateObj) {
                 // BookingForm inputs are hidden, skipping update
             }
         } catch (e) {
-            console.error('Error updating BookingForm:', e);
+            // Error updating BookingForm
         }
     }
     
@@ -1947,11 +1913,11 @@ updateDateDisplays: function(formattedDate, dateObj) {
                 },
                 success: function(response) {
                     if (!response.success) {
-                        console.error('Error al actualizar contexto del carrito', response.data);
+                        // Error al actualizar contexto del carrito
                     }
                 },
                 error: function() {
-                    console.error('Error de conexión al actualizar contexto');
+                    // Error de conexión al actualizar contexto
                 }
             });
         },
@@ -2066,7 +2032,6 @@ hideSyncIndicator: function() {
                         window.location.reload(true);
                     }, 1000);
                 } else {
-                    console.error('Error ending session on server');
                     self.showNotification('Error al finalizar sesión', 'error');
                     
                     // Forzar recarga de todos modos
@@ -2076,7 +2041,6 @@ hideSyncIndicator: function() {
                 }
             },
             error: function() {
-                console.error('AJAX error ending session');
                 self.showNotification('Error de conexión', 'error');
                 
                 // Forzar recarga como último recurso
@@ -2144,28 +2108,25 @@ clearContextWithRetry: function(retries) {
                     self.verifyContextCleared();
                 }, 500);
             } else {
-                console.error('Error clearing context or server did not confirm clearance');
+                // Error clearing context or server did not confirm clearance
                 
                 if (retries > 0) {
                     setTimeout(function() {
                         self.clearContextWithRetry(retries - 1);
                     }, 1000);
                 } else {
-                    console.error('Failed to clear context after multiple attempts');
                     self.showNotification('Error al finalizar sesión después de varios intentos', 'error');
                     window.location.reload();
                 }
             }
         },
         error: function(xhr, status, error) {
-            console.error('AJAX error clearing context:', status, error);
             
             if (retries > 0) {
                 setTimeout(function() {
                     self.clearContextWithRetry(retries - 1);
                 }, 1000);
             } else {
-                console.error('Failed to clear context after multiple attempts');
                 self.showNotification('Error de conexión al finalizar sesión', 'error');
                 window.location.reload();
             }
@@ -2190,7 +2151,6 @@ verifyContextCleared: function() {
         success: function(response) {
             if (response.success) {
                 if (response.data.isActive) {
-                    console.error('Context still active after clearing! Retrying...');
                     self.clearContextWithRetry(1);
                 } else {
                     self.showNotification('Sesión finalizada correctamente', 'success');
@@ -2201,13 +2161,11 @@ verifyContextCleared: function() {
                     }, 1000);
                 }
             } else {
-                console.error('Error verifying context clearance');
                 self.showNotification('Error al verificar finalización de sesión', 'error');
                 window.location.reload();
             }
         },
         error: function() {
-            console.error('AJAX error verifying context clearance');
             self.showNotification('Error de conexión al verificar', 'error');
             window.location.reload();
         }
@@ -2249,7 +2207,6 @@ forceRefreshPanel: function() {
 validateCartDateChange: function(date, callback) {
     // Verificar que callback sea una función antes de usarlo
     if (typeof callback !== 'function') {
-        console.error('EQ Context: validateCartDateChange called without callback');
         return;
     }
     
@@ -2266,12 +2223,10 @@ validateCartDateChange: function(date, callback) {
             if (response.success) {
                 callback(response.data);
             } else {
-                console.error('Error validating date:', response.data);
                 callback({ hasItems: false, unavailableItems: [] });
             }
         },
         error: function() {
-            console.error('Error connecting to server');
             callback({ hasItems: false, unavailableItems: [] });
         }
     });
