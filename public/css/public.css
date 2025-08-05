@@ -174,3 +174,142 @@
     color: #1e40af;
     font-weight: 500;
 }
+
+/* Discount Styles */
+.eq-item-discount {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.eq-item-discount label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.eq-discount-input-group {
+    display: flex;
+    gap: 5px;
+}
+
+.eq-item-discount-value {
+    width: 80px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.eq-item-discount-type {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.eq-discounted-price {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.eq-original-price {
+    font-size: 12px;
+    color: #999;
+}
+
+/* Global Discount Styles */
+.eq-global-discount-input {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+#eq-global-discount-value {
+    width: 100px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#eq-global-discount-type {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.eq-total-row.global-discount span:last-child,
+.eq-total-row.item-discounts span:last-child {
+    color: #f44336;
+}
+
+.eq-global-discount-amount,
+.eq-item-discounts-amount {
+    font-weight: 500;
+}
+
+/* Cart Item Styles for Discounts */
+.eq-cart-item {
+    display: grid;
+    grid-template-columns: 30px 100px 1fr 150px 150px 150px;
+    gap: 15px;
+    padding: 20px;
+    border: 1px solid #eee;
+    margin-bottom: 15px;
+    align-items: center;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+/* Drag and Drop Styles */
+.eq-item-drag-handle {
+    cursor: move;
+    color: #999;
+    font-size: 20px;
+    text-align: center;
+}
+
+.eq-item-drag-handle:hover {
+    color: #666;
+}
+
+.eq-sortable-placeholder {
+    background: #f5f5f5;
+    border: 2px dashed #ddd;
+    margin-bottom: 15px;
+    visibility: visible !important;
+}
+
+.ui-sortable-helper {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.eq-item-price {
+    text-align: right;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .eq-cart-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        position: relative;
+        padding-left: 40px;
+    }
+    
+    .eq-item-drag-handle {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    .eq-item-discount,
+    .eq-global-discount-input {
+        justify-content: flex-start;
+    }
+}

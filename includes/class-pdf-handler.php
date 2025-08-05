@@ -29,11 +29,55 @@ class Event_Quote_Cart_PDF_Handler {
 
         
         try {
+            // Obtener descuentos del POST
+            $discounts_json = isset($_POST['discounts']) ? stripslashes($_POST['discounts']) : '{}';
+            $discounts = json_decode($discounts_json, true);
+            if (!$discounts) {
+                $discounts = array(
+                    'itemDiscounts' => array(),
+                    'globalDiscount' => array('value' => 0, 'type' => 'fixed', 'amount' => 0),
+                    'totalItemDiscounts' => 0
+                );
+            }
+            
+            // Obtener orden de items del POST
+            $item_order_json = isset($_POST['itemOrder']) ? stripslashes($_POST['itemOrder']) : '[]';
+            $item_order = json_decode($item_order_json, true);
+            if (!$item_order) {
+                $item_order = array();
+            }
+            
             // Obtener items detallados del carrito
 $cart_items = eq_get_cart_items();
 
 if (empty($cart_items)) {
     throw new Exception('No items in cart');
+}
+
+// Reordenar items si se especificó un orden
+if (!empty($item_order)) {
+    $ordered_items = array();
+    $item_map = array();
+    
+    // Crear mapa de items por ID
+    foreach ($cart_items as $item) {
+        $item_map[$item->id] = $item;
+    }
+    
+    // Reordenar según el orden especificado
+    foreach ($item_order as $order_info) {
+        if (isset($item_map[$order_info['id']])) {
+            $ordered_items[] = $item_map[$order_info['id']];
+            unset($item_map[$order_info['id']]);
+        }
+    }
+    
+    // Agregar cualquier item que no esté en el orden al final
+    foreach ($item_map as $item) {
+        $ordered_items[] = $item;
+    }
+    
+    $cart_items = $ordered_items;
 }
 
 // Log de items del carrito
@@ -136,7 +180,7 @@ if (!isset($totals['total_raw'])) {
 }
 
 // Generar HTML para el PDF
-$html = $this->generate_pdf_html($cart_items, $totals, $context);
+$html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts);
             
             // Usar DOMPDF para convertir HTML a PDF
         if (class_exists('Dompdf\Dompdf')) {
@@ -214,7 +258,7 @@ wp_send_json_success(array(
     /**
  * Generar HTML para el PDF
  */
-private function generate_pdf_html($cart_items, $totals, $context = null) {
+private function generate_pdf_html($cart_items, $totals, $context = null, $discounts = null) {
     global $debug_log;
     
     // Preparar datos
@@ -433,6 +477,20 @@ private function generate_pdf_html($cart_items, $totals, $context = null) {
                 }
                 
                 // 1. Fila principal del servicio
+                // Calcular descuento del item si existe
+                $item_discount_amount = 0;
+                $item_total = $item->base_price * $item->quantity;
+                
+                if ($discounts && isset($discounts['itemDiscounts'][$item->id])) {
+                    $discount = $discounts['itemDiscounts'][$item->id];
+                    if ($discount['type'] === 'percentage') {
+                        $item_discount_amount = $item_total * ($discount['value'] / 100);
+                    } else {
+                        $item_discount_amount = min($discount['value'], $item_total);
+                    }
+                }
+                
+                $item_total_with_discount = $item_total - $item_discount_amount;
                 ?>
                 <tr>
                     <td><?php echo esc_html($item->title); ?></td>
@@ -444,7 +502,14 @@ private function generate_pdf_html($cart_items, $totals, $context = null) {
                     </td>
                     <td><?php echo esc_html($item->quantity); ?></td>
                     <td><?php echo hivepress()->woocommerce->format_price($item->base_price); ?></td>
-                    <td><?php echo hivepress()->woocommerce->format_price($item->base_price * $item->quantity); ?></td>
+                    <td>
+                        <?php if ($item_discount_amount > 0): ?>
+                            <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_total); ?></span><br>
+                            <span><?php echo hivepress()->woocommerce->format_price($item_total_with_discount); ?></span>
+                        <?php else: ?>
+                            <?php echo hivepress()->woocommerce->format_price($item_total); ?>
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 
                 <?php 
@@ -549,13 +614,47 @@ foreach ($extras_without_desc as $extra):
                 echo esc_html($totals['subtotal']); 
             ?></td>
         </tr>
+        
+        <?php 
+        // Mostrar descuentos si existen
+        if ($discounts && $discounts['totalItemDiscounts'] > 0): 
+        ?>
+        <tr>
+            <td>DESCUENTOS POR ITEM:</td>
+            <td>-<?php echo hivepress()->woocommerce->format_price($discounts['totalItemDiscounts']); ?></td>
+        </tr>
+        <?php endif; ?>
+        
+        <?php 
+        if ($discounts && $discounts['globalDiscount']['amount'] > 0): 
+        ?>
+        <tr>
+            <td>DESCUENTO GLOBAL:</td>
+            <td>-<?php echo hivepress()->woocommerce->format_price($discounts['globalDiscount']['amount']); ?></td>
+        </tr>
+        <?php endif; ?>
+        
         <tr>
             <td>TAX:</td>
-            <td><?php echo esc_html($totals['tax']); ?></td>
+            <td><?php 
+                // Recalcular tax con descuentos
+                $subtotal_with_discounts = $totals['subtotal_raw'];
+                if ($discounts) {
+                    $subtotal_with_discounts -= $discounts['totalItemDiscounts'];
+                    $subtotal_with_discounts -= $discounts['globalDiscount']['amount'];
+                }
+                $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
+                $tax_with_discounts = $subtotal_with_discounts * $tax_rate;
+                echo hivepress()->woocommerce->format_price($tax_with_discounts); 
+            ?></td>
         </tr>
         <tr class="total-row">
             <td>TOTAL:</td>
             <td><?php 
+                // Calcular total con descuentos
+                $total_with_discounts = $subtotal_with_discounts + $tax_with_discounts;
+                echo hivepress()->woocommerce->format_price($total_with_discounts);
+                
                 // Verificar que estamos usando el total correcto
                 global $debug_log;
                 

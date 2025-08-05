@@ -11,6 +11,43 @@
         init() {
             this.container = $('.eq-cart-page');
             this.items = this.container.find('.eq-cart-item');
+            this.initSortable();
+        }
+        
+        initSortable() {
+            const $itemsContainer = this.container.find('.eq-cart-items');
+            
+            // Hacer los items arrastrables
+            $itemsContainer.sortable({
+                items: '.eq-cart-item',
+                handle: '.eq-item-drag-handle',
+                placeholder: 'eq-sortable-placeholder',
+                axis: 'y',
+                opacity: 0.8,
+                cursor: 'move',
+                start: function(event, ui) {
+                    // Crear placeholder con la misma altura
+                    ui.placeholder.height(ui.item.height());
+                },
+                update: (event, ui) => {
+                    // Guardar el nuevo orden para el PDF
+                    this.updateItemOrder();
+                }
+            });
+        }
+        
+        updateItemOrder() {
+            const itemOrder = [];
+            $('.eq-cart-item').each(function(index) {
+                const itemId = $(this).data('item-id');
+                itemOrder.push({
+                    id: itemId,
+                    order: index
+                });
+            });
+            
+            // Guardar el orden en una variable para usarlo al generar el PDF
+            this.itemOrder = itemOrder;
         }
 
       bindEvents() {
@@ -29,6 +66,15 @@
 
     this.container.on('click', '.eq-share-quote', (e) => {
         this.handleShare();
+    });
+    
+    // Eventos para descuentos
+    this.container.on('input change', '.eq-item-discount-value, .eq-item-discount-type', (e) => {
+        this.calculateDiscounts();
+    });
+    
+    this.container.on('input change', '#eq-global-discount-value, #eq-global-discount-type', (e) => {
+        this.calculateDiscounts();
     });
 }
 
@@ -480,6 +526,115 @@ formatPrice(amount) {
         handleViewQuote() {
             window.location.href = eqCartData.quoteViewUrl;
         }
+        
+        calculateDiscounts() {
+            let subtotal = 0;
+            let totalItemDiscounts = 0;
+            let globalDiscountAmount = 0;
+            
+            // Calcular subtotal y descuentos por item
+            $('.eq-cart-item').each(function() {
+                const $item = $(this);
+                const itemId = $item.data('item-id');
+                const priceText = $item.find('.eq-original-price').text();
+                const itemPrice = parseFloat(priceText.replace(/[^0-9.-]+/g, ''));
+                
+                if (!isNaN(itemPrice)) {
+                    subtotal += itemPrice;
+                    
+                    // Calcular descuento del item
+                    const discountValue = parseFloat($item.find('.eq-item-discount-value').val()) || 0;
+                    const discountType = $item.find('.eq-item-discount-type').val();
+                    
+                    let itemDiscount = 0;
+                    if (discountValue > 0) {
+                        if (discountType === 'percentage') {
+                            itemDiscount = itemPrice * (discountValue / 100);
+                        } else {
+                            itemDiscount = Math.min(discountValue, itemPrice);
+                        }
+                    }
+                    
+                    totalItemDiscounts += itemDiscount;
+                    
+                    // Mostrar precio con descuento si aplica
+                    if (itemDiscount > 0) {
+                        const discountedPrice = itemPrice - itemDiscount;
+                        $item.find('.eq-discounted-price')
+                            .text('$' + discountedPrice.toFixed(2))
+                            .show();
+                        $item.find('.eq-original-price').css('text-decoration', 'line-through');
+                    } else {
+                        $item.find('.eq-discounted-price').hide();
+                        $item.find('.eq-original-price').css('text-decoration', 'none');
+                    }
+                }
+            });
+            
+            // Calcular descuento global
+            const globalDiscountValue = parseFloat($('#eq-global-discount-value').val()) || 0;
+            const globalDiscountType = $('#eq-global-discount-type').val();
+            
+            if (globalDiscountValue > 0) {
+                const subtotalAfterItemDiscounts = subtotal - totalItemDiscounts;
+                if (globalDiscountType === 'percentage') {
+                    globalDiscountAmount = subtotalAfterItemDiscounts * (globalDiscountValue / 100);
+                } else {
+                    globalDiscountAmount = Math.min(globalDiscountValue, subtotalAfterItemDiscounts);
+                }
+            }
+            
+            // Actualizar totales en la UI
+            const subtotalAfterDiscounts = subtotal - totalItemDiscounts - globalDiscountAmount;
+            const taxRate = parseFloat(eqCartData.taxRate) || 0.16;
+            const tax = subtotalAfterDiscounts * taxRate;
+            const total = subtotalAfterDiscounts + tax;
+            
+            // Actualizar valores en pantalla
+            $('.eq-subtotal-amount').text('$' + subtotal.toFixed(2));
+            
+            if (globalDiscountAmount > 0) {
+                $('.eq-global-discount-amount').text('-$' + globalDiscountAmount.toFixed(2));
+            } else {
+                $('.eq-global-discount-amount').text('$0.00');
+            }
+            
+            if (totalItemDiscounts > 0) {
+                $('.eq-item-discounts-amount').text('-$' + totalItemDiscounts.toFixed(2));
+                $('.item-discounts').show();
+            } else {
+                $('.item-discounts').hide();
+            }
+            
+            $('.eq-tax-amount').text('$' + tax.toFixed(2));
+            $('.eq-total-amount').text('$' + total.toFixed(2));
+            
+            // Guardar descuentos en datos para el PDF
+            this.discountData = {
+                itemDiscounts: {},
+                globalDiscount: {
+                    value: globalDiscountValue,
+                    type: globalDiscountType,
+                    amount: globalDiscountAmount
+                },
+                totalItemDiscounts: totalItemDiscounts
+            };
+            
+            // Guardar descuentos individuales
+            $('.eq-cart-item').each((index, element) => {
+                const $item = $(element);
+                const itemId = $item.data('item-id');
+                const discountValue = parseFloat($item.find('.eq-item-discount-value').val()) || 0;
+                const discountType = $item.find('.eq-item-discount-type').val();
+                
+                if (discountValue > 0) {
+                    this.discountData.itemDiscounts[itemId] = {
+                        value: discountValue,
+                        type: discountType
+                    };
+                }
+            });
+        }
 
         handleShare() {
             // Por implementar en siguiente fase
@@ -539,6 +694,9 @@ formatPrice(amount) {
         }
 		
 		handleGenerateQuote() {
+    // Calcular descuentos antes de generar el PDF
+    this.calculateDiscounts();
+    
     // Mostrar indicador de carga
     const button = this.container.find('.eq-generate-quote');
     button.prop('disabled', true).text('Generating...');
@@ -549,7 +707,9 @@ formatPrice(amount) {
         type: 'POST',
         data: {
             action: 'eq_generate_quote_pdf',
-            nonce: eqCartData.nonce
+            nonce: eqCartData.nonce,
+            discounts: JSON.stringify(this.discountData || {}),
+            itemOrder: JSON.stringify(this.itemOrder || [])
         },
         success: (response) => {
             if (response.success) {

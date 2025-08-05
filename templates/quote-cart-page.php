@@ -165,6 +165,11 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
         <div class="eq-cart-items">
             <?php foreach ($cart_items as $item): ?>
                 <div class="eq-cart-item" data-item-id="<?php echo esc_attr($item->id); ?>">
+                    <!-- Handle para arrastrar -->
+                    <div class="eq-item-drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    
                     <!-- Imagen del Item -->
                     <div class="eq-item-image">
                         <?php if ($item->image): ?>
@@ -207,7 +212,20 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
 
                     <!-- Precio -->
                     <div class="eq-item-price">
-                        <?php echo esc_html($item->price_formatted); ?>
+                        <div class="eq-original-price"><?php echo esc_html($item->price_formatted); ?></div>
+                        <div class="eq-discounted-price" style="display: none;"></div>
+                    </div>
+
+                    <!-- Descuento por Item -->
+                    <div class="eq-item-discount">
+                        <label><?php esc_html_e('Discount:', 'event-quote-cart'); ?></label>
+                        <div class="eq-discount-input-group">
+                            <input type="number" class="eq-item-discount-value" data-item-id="<?php echo esc_attr($item->id); ?>" placeholder="0" min="0" step="0.01">
+                            <select class="eq-item-discount-type" data-item-id="<?php echo esc_attr($item->id); ?>">
+                                <option value="fixed">$</option>
+                                <option value="percentage">%</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Acciones -->
@@ -230,15 +248,35 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     ?>
                     <div class="eq-total-row subtotal">
                         <span><?php esc_html_e('Subtotal:', 'event-quote-cart'); ?></span>
-                        <span><?php echo esc_html($totals['subtotal']); ?></span>
+                        <span class="eq-subtotal-amount"><?php echo esc_html($totals['subtotal']); ?></span>
                     </div>
+                    
+                    <!-- Descuento Global -->
+                    <div class="eq-total-row global-discount">
+                        <span><?php esc_html_e('Global Discount:', 'event-quote-cart'); ?></span>
+                        <div class="eq-global-discount-input">
+                            <input type="number" id="eq-global-discount-value" placeholder="0" min="0" step="0.01">
+                            <select id="eq-global-discount-type">
+                                <option value="fixed">$</option>
+                                <option value="percentage">%</option>
+                            </select>
+                        </div>
+                        <span class="eq-global-discount-amount">$0.00</span>
+                    </div>
+                    
+                    <!-- Descuentos por Item -->
+                    <div class="eq-total-row item-discounts" style="display: none;">
+                        <span><?php esc_html_e('Item Discounts:', 'event-quote-cart'); ?></span>
+                        <span class="eq-item-discounts-amount">$0.00</span>
+                    </div>
+                    
                     <div class="eq-total-row tax">
                         <span><?php esc_html_e('Tax:', 'event-quote-cart'); ?></span>
-                        <span><?php echo esc_html($totals['tax']); ?></span>
+                        <span class="eq-tax-amount"><?php echo esc_html($totals['tax']); ?></span>
                     </div>
                     <div class="eq-total-row total">
                         <span><?php esc_html_e('Total:', 'event-quote-cart'); ?></span>
-                        <span><?php echo esc_html($totals['total']); ?></span>
+                        <span class="eq-total-amount"><?php echo esc_html($totals['total']); ?></span>
                     </div>
                 </div>
 

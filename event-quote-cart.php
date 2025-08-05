@@ -140,10 +140,12 @@ function eq_cart_enqueue_scripts() {
             EQ_CART_VERSION
         );
         
+        wp_enqueue_script('jquery-ui-sortable');
+        
         wp_enqueue_script(
             'event-quote-cart-page',
             EQ_CART_PLUGIN_URL . 'public/js/quote-cart-page.js',
-            array('jquery'),
+            array('jquery', 'jquery-ui-sortable'),
             EQ_CART_VERSION,
             true
         );
