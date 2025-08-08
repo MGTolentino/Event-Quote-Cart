@@ -93,6 +93,24 @@ function eq_can_use_leads_integration() {
     );
 }
 
+/**
+ * Obtiene el tax rate dinámicamente de WooCommerce
+ * Se usa en todas las páginas para consistencia
+ */
+function eq_get_woocommerce_tax_rate() {
+    global $wpdb;
+    
+    $tax_rate = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+            1
+        )
+    );
+    
+    // Si no se encuentra, usar 16 como fallback
+    return floatval($tax_rate) ?: 16;
+}
+
 function init_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-loader.php';
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-ajax-handler.php';
@@ -184,7 +202,7 @@ wp_localize_script(
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('eq_cart_public_nonce'),
         'cartUrl' => get_permalink(get_option('eq_cart_page_id')),
-        'taxRate' => get_option('eq_cart_tax_rate', 0),
+        'taxRate' => eq_get_woocommerce_tax_rate(),
         'currency' => get_woocommerce_currency_symbol(),
         'thousand_sep' => wc_get_price_thousand_separator(),
         'decimal_sep' => wc_get_price_decimal_separator(),
