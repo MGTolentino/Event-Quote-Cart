@@ -666,9 +666,6 @@ private function get_woocommerce_tax_rate() {
         )
     );
     
-    // DEBUG: Log para verificar qué está pasando en JavaScript localization
-    error_log("JS TAX RATE DEBUG: DB query result = " . var_export($tax_rate, true) . ", final value = " . (floatval($tax_rate) ?: 16));
-    
     // Si no se encuentra, usar 16 como fallback
     return floatval($tax_rate) ?: 16;
 }

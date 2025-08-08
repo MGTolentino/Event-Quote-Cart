@@ -272,22 +272,10 @@ function eq_calculate_cart_totals($items) {
         )
     );
     
-    // DEBUG: Log para ver qué está pasando
-    $debug_log = "TAX CALCULATION DEBUG:\n";
-    $debug_log .= "  - Tax rate from DB: " . var_export($tax_rate_db, true) . "\n";
-    $debug_log .= "  - Total items sum: " . $total . "\n";
-    
     // Si no se encuentra, usar 16 como fallback (no 0)
     $tax_rate = floatval($tax_rate_db) ?: 16;
-    $debug_log .= "  - Final tax rate used: " . $tax_rate . "\n";
-    
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
-    
-    $debug_log .= "  - Calculated subtotal: " . $subtotal . "\n";
-    $debug_log .= "  - Calculated tax: " . $tax . "\n";
-    
-    error_log("QUOTE TAX DEBUG: " . $debug_log);
     
     // Guardar los valores numéricos también para evitar recálculos
     return array(

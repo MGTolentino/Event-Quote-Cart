@@ -551,13 +551,6 @@ formatPrice(amount) {
             const taxRate = parseFloat(eqCartData.taxRate) || 16;
             const taxMultiplier = 1 + (taxRate / 100);
             
-            // DEBUG: Log para ver qué tax rate está usando JavaScript
-            console.log('QUOTE TAX DEBUG (JS):', {
-                'eqCartData.taxRate': eqCartData.taxRate,
-                'parsed taxRate': taxRate,
-                'taxMultiplier': taxMultiplier
-            });
-            
             // Guardar referencia a this para usar dentro del each
             const instance = this;
             

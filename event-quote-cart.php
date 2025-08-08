@@ -174,7 +174,12 @@ function eq_cart_enqueue_scripts() {
             array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('eq_cart_public_nonce'),
-                'quoteViewUrl' => home_url('/quote-view/')
+                'quoteViewUrl' => home_url('/quote-view/'),
+                'taxRate' => eq_get_woocommerce_tax_rate(),
+                'currency' => get_woocommerce_currency_symbol(),
+                'thousand_sep' => wc_get_price_thousand_separator(),
+                'decimal_sep' => wc_get_price_decimal_separator(),
+                'num_decimals' => wc_get_price_decimals()
             )
         );
     }
