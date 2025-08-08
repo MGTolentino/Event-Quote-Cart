@@ -760,6 +760,9 @@ foreach ($extras_without_desc as $extra):
         wp_send_json_error('Unauthorized');
     }
     
+    // Check if custom message was provided
+    $custom_message = isset($_POST['custom_message']) ? wp_kses_post($_POST['custom_message']) : '';
+    
     // Obtener contexto y datos del lead primero
 $context = eq_get_active_context();
 $user = wp_get_current_user();
@@ -820,13 +823,42 @@ if (count($cart_items) == 1) {
         // Generar PDF
         $pdf_data = $this->generate_pdf_data();
         
-        // Preparar mensaje personalizado
-$subject = sprintf('🎉 ¡Tu cotización de %s está lista! Hagamos de tu evento algo inolvidable ✨', $product_name);
+        // Preparar mensaje personalizado - integrates with Vendor Dashboard PRO plugin
+        $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+        $customer_name = $lead_name ?: 'cliente';
         
-        $phone_number = "+528444550550"; // Número de contacto
-        $user_email = $user->user_email; // Email del usuario que cotiza
-        
-        $message = sprintf('**Hola %s,**
+        if (!empty($custom_message)) {
+            // Use custom message from modal and replace placeholders
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}', '{product_name}'],
+                [$customer_name, $quote_number, $user->display_name, $product_name],
+                $custom_message
+            );
+            $subject = sprintf('Cotización #%s - %s', $quote_number, $product_name);
+        } else {
+            // Fallback to vendor template or default
+            $email_template = '';
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $email_template = get_post_meta($vendor->get_id(), 'email_message_template', true);
+                }
+            }
+            
+            if (!empty($email_template)) {
+                $message = str_replace(
+                    ['{customer_name}', '{quote_number}', '{vendor_name}', '{product_name}'],
+                    [$customer_name, $quote_number, $user->display_name, $product_name],
+                    $email_template
+                );
+                $subject = sprintf('Cotización #%s - %s', $quote_number, $product_name);
+            } else {
+                $subject = sprintf('🎉 ¡Tu cotización de %s está lista! Hagamos de tu evento algo inolvidable ✨', $product_name);
+                
+                $phone_number = "+528444550550";
+                $user_email = $user->user_email;
+                
+                $message = sprintf('**Hola %s,**
 
 Con gran placer te comparto la propuesta de %s, espero sea de tu completo agrado.
   
@@ -852,11 +884,13 @@ Si tienes alguna duda o necesitas ajustes, estaré encantado de ayudarte a afina
 %s  
 📍 **Reservas Events** 
 📧 contacto@reservas.events | 📞 +528444550550 | 🌐 https://reservas.events',
-            $lead_name ?: 'cliente',
-            $product_name,
-            $phone_number,  // Añadir este argumento
-            $user->display_name
-        );
+                    $customer_name,
+                    $product_name,
+                    $phone_number,
+                    $user->display_name
+                );
+            }
+        }
         
         // Enviar email con adjunto
         $headers = array('Content-Type: text/html; charset=UTF-8');
@@ -997,12 +1031,32 @@ $dompdf = new \Dompdf\Dompdf($options);
         // Obtener URL de cotización
         $quote_view_url = home_url('/quote-view/');
         
-        // Preparar mensaje personalizado para WhatsApp
-        $message = sprintf(
-            __('¡Hola! Qué tal %s, soy %s integrante del equipo de Planner\'s de Reservas.events. Me reporto para saludarte y ayudarte con el servicio. ¿Tienes alguna pregunta sobre la cotización?', 'event-quote-cart'),
-            $lead_name,
-            $user->display_name
-        );
+        // Preparar mensaje personalizado para WhatsApp - integrates with Vendor Dashboard PRO plugin
+        $whatsapp_template = '';
+        if (function_exists('vdp_get_current_vendor')) {
+            $vendor = vdp_get_current_vendor();
+            if ($vendor) {
+                $whatsapp_template = get_post_meta($vendor->get_id(), 'whatsapp_message_template', true);
+            }
+        }
+        
+        // Use vendor template if available, otherwise use default message
+        if (!empty($whatsapp_template)) {
+            $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+            $customer_name = $lead_name ?: 'cliente';
+            
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}'],
+                [$customer_name, $quote_number, $user->display_name],
+                $whatsapp_template
+            );
+        } else {
+            $message = sprintf(
+                __('¡Hola! Qué tal %s, soy %s integrante del equipo de Planner\'s de Reservas.events. Me reporto para saludarte y ayudarte con el servicio. ¿Tienes alguna pregunta sobre la cotización?', 'event-quote-cart'),
+                $lead_name,
+                $user->display_name
+            );
+        }
         
         // Generar link de WhatsApp
         $whatsapp_link = 'https://wa.me/' . ($lead_phone ? $lead_phone : '') . '?text=' . urlencode($message);

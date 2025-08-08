@@ -853,18 +853,20 @@ handleShare() {
 }
 
 handleShareByEmail() {
-    // Primero obtener el email del lead
+    // Obtener email del lead y template del vendor
     $.ajax({
         url: eqCartData.ajaxurl,
         type: 'POST',
         data: {
-            action: 'eq_get_lead_email',
+            action: 'eq_get_email_template',
             nonce: eqCartData.nonce
         },
         success: (response) => {
-            const leadEmail = response.success ? response.data.email : '';
+            const data = response.success ? response.data : {};
+            const leadEmail = data.email || '';
+            const emailTemplate = data.template || '';
             
-            // Mostrar modal con email pre-rellenado
+            // Mostrar modal con email y mensaje editables
             const modalHtml = `
                 <div class="eq-share-modal">
                     <div class="eq-share-modal-content">
@@ -879,6 +881,12 @@ handleShareByEmail() {
                                     <input type="email" id="share-email" name="email" 
                                         value="${leadEmail}" 
                                         required placeholder="Ingrese dirección de email">
+                                </div>
+                                <div class="eq-form-group">
+                                    <label for="share-email-message">Mensaje</label>
+                                    <textarea id="share-email-message" name="message" rows="6" 
+                                        required placeholder="Ingrese mensaje para el email">${emailTemplate}</textarea>
+                                    <small>Puede usar: {customer_name}, {quote_number}, {vendor_name}, {product_name}</small>
                                 </div>
                                 <div class="eq-form-actions">
                                     <button type="submit" class="eq-send-email">Enviar Email</button>
@@ -904,6 +912,7 @@ handleShareByEmail() {
                 e.preventDefault();
                 
                 const email = $modal.find('#share-email').val();
+                const message = $modal.find('#share-email-message').val();
                 const submitButton = $modal.find('.eq-send-email');
                 submitButton.prop('disabled', true).text('Sending...');
                 
@@ -913,7 +922,8 @@ handleShareByEmail() {
                     data: {
                         action: 'eq_send_quote_email',
                         nonce: eqCartData.nonce,
-                        email: email
+                        email: email,
+                        custom_message: message
                     },
                     success: (response) => {
                         if (response.success) {
@@ -933,10 +943,7 @@ handleShareByEmail() {
             });
         },
         error: () => {
-            // Mostrar modal sin email pre-rellenado en caso de error
-            // (similar al código anterior pero sin valor en el input)
-            this.showNotification('Error al obtener el email del cliente', 'error');
-            // Aquí puedes incluir un código similar al de arriba pero sin pre-rellenar el email
+            this.showNotification('Error al obtener template de email', 'error');
         }
     });
 }
@@ -946,12 +953,14 @@ handleShareByWhatsApp() {
         url: eqCartData.ajaxurl,
         type: 'POST',
         data: {
-            action: 'eq_generate_whatsapp_link',
+            action: 'eq_get_whatsapp_template',
             nonce: eqCartData.nonce
         },
         success: (response) => {
             if (response.success) {
-                // Mostrar modal de confirmación
+                const data = response.data;
+                
+                // Mostrar modal con teléfono y mensaje editables
                 const modalHtml = `
                     <div class="eq-share-modal">
                         <div class="eq-share-modal-content">
@@ -964,12 +973,14 @@ handleShareByWhatsApp() {
                                     <div class="eq-form-group">
                                         <label for="share-phone">Número de teléfono</label>
                                         <input type="tel" id="share-phone" name="phone" 
-                                            value="${response.data.lead_phone || ''}" 
+                                            value="${data.lead_phone || ''}" 
                                             placeholder="Ingrese número de teléfono" required>
                                     </div>
                                     <div class="eq-form-group">
-                                        <label>Mensaje:</label>
-                                        <div class="eq-message-preview">${response.data.message}</div>
+                                        <label for="share-whatsapp-message">Mensaje</label>
+                                        <textarea id="share-whatsapp-message" name="message" rows="4" 
+                                            required placeholder="Ingrese mensaje para WhatsApp">${data.message}</textarea>
+                                        <small>Puede usar: {customer_name}, {quote_number}, {vendor_name}</small>
                                     </div>
                                     <div class="eq-form-actions">
                                         <button type="submit" class="eq-send-whatsapp">Enviar por WhatsApp</button>
@@ -995,8 +1006,9 @@ handleShareByWhatsApp() {
                     e.preventDefault();
                     
                     const phone = $modal.find('#share-phone').val().replace(/[^0-9]/g, '');
+                    const message = $modal.find('#share-whatsapp-message').val();
                     const whatsappLink = 'https://wa.me/' + (phone ? phone : '') + 
-                                        '?text=' + encodeURIComponent(response.data.message);
+                                        '?text=' + encodeURIComponent(message);
                     
                     // Abrir WhatsApp en nueva ventana
                     window.open(whatsappLink, '_blank');

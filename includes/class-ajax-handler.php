@@ -34,6 +34,8 @@ add_action('wp_ajax_eq_update_cart_date', array($this, 'update_cart_date'));
 add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		add_action('wp_ajax_eq_check_event_exists', array($this, 'check_event_exists'));
 		add_action('wp_ajax_eq_get_lead_email', array($this, 'get_lead_email'));
+		add_action('wp_ajax_eq_get_email_template', array($this, 'get_email_template'));
+		add_action('wp_ajax_eq_get_whatsapp_template', array($this, 'get_whatsapp_template'));
 		add_action('wp_ajax_eq_validate_all_cart_items', array($this, 'validate_all_cart_items'));
         
         // Hooks para manejo de fechas
@@ -2877,6 +2879,104 @@ public function validate_all_cart_items() {
         // Establecer cookies para que el frontend sepa que debe limpiar
         setcookie('eq_session_ended', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
         setcookie('eq_context_force_clear', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
+    }
+
+    /**
+     * Get email template and lead email - integrates with Vendor Dashboard PRO plugin
+     */
+    public function get_email_template() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Get lead email
+            $context = eq_get_active_context();
+            $lead_email = '';
+            if ($context && isset($context['lead'])) {
+                $lead = $context['lead'];
+                if (!empty($lead->lead_e_mail)) {
+                    $lead_email = sanitize_email($lead->lead_e_mail);
+                }
+            }
+            
+            // Get vendor email template
+            $email_template = '';
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $email_template = get_post_meta($vendor->get_id(), 'email_message_template', true);
+                }
+            }
+            
+            // If no template, provide default
+            if (empty($email_template)) {
+                $user = wp_get_current_user();
+                $email_template = "Hola {customer_name},\n\nTe comparto la cotización #{quote_number} que solicitaste.\n\nSaludos,\n{vendor_name}";
+            }
+            
+            wp_send_json_success(array(
+                'email' => $lead_email,
+                'template' => $email_template
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Get WhatsApp template and lead phone - integrates with Vendor Dashboard PRO plugin
+     */
+    public function get_whatsapp_template() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Get lead phone
+            $context = eq_get_active_context();
+            $lead_phone = '';
+            $lead_name = 'cliente';
+            
+            if ($context && isset($context['lead'])) {
+                $lead = $context['lead'];
+                if (!empty($lead->lead_celular)) {
+                    $lead_phone = preg_replace('/[^0-9]/', '', $lead->lead_celular);
+                    if (substr($lead_phone, 0, 1) === '+') {
+                        $lead_phone = substr($lead_phone, 1);
+                    }
+                }
+                $lead_name = $lead->lead_nombre ?: 'cliente';
+            }
+            
+            // Get vendor WhatsApp template
+            $whatsapp_template = '';
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $whatsapp_template = get_post_meta($vendor->get_id(), 'whatsapp_message_template', true);
+                }
+            }
+            
+            // If no template, provide default
+            if (empty($whatsapp_template)) {
+                $user = wp_get_current_user();
+                $whatsapp_template = "¡Hola! Qué tal {customer_name}, soy {vendor_name}. Te comparto la cotización #{quote_number}. ¿Tienes alguna pregunta?";
+            }
+            
+            wp_send_json_success(array(
+                'lead_phone' => $lead_phone,
+                'message' => $whatsapp_template
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
     }
 	
 }
