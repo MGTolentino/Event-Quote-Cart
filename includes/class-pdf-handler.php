@@ -499,11 +499,14 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 }
                 
                 // 1. Fila principal del servicio
+                // Calcular el precio unitario correcto (total sin impuestos dividido por cantidad)
+                $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
+                $item_total_without_tax = $item->total_price / (1 + $tax_rate);
+                $item_unit_price_without_tax = $item_total_without_tax / $item->quantity;
+                $item_subtotal = $item_total_without_tax;
+                
                 // Calcular descuento del item si existe
                 $item_discount_amount = 0;
-                $item_subtotal = $item->base_price * $item->quantity;
-                
-                // Usar el monto de descuento ya calculado si está disponible
                 if ($discounts && isset($discounts['itemDiscounts'][$item->id])) {
                     $discount = $discounts['itemDiscounts'][$item->id];
                     // Si tenemos el monto ya calculado, usarlo directamente
@@ -530,7 +533,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                         
                     </td>
                     <td><?php echo esc_html($item->quantity); ?></td>
-                    <td><?php echo hivepress()->woocommerce->format_price($item->base_price); ?></td>
+                    <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
                     <td>
                         <?php if ($item_discount_amount > 0): ?>
                             <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
@@ -639,8 +642,14 @@ foreach ($extras_without_desc as $extra):
         <tr>
             <td>SUB TOTAL:</td>
             <td><?php 
-                // Mostrar subtotal sin impuestos
-                echo hivepress()->woocommerce->format_price($totals['subtotal_raw']); 
+                // Calcular subtotal sin impuestos basado en los precios reales
+                $real_subtotal = 0;
+                foreach ($detailed_items as $item) {
+                    $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
+                    $item_total_without_tax = $item->total_price / (1 + $tax_rate);
+                    $real_subtotal += $item_total_without_tax;
+                }
+                echo hivepress()->woocommerce->format_price($real_subtotal); 
             ?></td>
         </tr>
         
@@ -666,8 +675,8 @@ foreach ($extras_without_desc as $extra):
         <tr>
             <td>IVA (<?php echo get_option('eq_tax_rate', 16); ?>%):</td>
             <td><?php 
-                // Calcular tax con descuentos aplicados
-                $subtotal_after_discounts = $totals['subtotal_raw'];
+                // Calcular tax con descuentos aplicados usando el subtotal real
+                $subtotal_after_discounts = $real_subtotal;
                 
                 if ($discounts) {
                     if (isset($discounts['totalItemDiscounts'])) {

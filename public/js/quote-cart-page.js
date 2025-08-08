@@ -617,27 +617,34 @@ formatPrice(amount) {
             const tax = finalSubtotal * (taxRate / 100);
             const total = finalSubtotal + tax;
             
-            // Actualizar valores en pantalla
-            $('.eq-subtotal-amount').text(instance.formatPrice(subtotalWithoutTax));
-            
-            if (globalDiscountAmount > 0) {
-                $('.eq-global-discount-amount').text('-' + instance.formatPrice(globalDiscountAmount));
-            } else {
-                $('.eq-global-discount-amount').text(instance.formatPrice(0));
-            }
-            
-            if (totalItemDiscounts > 0) {
-                $('.eq-item-discounts-amount').text('-' + instance.formatPrice(totalItemDiscounts));
-                $('.item-discounts').show();
-            } else {
-                $('.item-discounts').hide();
-            }
-            
-            // Mostrar subtotal con descuentos si hay algún descuento
+            // Actualizar valores en pantalla - NUEVO DISEÑO
+            // Si hay descuentos, mostrar el subtotal original y luego el descontado
             if (totalItemDiscounts > 0 || globalDiscountAmount > 0) {
-                $('.eq-subtotal-after-discounts-amount').text(instance.formatPrice(finalSubtotal));
-                $('.subtotal-after-discounts').show();
+                // Mostrar subtotal con descuentos aplicados como el principal
+                $('.eq-subtotal-amount').text(instance.formatPrice(finalSubtotal));
+                
+                // Mostrar descuentos aplicados
+                if (totalItemDiscounts > 0) {
+                    $('.eq-item-discounts-amount').text('-' + instance.formatPrice(totalItemDiscounts));
+                    $('.item-discounts').show();
+                } else {
+                    $('.item-discounts').hide();
+                }
+                
+                if (globalDiscountAmount > 0) {
+                    $('.eq-global-discount-amount').text('-' + instance.formatPrice(globalDiscountAmount));
+                } else {
+                    $('.eq-global-discount-amount').text(instance.formatPrice(0));
+                }
+                
+                // Ocultar la línea redundante "Subtotal after Discounts"
+                $('.subtotal-after-discounts').hide();
+                
             } else {
+                // Sin descuentos, mostrar subtotal normal
+                $('.eq-subtotal-amount').text(instance.formatPrice(subtotalWithoutTax));
+                $('.eq-global-discount-amount').text(instance.formatPrice(0));
+                $('.item-discounts').hide();
                 $('.subtotal-after-discounts').hide();
             }
             
