@@ -143,6 +143,7 @@
     border-radius: 4px;
     overflow: hidden;
     background: white;
+    width: 120px;
 }
 
 .eq-item-discount-value {
@@ -160,6 +161,7 @@
 }
 
 .eq-item-discount-type {
+    width: 40px;
     border: none;
     padding: 8px;
     background: #f8f9fa;
