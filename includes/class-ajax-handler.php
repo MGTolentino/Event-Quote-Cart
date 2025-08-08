@@ -469,9 +469,6 @@ public function update_cart_event() {
             }
             
             // Convertir fecha a timestamp
-            error_log("DEBUG: create_event - Fecha recibida: " . $event_date);
-            error_log("DEBUG: create_event - Timezone del servidor: " . date_default_timezone_get());
-            error_log("DEBUG: create_event - Fecha actual: " . date('Y-m-d H:i:s'));
             
             // Intentar usar DateTime para conversión más robusta
             try {
@@ -479,22 +476,16 @@ public function update_cart_event() {
                 $timezone = new DateTimeZone(get_option('timezone_string') ?: 'America/Mexico_City');
                 $dateObj = new DateTime($event_date . ' 00:00:00', $timezone);
                 $date_timestamp = $dateObj->getTimestamp();
-                error_log("DEBUG: create_event - DateTime timestamp: " . $date_timestamp . " (timezone: " . $timezone->getName() . ")");
             } catch (Exception $e) {
-                error_log("DEBUG: create_event - DateTime falló: " . $e->getMessage());
                 // Fallback a strtotime
                 $date_timestamp = strtotime($event_date . ' 00:00:00');
-                error_log("DEBUG: create_event - strtotime fallback: " . $date_timestamp);
             }
             
             if ($date_timestamp === false || $date_timestamp === 0) {
-                error_log("DEBUG: create_event - ERROR: Conversión de fecha falló para: " . $event_date);
                 $date_timestamp = strtotime('+1 day'); // Usar mañana como fallback
-                error_log("DEBUG: create_event - Usando fallback timestamp: " . $date_timestamp);
             }
             
             // Crear nuevo evento
-            error_log("DEBUG: create_event - Insertando en BD con timestamp: " . $date_timestamp);
             $result = $wpdb->insert(
                 $wpdb->prefix . 'jet_cct_eventos',
                 array(
@@ -510,10 +501,7 @@ public function update_cart_event() {
                 array('%d', '%d', '%s', '%d', '%s', '%s', '%s', '%s')
             );
             
-            error_log("DEBUG: create_event - Query ejecutada: " . $wpdb->last_query);
-            error_log("DEBUG: create_event - Resultado insert: " . ($result ? 'SUCCESS' : 'FAIL'));
             if (!$result) {
-                error_log("DEBUG: create_event - Error BD: " . $wpdb->last_error);
             }
             
             if (!$result) {
@@ -521,7 +509,6 @@ public function update_cart_event() {
             }
             
             $event_id = $wpdb->insert_id;
-            error_log("DEBUG: create_event - Evento creado con ID: " . $event_id);
             
             // Verificar qué se guardó realmente en la BD
             $saved_event = $wpdb->get_row($wpdb->prepare(
@@ -529,7 +516,6 @@ public function update_cart_event() {
                 $event_id
             ));
             if ($saved_event) {
-                error_log("DEBUG: create_event - Fecha guardada en BD: " . $saved_event->fecha_de_evento);
             }
         }
         
@@ -1856,30 +1842,24 @@ public function clear_context_meta() {
         ob_end_clean();
     }
     
-    error_log('DEBUG check_context_status: START - User ID: ' . get_current_user_id());
     
     // Verificar si session_start ya fue llamado
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
-        error_log('DEBUG check_context_status: Session started');
     }
     
     try {
         check_ajax_referer('eq_cart_public_nonce', 'nonce');
-        error_log('DEBUG check_context_status: Nonce verification passed');
     } catch (Exception $e) {
-        error_log('DEBUG check_context_status: Nonce verification failed: ' . $e->getMessage());
         session_write_close();
         wp_send_json_error('Nonce verification failed');
         return;
     }
     
     if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
-        error_log('DEBUG check_context_status: Permission check failed');
         wp_send_json_error('Unauthorized');
         return;
     }
-    error_log('DEBUG check_context_status: Permission check passed');
     
     global $wpdb;
     $user_id = get_current_user_id();
@@ -1887,14 +1867,11 @@ public function clear_context_meta() {
     
     // Verificar primero si hay cookie de sesión finalizada
     if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'true') {
-        error_log('DEBUG check_context_status: Session ended cookie found, returning false');
         wp_send_json_success(array('isActive' => false));
         return;
     }
-    error_log('DEBUG check_context_status: No session ended cookie found');
     
     // Query simplificada: obtener solo sesión primero
-    error_log('DEBUG check_context_status: About to query sessions table for user ' . $user_id);
     $session = $wpdb->get_row($wpdb->prepare(
         "SELECT id, lead_id, event_id, session_token 
         FROM {$wpdb->prefix}eq_context_sessions 
@@ -1905,21 +1882,17 @@ public function clear_context_meta() {
     ));
     
     if ($wpdb->last_error) {
-        error_log('DEBUG check_context_status: Database error in session query: ' . $wpdb->last_error);
         wp_send_json_error('Database error');
         return;
     }
     
-    error_log('DEBUG check_context_status: Session query completed. Found session: ' . ($session ? 'YES' : 'NO'));
 
     if (!$session) {
         // Si no hay sesión en BD pero sí en PHP, limpiarla
         if (isset($_SESSION['eq_quote_context'])) {
-            error_log('DEBUG check_context_status: Session in PHP but not in DB, clearing PHP session');
             unset($_SESSION['eq_quote_context']);
         }
         
-        error_log('DEBUG check_context_status: No session found, returning false');
         
         // Cerrar sesión antes de enviar respuesta
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -2449,23 +2422,14 @@ public function update_event_date() {
         }
         
         // Convertir fecha a timestamp si es necesario
-        error_log("DEBUG: update_event_date - Fecha recibida: " . $new_date);
         
         // Test múltiples métodos de conversión
-        error_log("DEBUG: TEST strtotime('" . $new_date . "'): " . strtotime($new_date));
-        error_log("DEBUG: TEST strtotime('" . $new_date . " 00:00:00'): " . strtotime($new_date . ' 00:00:00'));
-        error_log("DEBUG: TEST strtotime('" . $new_date . " 12:00:00'): " . strtotime($new_date . ' 12:00:00'));
         
         // Test específico para 2025-09-26
         if ($new_date === '2025-09-26') {
-            error_log("DEBUG: SPECIAL TEST para 2025-09-26");
-            error_log("DEBUG: date_parse('2025-09-26'): " . print_r(date_parse('2025-09-26'), true));
-            error_log("DEBUG: mktime(0,0,0,9,26,2025): " . mktime(0,0,0,9,26,2025));
             try {
                 $test_dt = new DateTime('2025-09-26');
-                error_log("DEBUG: DateTime('2025-09-26')->getTimestamp(): " . $test_dt->getTimestamp());
             } catch (Exception $e) {
-                error_log("DEBUG: DateTime test falló: " . $e->getMessage());
             }
         }
         
@@ -2475,16 +2439,12 @@ public function update_event_date() {
             $timezone = new DateTimeZone(get_option('timezone_string') ?: 'America/Mexico_City');
             $dateObj = new DateTime($new_date . ' 00:00:00', $timezone);
             $date_timestamp = $dateObj->getTimestamp();
-            error_log("DEBUG: update_event_date - DateTime timestamp: " . $date_timestamp . " (timezone: " . $timezone->getName() . ")");
         } catch (Exception $e) {
-            error_log("DEBUG: update_event_date - DateTime falló: " . $e->getMessage());
             // Fallback a strtotime
             $date_timestamp = strtotime($new_date . ' 00:00:00');
-            error_log("DEBUG: update_event_date - strtotime fallback: " . $date_timestamp);
         }
         
         if ($date_timestamp === false || $date_timestamp === 0) {
-            error_log("DEBUG: update_event_date - ERROR: Conversión de fecha falló para: " . $new_date);
             wp_send_json_error('Fecha inválida: ' . $new_date);
             return;
         }
