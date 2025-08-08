@@ -647,18 +647,15 @@ foreach ($extras_without_desc as $extra):
     </table>
     
     <table class="totals-table">
+        <?php 
+        // Usar la función eq_calculate_cart_totals que ya funciona correctamente
+        $pdf_totals = eq_calculate_cart_totals($cart_items);
+        $tax_rate = eq_get_woocommerce_tax_rate();
+        ?>
+        
         <tr>
             <td>SUB TOTAL:</td>
-            <td><?php 
-                // Calcular subtotal sin impuestos basado en los precios reales
-                $real_subtotal = 0;
-                foreach ($detailed_items as $item) {
-                    $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
-                    $item_total_without_tax = $item->total_price / (1 + $tax_rate);
-                    $real_subtotal += $item_total_without_tax;
-                }
-                echo hivepress()->woocommerce->format_price($real_subtotal); 
-            ?></td>
+            <td><?php echo esc_html($pdf_totals['subtotal']); ?></td>
         </tr>
         
         <?php 
@@ -681,32 +678,31 @@ foreach ($extras_without_desc as $extra):
         <?php endif; ?>
         
         <tr>
-            <td>IVA (<?php echo get_option('eq_tax_rate', 16); ?>%):</td>
-            <td><?php 
-                // Calcular tax con descuentos aplicados usando el subtotal real
-                $subtotal_after_discounts = $real_subtotal;
-                
-                if ($discounts) {
-                    if (isset($discounts['totalItemDiscounts'])) {
-                        $subtotal_after_discounts -= $discounts['totalItemDiscounts'];
-                    }
-                    if (isset($discounts['globalDiscount']['amount'])) {
-                        $subtotal_after_discounts -= $discounts['globalDiscount']['amount'];
-                    }
-                }
-                
-                $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
-                $tax_amount = $subtotal_after_discounts * $tax_rate;
-                
-                echo hivepress()->woocommerce->format_price($tax_amount); 
-            ?></td>
+            <td>IVA (<?php echo number_format($tax_rate, 2); ?>%):</td>
+            <td><?php echo esc_html($pdf_totals['tax']); ?></td>
         </tr>
+        
         <tr class="total-row">
             <td>TOTAL:</td>
             <td><?php 
-                // Total final = Subtotal con descuentos + Tax
-                $total_final = $subtotal_after_discounts + $tax_amount;
-                echo hivepress()->woocommerce->format_price($total_final);
+                // Si hay descuentos, calcular el total ajustado
+                if ($discounts && (
+                    (isset($discounts['totalItemDiscounts']) && $discounts['totalItemDiscounts'] > 0) ||
+                    (isset($discounts['globalDiscount']['amount']) && $discounts['globalDiscount']['amount'] > 0)
+                )) {
+                    $total_discounts = 0;
+                    if (isset($discounts['totalItemDiscounts'])) {
+                        $total_discounts += $discounts['totalItemDiscounts'];
+                    }
+                    if (isset($discounts['globalDiscount']['amount'])) {
+                        $total_discounts += $discounts['globalDiscount']['amount'];
+                    }
+                    
+                    $final_total = $pdf_totals['total_raw'] - $total_discounts;
+                    echo hivepress()->woocommerce->format_price($final_total);
+                } else {
+                    echo esc_html($pdf_totals['total']);
+                }
             ?></td>
         </tr>
     </table>
