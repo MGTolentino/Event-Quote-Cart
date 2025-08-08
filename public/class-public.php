@@ -133,7 +133,7 @@ class Event_Quote_Cart_Public {
                 ),
 				'isPrivilegedUser' => current_user_can('administrator') || current_user_can('ejecutivo_de_ventas'),
        				 'hasContextPanel' => $this->is_context_panel_active(),
-       			 'taxRate' => floatval(get_option('eq_tax_rate', 16))
+       			 'taxRate' => $this->get_woocommerce_tax_rate()
             )
         );
 		
@@ -650,6 +650,24 @@ private function is_context_panel_active() {
     }
     
     return $cart && !empty($cart->lead_id) && !empty($cart->event_id);
+}
+
+/**
+ * Obtiene el tax rate de WooCommerce igual que el tema Kava-Child
+ * @return float
+ */
+private function get_woocommerce_tax_rate() {
+    global $wpdb;
+    
+    $tax_rate = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+            1
+        )
+    );
+    
+    // Si no se encuentra, usar 16 como fallback
+    return floatval($tax_rate) ?: 16;
 }
 	
 public function search_leads() {

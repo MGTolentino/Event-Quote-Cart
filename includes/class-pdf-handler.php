@@ -500,7 +500,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 
                 // 1. Fila principal del servicio
                 // Calcular el precio unitario correcto (total sin impuestos dividido por cantidad)
-                // Usar la misma fuente de tax rate que el tema para consistencia
+                // Usar exactamente la misma fuente de tax rate que el tema Kava-Child
                 global $wpdb;
                 $tax_rate_db = $wpdb->get_var(
                     $wpdb->prepare(
@@ -508,7 +508,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                         1
                     )
                 );
-                $tax_rate = (floatval($tax_rate_db) ?: floatval(get_option('eq_tax_rate', 16))) / 100;
+                $tax_rate = (floatval($tax_rate_db) ?: 16) / 100;
                 $item_total_without_tax = $item->total_price / (1 + $tax_rate);
                 $item_unit_price_without_tax = $item_total_without_tax / $item->quantity;
                 $item_subtotal = $item_total_without_tax;

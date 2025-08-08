@@ -742,8 +742,15 @@ private function calculate_price($listing_id, $quantity, $extras, $date = '') {
         }
     }
     
-    // Aplicar impuestos al total
-    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    // Aplicar impuestos al total usando la misma fuente que el tema
+    global $wpdb;
+    $tax_rate_db = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+            1
+        )
+    );
+    $tax_rate = floatval($tax_rate_db) ?: 16;
     $total_with_taxes = $total * (1 + ($tax_rate / 100));
     
     return $total_with_taxes;
