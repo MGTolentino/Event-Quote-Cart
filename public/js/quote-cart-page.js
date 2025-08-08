@@ -536,7 +536,7 @@ formatPrice(amount) {
             const taxMultiplier = 1 + (taxRate / 100);
             
             // Guardar referencia a this para usar dentro del each
-            const self = this;
+            const instance = this;
             
             // Calcular subtotal sin impuestos y descuentos por item
             $('.eq-cart-item').each(function() {
@@ -573,7 +573,7 @@ formatPrice(amount) {
                         const discountedPriceWithoutTax = itemPriceWithoutTax - itemDiscount;
                         const discountedPriceWithTax = discountedPriceWithoutTax * taxMultiplier;
                         $item.find('.eq-discounted-price')
-                            .text(self.formatPrice(discountedPriceWithTax))
+                            .text(instance.formatPrice(discountedPriceWithTax))
                             .show();
                         $item.find('.eq-original-price').css('text-decoration', 'line-through');
                     } else {
@@ -602,16 +602,16 @@ formatPrice(amount) {
             const total = finalSubtotal + tax;
             
             // Actualizar valores en pantalla
-            $('.eq-subtotal-amount').text(this.formatPrice(subtotalWithoutTax));
+            $('.eq-subtotal-amount').text(instance.formatPrice(subtotalWithoutTax));
             
             if (globalDiscountAmount > 0) {
-                $('.eq-global-discount-amount').text('-' + this.formatPrice(globalDiscountAmount));
+                $('.eq-global-discount-amount').text('-' + instance.formatPrice(globalDiscountAmount));
             } else {
-                $('.eq-global-discount-amount').text(this.formatPrice(0));
+                $('.eq-global-discount-amount').text(instance.formatPrice(0));
             }
             
             if (totalItemDiscounts > 0) {
-                $('.eq-item-discounts-amount').text('-' + this.formatPrice(totalItemDiscounts));
+                $('.eq-item-discounts-amount').text('-' + instance.formatPrice(totalItemDiscounts));
                 $('.item-discounts').show();
             } else {
                 $('.item-discounts').hide();
@@ -619,14 +619,14 @@ formatPrice(amount) {
             
             // Mostrar subtotal con descuentos si hay algún descuento
             if (totalItemDiscounts > 0 || globalDiscountAmount > 0) {
-                $('.eq-subtotal-after-discounts-amount').text(this.formatPrice(finalSubtotal));
+                $('.eq-subtotal-after-discounts-amount').text(instance.formatPrice(finalSubtotal));
                 $('.subtotal-after-discounts').show();
             } else {
                 $('.subtotal-after-discounts').hide();
             }
             
-            $('.eq-tax-amount').text(this.formatPrice(tax));
-            $('.eq-total-amount').text(this.formatPrice(total));
+            $('.eq-tax-amount').text(instance.formatPrice(tax));
+            $('.eq-total-amount').text(instance.formatPrice(total));
             
             // Guardar descuentos en datos para el PDF (ahora con valores correctos)
             this.discountData = {
@@ -642,7 +642,6 @@ formatPrice(amount) {
             };
             
             // Guardar descuentos individuales con sus montos calculados
-            const self = this;
             $('.eq-cart-item').each((index, element) => {
                 const $item = $(element);
                 const itemId = $item.data('item-id');
@@ -661,7 +660,7 @@ formatPrice(amount) {
                         itemDiscountAmount = Math.min(discountValue, itemPriceWithoutTax);
                     }
                     
-                    self.discountData.itemDiscounts[itemId] = {
+                    instance.discountData.itemDiscounts[itemId] = {
                         value: discountValue,
                         type: discountType,
                         amount: itemDiscountAmount
