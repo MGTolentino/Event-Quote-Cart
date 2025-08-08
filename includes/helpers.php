@@ -265,16 +265,29 @@ function eq_calculate_cart_totals($items) {
     // Calcular el subtotal y los impuestos basados en el total
     // Usar exactamente la misma fuente de tax rate que el tema Kava-Child
     global $wpdb;
-    $tax_rate = $wpdb->get_var(
+    $tax_rate_db = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
             1
         )
     );
+    
+    // DEBUG: Log para ver qué está pasando
+    $debug_log = "TAX CALCULATION DEBUG:\n";
+    $debug_log .= "  - Tax rate from DB: " . var_export($tax_rate_db, true) . "\n";
+    $debug_log .= "  - Total items sum: " . $total . "\n";
+    
     // Si no se encuentra, usar 16 como fallback (no 0)
-    $tax_rate = floatval($tax_rate) ?: 16;
+    $tax_rate = floatval($tax_rate_db) ?: 16;
+    $debug_log .= "  - Final tax rate used: " . $tax_rate . "\n";
+    
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
+    
+    $debug_log .= "  - Calculated subtotal: " . $subtotal . "\n";
+    $debug_log .= "  - Calculated tax: " . $tax . "\n";
+    
+    error_log("QUOTE TAX DEBUG: " . $debug_log);
     
     // Guardar los valores numéricos también para evitar recálculos
     return array(
