@@ -270,6 +270,12 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <span class="eq-item-discounts-amount">$0.00</span>
                     </div>
                     
+                    <!-- Subtotal con Descuentos -->
+                    <div class="eq-total-row subtotal-after-discounts" style="display: none;">
+                        <span><?php esc_html_e('Subtotal after Discounts:', 'event-quote-cart'); ?></span>
+                        <span class="eq-subtotal-after-discounts-amount"><?php echo esc_html($totals['subtotal']); ?></span>
+                    </div>
+                    
                     <div class="eq-total-row tax">
                         <span><?php esc_html_e('Tax:', 'event-quote-cart'); ?></span>
                         <span class="eq-tax-amount"><?php echo esc_html($totals['tax']); ?></span>
