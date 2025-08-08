@@ -795,7 +795,7 @@ handleShare() {
     
     // Crear opciones de compartir
     const button = this.container.find('.eq-share-quote');
-    const buttonPosition = button.position();
+    const buttonOffset = button.offset();
     
     const shareMenu = `
     <div class="eq-share-options">
@@ -808,11 +808,28 @@ handleShare() {
     </div>
 `;
     
-    const $menu = $(shareMenu).appendTo(this.container);
-    $menu.css({
-        top: buttonPosition.top + button.outerHeight() + 5,
-        left: buttonPosition.left
-    });
+    const $menu = $(shareMenu).appendTo('body');
+    
+    // Calcular posición óptima
+    const menuWidth = 150;
+    const menuHeight = 80; // aprox
+    const windowWidth = $(window).width();
+    const windowHeight = $(window).height();
+    
+    let top = buttonOffset.top + button.outerHeight() + 5;
+    let left = buttonOffset.left;
+    
+    // Ajustar si se sale de la pantalla horizontalmente
+    if (left + menuWidth > windowWidth) {
+        left = buttonOffset.left + button.outerWidth() - menuWidth;
+    }
+    
+    // Ajustar si se sale de la pantalla verticalmente
+    if (top + menuHeight > windowHeight) {
+        top = buttonOffset.top - menuHeight - 5;
+    }
+    
+    $menu.css({ top, left });
     
     // Manejar clicks fuera del menú
     $(document).on('click', (event) => {
