@@ -535,6 +535,9 @@ formatPrice(amount) {
             const taxRate = parseFloat(eqCartData.taxRate) || 16;
             const taxMultiplier = 1 + (taxRate / 100);
             
+            // Guardar referencia a this para usar dentro del each
+            const self = this;
+            
             // Calcular subtotal sin impuestos y descuentos por item
             $('.eq-cart-item').each(function() {
                 const $item = $(this);
@@ -570,7 +573,7 @@ formatPrice(amount) {
                         const discountedPriceWithoutTax = itemPriceWithoutTax - itemDiscount;
                         const discountedPriceWithTax = discountedPriceWithoutTax * taxMultiplier;
                         $item.find('.eq-discounted-price')
-                            .text(this.formatPrice(discountedPriceWithTax))
+                            .text(self.formatPrice(discountedPriceWithTax))
                             .show();
                         $item.find('.eq-original-price').css('text-decoration', 'line-through');
                     } else {
