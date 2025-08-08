@@ -263,7 +263,15 @@ function eq_calculate_cart_totals($items) {
     }
     
     // Calcular el subtotal y los impuestos basados en el total
-    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    // Usar la misma fuente de tax rate que el tema para consistencia
+    global $wpdb;
+    $tax_rate_db = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+            1
+        )
+    );
+    $tax_rate = floatval($tax_rate_db) ?: floatval(get_option('eq_tax_rate', 16));
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
     

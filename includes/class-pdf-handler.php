@@ -500,7 +500,15 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 
                 // 1. Fila principal del servicio
                 // Calcular el precio unitario correcto (total sin impuestos dividido por cantidad)
-                $tax_rate = floatval(get_option('eq_tax_rate', 16)) / 100;
+                // Usar la misma fuente de tax rate que el tema para consistencia
+                global $wpdb;
+                $tax_rate_db = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+                        1
+                    )
+                );
+                $tax_rate = (floatval($tax_rate_db) ?: floatval(get_option('eq_tax_rate', 16))) / 100;
                 $item_total_without_tax = $item->total_price / (1 + $tax_rate);
                 $item_unit_price_without_tax = $item_total_without_tax / $item->quantity;
                 $item_subtotal = $item_total_without_tax;
