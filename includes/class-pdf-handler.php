@@ -431,15 +431,41 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
     <body>
     <div class="header">
     <?php 
-    // Usar imagen en lugar del texto del encabezado
-    $banner_path = EQ_CART_PLUGIN_DIR . 'assets/images/banner-pdf.jpg';
+    // Try to get vendor-specific header first
+    $vendor_header_url = null;
+    $vendor_header_path = null;
     
-    $image_data_url = $this->ImageToDataUrl($banner_path);
-    if ($image_data_url) {
-        ?>
-        <img src="<?php echo $image_data_url; ?>" alt="<?php echo esc_attr($site_name); ?>">
-    <?php } else { ?>
-    <?php } ?>
+    // Check if Vendor Dashboard Pro plugin is active and get vendor header
+    if (function_exists('vdp_get_current_vendor')) {
+        $vendor = vdp_get_current_vendor();
+        if ($vendor) {
+            $header_id = get_post_meta($vendor->get_id(), 'pdf_header_image_id', true);
+            if ($header_id) {
+                $vendor_header_url = wp_get_attachment_image_url($header_id, 'full');
+                $vendor_header_path = get_attached_file($header_id);
+            }
+        }
+    }
+    
+    // Use vendor header if available, otherwise use default
+    if ($vendor_header_path && file_exists($vendor_header_path)) {
+        $image_data_url = $this->ImageToDataUrl($vendor_header_path);
+        if ($image_data_url) {
+            ?>
+            <img src="<?php echo $image_data_url; ?>" alt="<?php echo esc_attr($site_name); ?>">
+            <?php
+        }
+    } else {
+        // Fallback to default banner
+        $banner_path = EQ_CART_PLUGIN_DIR . 'assets/images/banner-pdf.jpg';
+        $image_data_url = $this->ImageToDataUrl($banner_path);
+        if ($image_data_url) {
+            ?>
+            <img src="<?php echo $image_data_url; ?>" alt="<?php echo esc_attr($site_name); ?>">
+            <?php
+        }
+    }
+    ?>
 <p>Fecha: <?php echo date_i18n(get_option('date_format')); ?></p>
 </div>
     
