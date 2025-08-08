@@ -2917,9 +2917,32 @@ public function validate_all_cart_items() {
                 $email_template = "Hola {customer_name},\n\nTe comparto la cotización #{quote_number} que solicitaste.\n\nSaludos,\n{vendor_name}";
             }
             
+            // Replace placeholders with actual values
+            $user = wp_get_current_user();
+            $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+            $lead_name = '';
+            if ($context && isset($context['lead'])) {
+                $lead_name = $context['lead']->lead_nombre ?: 'cliente';
+            }
+            
+            // Get product name for template
+            $cart_items = eq_get_cart_items();
+            $product_name = "";
+            if (count($cart_items) == 1) {
+                $product_name = $cart_items[0]->title;
+            } else {
+                $product_name = "los productos seleccionados";
+            }
+            
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}', '{product_name}'],
+                [$lead_name ?: 'cliente', $quote_number, $user->display_name, $product_name],
+                $email_template
+            );
+            
             wp_send_json_success(array(
                 'email' => $lead_email,
-                'template' => $email_template
+                'template' => $message
             ));
             
         } catch (Exception $e) {
@@ -2969,9 +2992,19 @@ public function validate_all_cart_items() {
                 $whatsapp_template = "¡Hola! Qué tal {customer_name}, soy {vendor_name}. Te comparto la cotización #{quote_number}. ¿Tienes alguna pregunta?";
             }
             
+            // Replace placeholders with actual values
+            $user = wp_get_current_user();
+            $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+            
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}'],
+                [$lead_name, $quote_number, $user->display_name],
+                $whatsapp_template
+            );
+            
             wp_send_json_success(array(
                 'lead_phone' => $lead_phone,
-                'message' => $whatsapp_template
+                'message' => $message
             ));
             
         } catch (Exception $e) {
