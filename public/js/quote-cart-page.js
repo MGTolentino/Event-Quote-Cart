@@ -12,6 +12,7 @@
             this.container = $('.eq-cart-page');
             this.items = this.container.find('.eq-cart-item');
             this.initSortable();
+            this.initDiscounts();
         }
         
         initSortable() {
@@ -48,6 +49,21 @@
             
             // Guardar el orden en una variable para usarlo al generar el PDF
             this.itemOrder = itemOrder;
+        }
+        
+        initDiscounts() {
+            // Limpiar todos los inputs de descuento para evitar persistencia del navegador
+            $('.eq-item-discount-value').val('');
+            $('#eq-global-discount-value').val('');
+            $('.eq-item-discount-type').val('fixed');
+            $('#eq-global-discount-type').val('fixed');
+            
+            // Ocultar precios descontados
+            $('.eq-discounted-price').hide();
+            $('.eq-original-price').css('text-decoration', 'none');
+            
+            // Calcular totales correctos iniciales
+            this.calculateDiscounts();
         }
 
       bindEvents() {

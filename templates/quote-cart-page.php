@@ -220,9 +220,9 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     <div class="eq-item-discount">
                         <label><?php esc_html_e('Discount:', 'event-quote-cart'); ?></label>
                         <div class="eq-discount-input-group">
-                            <input type="number" class="eq-item-discount-value" data-item-id="<?php echo esc_attr($item->id); ?>" placeholder="0" min="0" step="0.01">
-                            <select class="eq-item-discount-type" data-item-id="<?php echo esc_attr($item->id); ?>">
-                                <option value="fixed">$</option>
+                            <input type="number" class="eq-item-discount-value" data-item-id="<?php echo esc_attr($item->id); ?>" placeholder="0" min="0" step="0.01" value="" autocomplete="off">
+                            <select class="eq-item-discount-type" data-item-id="<?php echo esc_attr($item->id); ?>" autocomplete="off">
+                                <option value="fixed" selected>$</option>
                                 <option value="percentage">%</option>
                             </select>
                         </div>
@@ -255,9 +255,9 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     <div class="eq-total-row global-discount">
                         <span><?php esc_html_e('Global Discount:', 'event-quote-cart'); ?></span>
                         <div class="eq-global-discount-input">
-                            <input type="number" id="eq-global-discount-value" placeholder="0" min="0" step="0.01">
-                            <select id="eq-global-discount-type">
-                                <option value="fixed">$</option>
+                            <input type="number" id="eq-global-discount-value" placeholder="0" min="0" step="0.01" value="" autocomplete="off">
+                            <select id="eq-global-discount-type" autocomplete="off">
+                                <option value="fixed" selected>$</option>
                                 <option value="percentage">%</option>
                             </select>
                         </div>
