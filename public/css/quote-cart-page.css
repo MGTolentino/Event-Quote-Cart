@@ -41,7 +41,7 @@
 /* Cart Items */
 .eq-cart-item {
     display: grid;
-    grid-template-columns: 30px 120px 1fr 120px 180px 120px;
+    grid-template-columns: 30px 120px 1fr 120px 100px 120px;
     gap: 20px;
     padding: 20px;
     background: white;
@@ -144,16 +144,16 @@
     border-radius: 4px;
     overflow: visible;
     background: white;
-    width: 160px;
+    width: 80px;
     position: relative;
-    z-index: 1;
+    z-index: 10;
 }
 
 .eq-item-discount-value {
-    width: 100px;
+    width: 50px;
     border: none;
-    padding: 8px;
-    font-size: 14px;
+    padding: 6px;
+    font-size: 12px;
     background: transparent;
     flex-shrink: 0;
 }
@@ -164,12 +164,12 @@
 }
 
 .eq-item-discount-type {
-    width: 60px;
+    width: 30px;
     border: none;
-    padding: 8px;
+    padding: 6px;
     background: #f8f9fa;
     border-left: 1px solid #ddd;
-    font-size: 14px;
+    font-size: 12px;
     color: #666;
     cursor: pointer;
     flex-shrink: 0;
@@ -215,8 +215,9 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: flex-start;
+    position: relative;
 }
 
 .eq-cart-totals {
@@ -286,6 +287,9 @@
 .eq-cart-actions {
     display: flex;
     gap: 12px;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-left: 20px;
 }
 
 .eq-generate-quote,
@@ -363,22 +367,22 @@
 /* Responsive */
 @media (max-width: 1024px) {
     .eq-cart-item {
-        grid-template-columns: 30px 100px 1fr 100px 160px 100px;
+        grid-template-columns: 30px 100px 1fr 100px 90px 100px;
         gap: 15px;
         padding: 15px;
         overflow: visible;
     }
     
     .eq-discount-input-group {
-        width: 140px;
+        width: 70px;
     }
     
     .eq-item-discount-value {
-        width: 90px;
+        width: 45px;
     }
     
     .eq-item-discount-type {
-        width: 50px;
+        width: 25px;
     }
     
     .eq-cart-totals {
@@ -428,6 +432,7 @@
     .eq-cart-summary {
         flex-direction: column;
         gap: 20px;
+        justify-content: center;
     }
     
     .eq-cart-totals {
@@ -436,7 +441,10 @@
 
     .eq-cart-actions {
         width: 100%;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0;
     }
 }
 
