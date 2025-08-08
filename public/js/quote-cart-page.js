@@ -324,8 +324,8 @@ formatPrice(amount) {
     const thousand_sep = (eqCartData && eqCartData.thousand_sep) ? eqCartData.thousand_sep : ',';
     const decimal_sep = (eqCartData && eqCartData.decimal_sep) ? eqCartData.decimal_sep : '.';
     
-    // Formatear con el número correcto de decimales
-    let formattedPrice = amount.toFixed(num_decimals);
+    // Formatear con el número correcto de decimales usando redondeo matemático estándar
+    let formattedPrice = (Math.round(amount * 100) / 100).toFixed(num_decimals);
     
     // Dividir en parte entera y decimal
     let parts = formattedPrice.split('.');
