@@ -183,7 +183,13 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <div class="eq-item-meta">
                             <span class="eq-item-date">
                                 <?php esc_html_e('Event Date:', 'event-quote-cart'); ?> 
-                                <?php echo esc_html($item->date); ?>
+                                <?php 
+                                if (isset($item->is_date_range) && $item->is_date_range) {
+                                    echo esc_html($item->start_date) . ' to ' . esc_html($item->end_date);
+                                } else {
+                                    echo esc_html($item->date);
+                                }
+                                ?>
                             </span>
                             <span class="eq-item-quantity">
                                 <?php esc_html_e('Quantity:', 'event-quote-cart'); ?> 
@@ -199,7 +205,11 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                                         <li>
                                             <?php 
                                             echo esc_html($extra['name']);
-                                            if ($extra['quantity'] > 1) {
+                                            
+                                            // Mostrar quantity apropiada para extras
+                                            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                                                echo ' × ' . esc_html($extra['display_quantity']);
+                                            } elseif ($extra['quantity'] > 1) {
                                                 echo ' × ' . esc_html($extra['quantity']);
                                             }
                                             ?>

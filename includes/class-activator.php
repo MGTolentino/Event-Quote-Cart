@@ -63,6 +63,20 @@ class Event_Quote_Cart_Activator {
 				UNIQUE KEY unique_listing_in_cart (cart_id, listing_id, status) /* Agregar esta línea */
 			) $charset_collate;";
 
+        // SQL for cart item date ranges table
+        $sql_date_ranges = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}eq_cart_date_ranges (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            cart_item_id bigint(20) unsigned NOT NULL,
+            start_date date NOT NULL,
+            end_date date NOT NULL,
+            days_count int(11) NOT NULL,
+            extras_info longtext,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY cart_item_id (cart_item_id),
+            CONSTRAINT fk_cart_item_range FOREIGN KEY (cart_item_id) REFERENCES {$wpdb->prefix}eq_cart_items(id) ON DELETE CASCADE
+        ) $charset_collate;";
+
              // Tabla de órdenes
     $table_name = $wpdb->prefix . 'eq_orders';
     $sql = "CREATE TABLE $table_name (
@@ -127,6 +141,8 @@ class Event_Quote_Cart_Activator {
         
         // Create tables
         dbDelta($sql);
+        dbDelta($sql_items);
+        dbDelta($sql_date_ranges);
         dbDelta($sql_vendors);
         dbDelta($sql_bookings);
 		

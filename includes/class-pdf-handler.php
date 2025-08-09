@@ -562,11 +562,19 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                     <td><?php echo esc_html($item->title); ?></td>
                     <td class="description">
 <?php echo nl2br(esc_html($item->description)); ?>
-
-                        
-                        
+                        <?php if ($item->is_date_range): ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                        <?php else: ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+                        <?php endif; ?>
                     </td>
-                    <td><?php echo esc_html($item->quantity); ?></td>
+                    <td><?php 
+                        if ($item->is_date_range) {
+                            echo esc_html($item->days_count);
+                        } else {
+                            echo esc_html($item->quantity);
+                        }
+                    ?></td>
                     <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
                     <td>
                         <?php if ($item_discount_amount > 0): ?>
@@ -608,7 +616,14 @@ foreach ($extras_with_desc as $extra):
     <tr>
         <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
 <td class="description"><?php echo nl2br(esc_html($extra['description'])); ?></td>		
-        <td><?php echo esc_html($display_quantity); ?></td>
+        <td><?php 
+            // Mostrar quantity apropiada para extras con descripción
+            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                echo esc_html($extra['display_quantity']);
+            } else {
+                echo esc_html($display_quantity);
+            }
+        ?></td>
         <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
     </tr>
@@ -644,7 +659,14 @@ foreach ($extras_without_desc as $extra):
     <tr>
         <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
         <td class="description"></td>
-        <td><?php echo esc_html($display_quantity); ?></td>
+        <td><?php 
+            // Mostrar quantity apropiada para extras sin descripción
+            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                echo esc_html($extra['display_quantity']);
+            } else {
+                echo esc_html($display_quantity);
+            }
+        ?></td>
         <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
     </tr>
@@ -662,7 +684,14 @@ foreach ($extras_without_desc as $extra):
                                 <?php echo esc_html($extra['description']); ?>
                             <?php endif; ?>
                         </td>
-                        <td><?php echo esc_html($extra['quantity']); ?></td>
+                        <td><?php 
+                            // Mostrar quantity apropiada para extras variables
+                            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                                echo esc_html($extra['display_quantity']);
+                            } else {
+                                echo esc_html($extra['quantity']);
+                            }
+                        ?></td>
                         <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
                         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
                     </tr>
@@ -1127,7 +1156,12 @@ $detailed_item = (object) array(
     // Usar el precio base almacenado en form_data en lugar de obtenerlo nuevamente
     'base_price' => isset($form_data['base_price']) ? floatval($form_data['base_price']) : 
                    floatval(get_post_meta($listing_id, 'hp_price', true)),
-    'extras' => array()
+    'extras' => array(),
+    // Información de rango de fechas
+    'is_date_range' => isset($item->is_date_range) ? $item->is_date_range : false,
+    'start_date' => isset($item->start_date) ? $item->start_date : $item->date,
+    'end_date' => isset($item->end_date) ? $item->end_date : '',
+    'days_count' => isset($item->days_count) ? $item->days_count : 1
 );
         
         // Procesar extras con detalles adicionales
@@ -1153,7 +1187,10 @@ $detailed_item = (object) array(
                     'type' => isset($extra['type']) ? $extra['type'] : '',
                     'description' => isset($extra_detail['description']) ? $extra_detail['description'] : '',
                     'has_description' => isset($extra_detail['description']) && !empty($extra_detail['description']),
-                    'is_variable' => (isset($extra['type']) && $extra['type'] === 'variable_quantity')
+                    'is_variable' => (isset($extra['type']) && $extra['type'] === 'variable_quantity'),
+                    // Información para extras que se multiplicaron por días
+                    'display_quantity' => isset($extra['display_quantity']) ? $extra['display_quantity'] : $extra_data['quantity'],
+                    'was_multiplied_by_days' => isset($extra['was_multiplied_by_days']) ? $extra['was_multiplied_by_days'] : false
                 );
                 
                 $detailed_item->extras[] = $extra_data;

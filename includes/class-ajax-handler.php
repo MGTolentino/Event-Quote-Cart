@@ -132,6 +132,11 @@ public function add_to_cart() {
     $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     $extras = isset($_POST['extras']) ? $_POST['extras'] : array();
+    
+    // Datos adicionales para rangos de fechas
+    $end_date = isset($_POST['end_date']) ? sanitize_text_field($_POST['end_date']) : '';
+    $days_count = isset($_POST['days_count']) ? intval($_POST['days_count']) : 1;
+    $is_date_range = isset($_POST['is_date_range']) ? (bool)$_POST['is_date_range'] : false;
 
     // Validar y convertir fecha si es timestamp
     if (!empty($date)) {
@@ -253,6 +258,15 @@ if (!empty($date)) {
             );
 
             $item_id = $existing_item->id;
+            
+            // Eliminar rango de fechas existente si hay uno
+            if ($is_date_range) {
+                $wpdb->delete(
+                    $wpdb->prefix . 'eq_cart_date_ranges',
+                    array('cart_item_id' => $item_id),
+                    array('%d')
+                );
+            }
 			
 			// Verificar otros ítems en el carrito
 $other_items = $wpdb->get_results($wpdb->prepare(
@@ -290,6 +304,33 @@ foreach ($other_items as $other_item) {
             );
 
             $item_id = $wpdb->insert_id;
+        }
+
+        // Guardar información de rango de fechas si aplica
+        if ($is_date_range && $end_date && $item_id) {
+            // Preparar información de extras que se multiplicaron por días
+            $extras_info = array();
+            foreach ($extras as $extra) {
+                if (isset($extra['multiplied_by_days']) && $extra['multiplied_by_days']) {
+                    $extras_info[] = array(
+                        'id' => $extra['id'],
+                        'original_days' => isset($extra['original_days']) ? $extra['original_days'] : $days_count
+                    );
+                }
+            }
+
+            $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_date_ranges',
+                array(
+                    'cart_item_id' => $item_id,
+                    'start_date' => $date,
+                    'end_date' => $end_date,
+                    'days_count' => $days_count,
+                    'extras_info' => json_encode($extras_info),
+                    'created_at' => current_time('mysql')
+                ),
+                array('%d', '%s', '%s', '%d', '%s', '%s')
+            );
         }
 
         // 9. Obtener datos completos del item
