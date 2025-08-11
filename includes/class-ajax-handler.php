@@ -1252,6 +1252,12 @@ public function get_cart_item() {
         // Obtener la fecha del ítem
         $item_date = isset($form_data['date']) ? $form_data['date'] : '';
         
+        // Verificar si existe un rango de fechas para este item
+        $date_range = $wpdb->get_row($wpdb->prepare(
+            "SELECT start_date, end_date, days_count FROM {$wpdb->prefix}eq_cart_date_ranges WHERE cart_item_id = %d",
+            $item_id
+        ));
+        
         // Obtener datos del listing pasando la fecha
         $listing_data = $this->get_listing_data_for_edit($item->listing_id, $item_date);
         
@@ -1262,6 +1268,14 @@ public function get_cart_item() {
             'listing_data' => $listing_data,
             'form_data' => $form_data
         );
+        
+        // Agregar datos de rango de fechas si existen
+        if ($date_range) {
+            $response_data['is_date_range'] = true;
+            $response_data['start_date'] = $date_range->start_date;
+            $response_data['end_date'] = $date_range->end_date;
+            $response_data['days_count'] = $date_range->days_count;
+        }
 
         wp_send_json_success($response_data);
 

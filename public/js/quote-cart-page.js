@@ -162,7 +162,15 @@
                         
                         <div class="eq-form-group">
                             <label>Date</label>
-                            <input type="date" name="date" value="${itemData.form_data.date}" required readonly>
+                            ${itemData.is_date_range ? `
+                                <div class="eq-date-range-display">
+                                    <span>${itemData.start_date} to ${itemData.end_date}</span>
+                                    ${itemData.days_count ? ` (${itemData.days_count} days)` : ''}
+                                </div>
+                                <input type="hidden" name="date" value="${itemData.form_data.date}">
+                            ` : `
+                                <input type="date" name="date" value="${itemData.form_data.date}" required readonly>
+                            `}
                             <small class="eq-date-info">The date is shared across all items. To change date, please remove and add items again.</small>
                         </div>
                         
