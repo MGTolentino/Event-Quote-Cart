@@ -27,12 +27,6 @@ class Event_Quote_Cart_PDF_Handler {
             $debug_log = "=== INICIO LOG DE COTIZACIÓN ===\n";
             $debug_log .= "Timestamp: " . date('Y-m-d H:i:s') . "\n";
             $debug_log .= "Usuario: " . get_current_user_id() . "\n\n";
-            
-            // Debug de datos POST recibidos
-            $debug_log .= "DATOS POST RECIBIDOS:\n";
-            $debug_log .= "  - Discounts: " . (isset($_POST['discounts']) ? $_POST['discounts'] : 'No recibido') . "\n";
-            $debug_log .= "  - Item Order: " . (isset($_POST['itemOrder']) ? $_POST['itemOrder'] : 'No recibido') . "\n";
-            $debug_log .= "  - Otros campos POST: " . print_r($_POST, true) . "\n\n";
         }
 		
 		    global $wpdb;
@@ -101,32 +95,15 @@ if ($debug_enabled) {
         $debug_log .= "  - Fecha: " . $item->date . "\n";
         $debug_log .= "  - Precio base: " . (isset($item->base_price) ? $item->base_price : 'N/A') . "\n";
         $debug_log .= "  - Precio total (item->total_price): " . (isset($item->total_price) ? $item->total_price : 'N/A') . "\n";
-        $debug_log .= "  - Form data: " . (isset($item->form_data) ? $item->form_data : 'N/A') . "\n";
-        
-        // Decodificar form_data para ver el precio base almacenado
-        if (isset($item->form_data)) {
-            $form_data = json_decode($item->form_data, true);
-            $debug_log .= "  - Precio base en form_data: " . (isset($form_data['base_price']) ? $form_data['base_price'] : 'N/A') . "\n";
-            $debug_log .= "  - Precio en listing meta: " . get_post_meta($item->listing_id, 'hp_price', true) . "\n";
-        }
         
         // Log de extras
         if (!empty($item->extras)) {
             $debug_log .= "  - Extras:\n";
-            $extras_total = 0;
             foreach ($item->extras as $extra_index => $extra) {
                 $debug_log .= "    * Extra #" . ($extra_index + 1) . ": ";
                 $debug_log .= (isset($extra['name']) ? $extra['name'] : 'Sin nombre') . " - ";
-                $debug_log .= "Precio: " . (isset($extra['price']) ? $extra['price'] : '0');
-                $debug_log .= " - Cantidad: " . (isset($extra['quantity']) ? $extra['quantity'] : '1');
-                $debug_log .= " - Tipo: " . (isset($extra['type']) ? $extra['type'] : 'N/A') . "\n";
-                
-                // Calcular total del extra
-                if (isset($extra['price']) && isset($extra['quantity'])) {
-                    $extras_total += $extra['price'] * $extra['quantity'];
-                }
+                $debug_log .= "Precio: " . (isset($extra['price']) ? $extra['price'] : '0') . "\n";
             }
-            $debug_log .= "  - Total de extras: " . $extras_total . "\n";
         } else {
             $debug_log .= "  - Sin extras\n";
         }
@@ -559,35 +536,15 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 );
                 $tax_rate = (floatval($tax_rate_db) ?: 16) / 100;
                 
-                // DEBUG: Log de cálculos de precios
-                if ($debug_enabled) {
-                    global $debug_log;
-                    $debug_log .= "\nDEBUG CÁLCULO ITEM #" . $item->id . ":\n";
-                    $debug_log .= "  - total_price: " . $item->total_price . "\n";
-                    $debug_log .= "  - base_price: " . $item->base_price . "\n";
-                    $debug_log .= "  - quantity: " . $item->quantity . "\n";
-                    $debug_log .= "  - tax_rate: " . ($tax_rate * 100) . "%\n";
-                }
-                
                 // Si el item tiene precio base 0, usar ese precio base para el cálculo
                 if ($item->base_price == 0) {
                     $item_unit_price_without_tax = 0;
                     $item_subtotal = 0;
-                    
-                    if ($debug_enabled) {
-                        $debug_log .= "  - PRECIO BASE ES 0, mostrando 0 en precio unitario y subtotal\n";
-                    }
                 } else {
                     // Calcular normalmente
                     $item_total_without_tax = $item->total_price / (1 + $tax_rate);
                     $item_unit_price_without_tax = $item_total_without_tax / $item->quantity;
                     $item_subtotal = $item_total_without_tax;
-                    
-                    if ($debug_enabled) {
-                        $debug_log .= "  - item_total_without_tax: " . $item_total_without_tax . "\n";
-                        $debug_log .= "  - item_unit_price_without_tax: " . $item_unit_price_without_tax . "\n";
-                        $debug_log .= "  - item_subtotal: " . $item_subtotal . "\n";
-                    }
                 }
                 
                 // Calcular descuento del item si existe
