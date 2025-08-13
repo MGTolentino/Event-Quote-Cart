@@ -1148,14 +1148,12 @@ private function get_detailed_cart_items($item_order = null) {
         $form_data = json_decode($item->form_data, true);
         
         // DEBUG: Log form_data and base_price calculation
-        if ($debug_enabled) {
-            $debug_log .= "FORM DATA DEBUG para item ID " . $item->id . ":\n";
-            $debug_log .= "  - Raw form_data: " . $item->form_data . "\n";
-            $debug_log .= "  - Decoded form_data: " . print_r($form_data, true) . "\n";
-            $debug_log .= "  - form_data['base_price'] existe: " . (isset($form_data['base_price']) ? 'SI' : 'NO') . "\n";
-            $debug_log .= "  - form_data['base_price'] valor: " . (isset($form_data['base_price']) ? $form_data['base_price'] : 'NULL') . "\n";
-            $debug_log .= "  - get_post_meta hp_price: " . get_post_meta($listing_id, 'hp_price', true) . "\n\n";
-        }
+        error_log("FORM DATA DEBUG para item ID " . $item->id . ":");
+        error_log("  - Raw form_data: " . $item->form_data);
+        error_log("  - Decoded form_data: " . print_r($form_data, true));
+        error_log("  - form_data['base_price'] existe: " . (isset($form_data['base_price']) ? 'SI' : 'NO'));
+        error_log("  - form_data['base_price'] valor: " . (isset($form_data['base_price']) ? $form_data['base_price'] : 'NULL'));
+        error_log("  - get_post_meta hp_price: " . get_post_meta($listing_id, 'hp_price', true));
 
 $detailed_item = (object) array(
     'id' => $item->id,
