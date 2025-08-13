@@ -20,14 +20,6 @@ class Event_Quote_Cart_PDF_Handler {
             wp_send_json_error('Unauthorized');
         }
         
-        // Debug logging solo en desarrollo
-        $debug_enabled = defined('WP_DEBUG') && WP_DEBUG;
-        $debug_log = "";
-        if ($debug_enabled) {
-            $debug_log = "=== INICIO LOG DE COTIZACIÓN ===\n";
-            $debug_log .= "Timestamp: " . date('Y-m-d H:i:s') . "\n";
-            $debug_log .= "Usuario: " . get_current_user_id() . "\n\n";
-        }
 		
 		    global $wpdb;
 
@@ -84,49 +76,10 @@ if (!empty($item_order)) {
     $cart_items = $ordered_items;
 }
 
-// Log de items del carrito
-if ($debug_enabled) {
-    $debug_log .= "ITEMS DEL CARRITO:\n";
-    foreach ($cart_items as $index => $item) {
-        $debug_log .= "Item #" . ($index + 1) . " (ID: " . $item->id . "):\n";
-        $debug_log .= "  - Listing ID: " . $item->listing_id . "\n";
-        $debug_log .= "  - Título: " . $item->title . "\n";
-        $debug_log .= "  - Cantidad: " . $item->quantity . "\n";
-        $debug_log .= "  - Fecha: " . $item->date . "\n";
-        $debug_log .= "  - Precio base: " . (isset($item->base_price) ? $item->base_price : 'N/A') . "\n";
-        $debug_log .= "  - Precio total (item->total_price): " . (isset($item->total_price) ? $item->total_price : 'N/A') . "\n";
-        
-        // Log de extras
-        if (!empty($item->extras)) {
-            $debug_log .= "  - Extras:\n";
-            foreach ($item->extras as $extra_index => $extra) {
-                $debug_log .= "    * Extra #" . ($extra_index + 1) . ": ";
-                $debug_log .= (isset($extra['name']) ? $extra['name'] : 'Sin nombre') . " - ";
-                $debug_log .= "Precio: " . (isset($extra['price']) ? $extra['price'] : '0') . "\n";
-            }
-        } else {
-            $debug_log .= "  - Sin extras\n";
-        }
-        $debug_log .= "\n";
-    }
-}
 
 // Calcular totales
 $totals = eq_calculate_cart_totals($cart_items);
 
-// Log de totales calculados
-if ($debug_enabled) {
-    $debug_log .= "TOTALES CALCULADOS POR eq_calculate_cart_totals:\n";
-    $debug_log .= "  - Subtotal: " . $totals['subtotal'] . "\n";
-    $debug_log .= "  - Tax: " . $totals['tax'] . "\n";
-    $debug_log .= "  - Total: " . $totals['total'] . "\n";
-    if (isset($totals['subtotal_raw'])) {
-        $debug_log .= "  - Subtotal Raw: " . $totals['subtotal_raw'] . "\n";
-        $debug_log .= "  - Tax Raw: " . $totals['tax_raw'] . "\n";
-        $debug_log .= "  - Total Raw: " . $totals['total_raw'] . "\n";
-    }
-    $debug_log .= "\n";
-}
 			
 			
 // Obtener contexto activo
@@ -180,13 +133,6 @@ if (!isset($totals['total_raw'])) {
     $totals['tax_raw'] = $tax;
     $totals['total_raw'] = $total;
     
-    // Log de totales después de la corrección
-    if ($debug_enabled) {
-        $debug_log .= "TOTALES DESPUÉS DE CORRECCIÓN (valores raw):\n";
-        $debug_log .= "  - Subtotal Raw (recalculado): " . $subtotal . "\n";
-        $debug_log .= "  - Tax Raw (recalculado): " . $tax . "\n";
-        $debug_log .= "  - Total Raw (suma): " . $total . "\n\n";
-    }
 }
 
 // Generar HTML para el PDF
@@ -227,11 +173,6 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $it
             // Guardar el archivo
 file_put_contents($pdf_path, $dompdf->output());
 
-// Guardar log de depuración usando error_log de WordPress
-if ($debug_enabled) {
-    $debug_log .= "=== FIN DEL LOG DE COTIZACIÓN ===\n";
-    error_log("QUOTE DEBUG LOG: " . $debug_log);
-}
 
 // Registrar la cotización en la base de datos
 $quote_data = array(
@@ -257,7 +198,7 @@ $quote_id = $wpdb->insert_id;
 wp_send_json_success(array(
     'pdf_url' => $pdf_url,
     'quote_id' => $quote_id,
-    'message' => 'Quote generated successfully. Debug log saved to error log.'
+    'message' => 'Quote generated successfully.'
 ));
         } else{
             throw new Exception('DOMPDF not available');
@@ -272,44 +213,14 @@ wp_send_json_success(array(
  * Generar HTML para el PDF
  */
 private function generate_pdf_html($cart_items, $totals, $context = null, $discounts = null, $item_order = null) {
-    global $debug_log;
-    
     // Preparar datos
     $site_name = get_bloginfo('name');
     $date = date_i18n(get_option('date_format'));
     $user = wp_get_current_user();
     
-    // Debug logging solo en desarrollo
-    $debug_enabled = defined('WP_DEBUG') && WP_DEBUG;
-    
-    // Log para la función generate_pdf_html
-    if ($debug_enabled) {
-        $debug_log .= "ENTRANDO A generate_pdf_html:\n";
-        $debug_log .= "  - Totales recibidos:\n";
-        $debug_log .= "    * Subtotal: " . $totals['subtotal'] . "\n";
-        $debug_log .= "    * Tax: " . $totals['tax'] . "\n";
-        $debug_log .= "    * Total: " . $totals['total'] . "\n";
-        if (isset($totals['total_raw'])) {
-            $debug_log .= "    * Total Raw: " . $totals['total_raw'] . "\n";
-        }
-        $debug_log .= "\n";
-    }
-    
     // Obtener datos detallados - solo usarlos para mostrar información de items, no para recalcular totales
     $detailed_items = $this->get_detailed_cart_items($item_order);
     
-    // Log de los items detallados
-    if ($debug_enabled) {
-        $debug_log .= "ITEMS DETALLADOS PARA EL PDF:\n";
-        foreach ($detailed_items as $index => $item) {
-            $debug_log .= "Item Detallado #" . ($index + 1) . " (ID: " . $item->id . "):\n";
-            $debug_log .= "  - Base Price: " . $item->base_price . "\n";
-            $debug_log .= "  - Quantity: " . $item->quantity . "\n";
-            $debug_log .= "  - Subtotal (Base × Quantity): " . ($item->base_price * $item->quantity) . "\n";
-            $debug_log .= "  - Total Price: " . $item->total_price . "\n";
-        }
-        $debug_log .= "\n";
-    }
     
     // Asegurar que los totales sean los correctos
     $total_sum = 0;
@@ -317,11 +228,6 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
         $total_sum += isset($item->total_price) ? floatval($item->total_price) : 0;
     }
     
-    if ($debug_enabled) {
-        $debug_log .= "VERIFICACIÓN DE TOTALES EN PDF:\n";
-        $debug_log .= "  - Total sumando item->total_price: " . $total_sum . "\n";
-        $debug_log .= "  - Total de totals['total']: " . (isset($totals['total_raw']) ? $totals['total_raw'] : 'N/A') . "\n\n";
-    }
     
     // Iniciar buffer de salida
     ob_start();
@@ -1146,13 +1052,6 @@ private function get_detailed_cart_items($item_order = null) {
         
         $form_data = json_decode($item->form_data, true);
         
-        // DEBUG: Log form_data and base_price calculation
-        error_log("FORM DATA DEBUG para item ID " . $item->id . ":");
-        error_log("  - Raw form_data: " . $item->form_data);
-        error_log("  - Decoded form_data: " . print_r($form_data, true));
-        error_log("  - form_data['base_price'] existe: " . (isset($form_data['base_price']) ? 'SI' : 'NO'));
-        error_log("  - form_data['base_price'] valor: " . (isset($form_data['base_price']) ? $form_data['base_price'] : 'NULL'));
-        error_log("  - get_post_meta hp_price: " . get_post_meta($listing_id, 'hp_price', true));
 
 $detailed_item = (object) array(
     'id' => $item->id,

@@ -1879,7 +1879,6 @@ public function clear_context_meta() {
         ]);
         return;
     } else {
-        error_log('clear_context_meta: Session successfully removed from database');
     }
     
     // Establecer cookie para indicar que la sesión se ha finalizado
@@ -1964,10 +1963,8 @@ public function clear_context_meta() {
         return;
     }
     
-    error_log('DEBUG check_context_status: Session found - Lead ID: ' . $session->lead_id . ', Event ID: ' . $session->event_id);
     
     // Queries rápidas separadas solo si necesitamos los datos
-    error_log('DEBUG check_context_status: About to query lead name for lead_id: ' . $session->lead_id);
     $lead_name = $wpdb->get_var($wpdb->prepare(
         "SELECT CONCAT(lead_nombre, ' ', lead_apellido) 
         FROM {$wpdb->prefix}jet_cct_leads 
@@ -1976,14 +1973,11 @@ public function clear_context_meta() {
     ));
     
     if ($wpdb->last_error) {
-        error_log('DEBUG check_context_status: Database error in lead query: ' . $wpdb->last_error);
         wp_send_json_error('Database error in lead query');
         return;
     }
     
-    error_log('DEBUG check_context_status: Lead query completed. Lead name: ' . ($lead_name ? $lead_name : 'NOT FOUND'));
     
-    error_log('DEBUG check_context_status: About to query event data for event_id: ' . $session->event_id);
     $event_data = $wpdb->get_row($wpdb->prepare(
         "SELECT tipo_de_evento, fecha_de_evento 
         FROM {$wpdb->prefix}jet_cct_eventos 
@@ -1992,16 +1986,13 @@ public function clear_context_meta() {
     ));
     
     if ($wpdb->last_error) {
-        error_log('DEBUG check_context_status: Database error in event query: ' . $wpdb->last_error);
         wp_send_json_error('Database error in event query');
         return;
     }
     
-    error_log('DEBUG check_context_status: Event query completed. Event found: ' . ($event_data ? 'YES' : 'NO'));
     
     // Verificar que lead y evento existen
     if (!$lead_name || !$event_data) {
-        error_log('DEBUG check_context_status: Lead or event not found, cleaning invalid session');
         // Eliminar sesión inválida
         $wpdb->delete(
             $wpdb->prefix . 'eq_context_sessions',
@@ -2014,7 +2005,6 @@ public function clear_context_meta() {
             unset($_SESSION['eq_quote_context']);
         }
         
-        error_log('DEBUG check_context_status: Invalid session cleaned, returning false');
         
         // Cerrar sesión antes de enviar respuesta
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -2025,7 +2015,6 @@ public function clear_context_meta() {
         return;
     }
     
-    error_log('DEBUG check_context_status: All data valid, preparing response');
     
     // Sesión válida encontrada, devolver datos completos
     $response = array(
@@ -2039,7 +2028,6 @@ public function clear_context_meta() {
         'sessionToken' => $session->session_token
     );
     
-    error_log('DEBUG check_context_status: Response prepared: ' . json_encode($response));
     
     // Actualizar sesión PHP para mantener sincronización
     $_SESSION['eq_quote_context'] = array(
@@ -2053,16 +2041,13 @@ public function clear_context_meta() {
         'last_update' => time()
     );
     
-    error_log('DEBUG check_context_status: About to send success response');
     
     // IMPORTANTE: Cerrar la sesión PHP para liberar el lock antes de enviar la respuesta
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
-        error_log('DEBUG check_context_status: Session closed to release lock');
     }
     
     wp_send_json_success($response);
-    error_log('DEBUG check_context_status: Response sent successfully');
 }
 	
 	/**
@@ -2112,8 +2097,6 @@ public function verify_context_cleared() {
     // Verificar en sesión PHP
     if (isset($_SESSION['eq_quote_context'])) {
         unset($_SESSION['eq_quote_context']);
-    } else {
-        error_log('verify_context_cleared: No session in PHP');
     }
     
     // Asegurarse de que la señal de no restaurar esté establecida
