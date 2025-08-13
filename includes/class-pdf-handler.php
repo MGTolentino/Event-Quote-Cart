@@ -541,10 +541,10 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                     $item_unit_price_without_tax = 0;
                     $item_subtotal = 0;
                 } else {
-                    // Calcular normalmente
-                    $item_total_without_tax = $item->total_price / (1 + $tax_rate);
-                    $item_unit_price_without_tax = $item_total_without_tax / $item->quantity;
-                    $item_subtotal = $item_total_without_tax;
+                    // Calcular usando solo el precio base del servicio principal (sin extras)
+                    $item_base_without_tax = ($item->base_price * $item->quantity) / (1 + $tax_rate);
+                    $item_unit_price_without_tax = $item_base_without_tax / $item->quantity;
+                    $item_subtotal = $item_base_without_tax;
                 }
                 
                 // Calcular descuento del item si existe
