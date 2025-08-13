@@ -693,12 +693,8 @@ foreach ($extras_without_desc as $extra):
                             <?php endif; ?>
                         </td>
                         <td><?php 
-                            // Mostrar quantity apropiada para extras variables
-                            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
-                                echo esc_html($extra['display_quantity']);
-                            } else {
-                                echo esc_html($extra['quantity']);
-                            }
+                            // Para extras variables, siempre usar su propia cantidad
+                            echo esc_html($extra['quantity']);
                         ?></td>
                         <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
                         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
@@ -1197,7 +1193,7 @@ $detailed_item = (object) array(
                     'has_description' => isset($extra_detail['description']) && !empty($extra_detail['description']),
                     'is_variable' => (isset($extra['type']) && $extra['type'] === 'variable_quantity'),
                     // Información para extras que se multiplicaron por días
-                    'display_quantity' => isset($extra['display_quantity']) ? $extra['display_quantity'] : $extra_data['quantity'],
+                    'display_quantity' => isset($extra['display_quantity']) ? $extra['display_quantity'] : (isset($extra['quantity']) ? $extra['quantity'] : 1),
                     'was_multiplied_by_days' => isset($extra['was_multiplied_by_days']) ? $extra['was_multiplied_by_days'] : false
                 );
                 
