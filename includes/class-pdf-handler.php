@@ -701,6 +701,24 @@ foreach ($extras_without_desc as $extra):
     // Check if custom message was provided
     $custom_message = isset($_POST['custom_message']) ? wp_kses_post($_POST['custom_message']) : '';
     
+    // Obtener descuentos del POST (igual que en generate_quote_pdf)
+    $discounts_json = isset($_POST['discounts']) ? stripslashes($_POST['discounts']) : '{}';
+    $discounts = json_decode($discounts_json, true);
+    if (!$discounts) {
+        $discounts = array(
+            'itemDiscounts' => array(),
+            'globalDiscount' => array('value' => 0, 'type' => 'fixed', 'amount' => 0),
+            'totalItemDiscounts' => 0
+        );
+    }
+    
+    // Obtener orden de items del POST (igual que en generate_quote_pdf)
+    $item_order_json = isset($_POST['itemOrder']) ? stripslashes($_POST['itemOrder']) : '[]';
+    $item_order = json_decode($item_order_json, true);
+    if (!$item_order) {
+        $item_order = array();
+    }
+    
     // Obtener contexto y datos del lead primero
 $context = eq_get_active_context();
 $user = wp_get_current_user();
@@ -758,8 +776,8 @@ if (count($cart_items) == 1) {
     }
 }
         
-        // Generar PDF
-        $pdf_data = $this->generate_pdf_data();
+        // Generar PDF con descuentos y orden de items
+        $pdf_data = $this->generate_pdf_data($discounts, $item_order);
         
         // Preparar mensaje personalizado - integrates with Vendor Dashboard PRO plugin
         $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
@@ -886,7 +904,7 @@ private function markdown_to_html($text) {
     /**
      * Generar datos del PDF para adjuntar
      */
-    private function generate_pdf_data() {
+    private function generate_pdf_data($discounts = null, $item_order = null) {
         // Obtener items del carrito
         $cart_items = eq_get_cart_items();
         
@@ -894,8 +912,67 @@ private function markdown_to_html($text) {
             throw new Exception('No items in cart');
         }
         
+        // Reordenar items si se especificó un orden (igual que en generate_quote_pdf)
+        if (!empty($item_order)) {
+            $ordered_items = array();
+            $item_map = array();
+            
+            // Crear mapa de items por ID
+            foreach ($cart_items as $item) {
+                $item_map[$item->id] = $item;
+            }
+            
+            // Reordenar según el orden especificado
+            foreach ($item_order as $order_info) {
+                if (isset($item_map[$order_info['id']])) {
+                    $ordered_items[] = $item_map[$order_info['id']];
+                    unset($item_map[$order_info['id']]);
+                }
+            }
+            
+            // Agregar cualquier item que no esté en el orden al final
+            foreach ($item_map as $item) {
+                $ordered_items[] = $item;
+            }
+            
+            $cart_items = $ordered_items;
+        }
+        
         // Calcular totales
         $totals = eq_calculate_cart_totals($cart_items);
+        
+        // Obtener contexto activo (igual que en generate_quote_pdf)
+        $context = eq_get_active_context();
+        
+        // Si no hay contexto pero hay items, intentar obtener los datos del carrito
+        if (!$context && !empty($cart_items)) {
+            $cart = eq_get_active_cart();
+            
+            if ($cart && !empty($cart->lead_id) && !empty($cart->event_id)) {
+                global $wpdb;
+                
+                // Obtener información del lead
+                $lead = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}jet_cct_leads 
+                    WHERE _ID = %d",
+                    $cart->lead_id
+                ));
+                
+                // Obtener información del evento
+                $event = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}jet_cct_eventos 
+                    WHERE _ID = %d",
+                    $cart->event_id
+                ));
+                
+                if ($lead && $event) {
+                    $context = [
+                        'lead' => $lead,
+                        'event' => $event
+                    ];
+                }
+            }
+        }
         
         // Asegurar que totals tiene los valores correctos
         if (!isset($totals['total_raw'])) {
@@ -913,8 +990,8 @@ private function markdown_to_html($text) {
             $totals['total_raw'] = $total;
         }
         
-        // Generar HTML para el PDF
-        $html = $this->generate_pdf_html($cart_items, $totals, null, null);
+        // Generar HTML para el PDF con descuentos y orden
+        $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $item_order);
         
         // Usar DOMPDF para convertir HTML a PDF
         if (!class_exists('Dompdf\Dompdf')) {

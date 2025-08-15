@@ -924,6 +924,9 @@ handleShareByEmail() {
                 const submitButton = $modal.find('.eq-send-email');
                 submitButton.prop('disabled', true).text('Sending...');
                 
+                // Primero calcular descuentos (igual que en handleGenerateQuote)
+                this.calculateDiscounts();
+                
                 $.ajax({
                     url: eqCartData.ajaxurl,
                     type: 'POST',
@@ -931,7 +934,9 @@ handleShareByEmail() {
                         action: 'eq_send_quote_email',
                         nonce: eqCartData.nonce,
                         email: email,
-                        custom_message: message
+                        custom_message: message,
+                        discounts: JSON.stringify(this.discountData || {}),
+                        itemOrder: JSON.stringify(this.itemOrder || [])
                     },
                     success: (response) => {
                         if (response.success) {
