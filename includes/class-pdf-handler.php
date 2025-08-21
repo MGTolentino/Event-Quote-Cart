@@ -298,8 +298,18 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
             }
             /* Quitar borde superior en filas de continuación */
             tr.continuation-row td {
-                border-top: none;
+                border-top: none !important;
                 padding-top: 0;
+            }
+            /* Asegurar que las celdas vacías en filas de continuación no tengan bordes */
+            tr.continuation-row td:empty {
+                border: none !important;
+            }
+            tr.continuation-row td:first-child {
+                border-left: 1px solid #ddd;
+            }
+            tr.continuation-row td:last-child {
+                border-right: 1px solid #ddd;
             }
             th {
                 background-color: #f2f2f2;
@@ -489,8 +499,8 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 foreach ($description_chunks as $chunk_index => $description_chunk):
                 ?>
                 <tr<?php echo !$is_first_row ? ' class="continuation-row"' : ''; ?>>
-                    <td><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
-                    <td class="description">
+                    <td<?php echo !$is_first_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
+                    <td class="description"<?php echo !$is_first_row ? ' style="border-top: none;"' : ''; ?>>
 <?php echo nl2br(esc_html($description_chunk)); ?>
                         <?php if ($chunk_index === count($description_chunks) - 1): // Solo en el último chunk ?>
                             <?php if ($item->is_date_range): ?>
@@ -500,7 +510,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                             <?php endif; ?>
                         <?php endif; ?>
                     </td>
-                    <td><?php 
+                    <td<?php echo !$is_first_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php 
                         if ($is_first_row) {
                             if ($item->is_date_range) {
                                 echo esc_html($item->days_count);
@@ -509,8 +519,8 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                             }
                         }
                     ?></td>
-                    <td><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_unit_price_without_tax) : ''; ?></td>
-                    <td>
+                    <td<?php echo !$is_first_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_unit_price_without_tax) : ''; ?></td>
+                    <td<?php echo !$is_first_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>>
                         <?php if ($is_first_row): ?>
                             <?php if ($item_discount_amount > 0): ?>
                                 <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
@@ -559,9 +569,9 @@ foreach ($extras_with_desc as $extra):
     foreach ($extra_description_chunks as $extra_chunk):
 ?>
     <tr<?php echo !$is_first_extra_row ? ' class="continuation-row"' : ''; ?>>
-        <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
-        <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
-        <td><?php 
+        <td<?php echo !$is_first_extra_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
+        <td class="description"<?php echo !$is_first_extra_row ? ' style="border-top: none;"' : ''; ?>><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
+        <td<?php echo !$is_first_extra_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php 
             if ($is_first_extra_row) {
                 // Mostrar quantity apropiada para extras con descripción
                 if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
@@ -571,8 +581,8 @@ foreach ($extras_with_desc as $extra):
                 }
             }
         ?></td>
-        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra['price']) : ''; ?></td>
-        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra_price) : ''; ?></td>
+        <td<?php echo !$is_first_extra_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra['price']) : ''; ?></td>
+        <td<?php echo !$is_first_extra_row ? ' style="border-top: none; border-bottom: none;"' : ''; ?>><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra_price) : ''; ?></td>
     </tr>
 <?php 
         $is_first_extra_row = false;
