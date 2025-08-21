@@ -294,33 +294,24 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
             table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 5px; /* Reducir margen para tablas separadas */
+                margin-bottom: 20px;
                 page-break-inside: auto; /* Permitir que las tablas se dividan entre páginas */
             }
-            /* Tablas de encabezados no deben dividirse */
-            table.header-table {
-                page-break-after: avoid;
-                margin-bottom: 0;
+            thead {
+                display: table-header-group; /* Repetir encabezados en cada página */
             }
-            /* Tablas de items pueden dividirse libremente */
-            table.item-table {
+            tbody {
                 page-break-inside: auto;
-                margin-top: 0;
-                margin-bottom: 5px;
             }
             tr {
                 page-break-inside: auto;
                 page-break-after: auto;
             }
-            td {
+            /* Permitir división dentro de celdas con mucho contenido */
+            td.description {
                 page-break-inside: auto;
-            }
-            /* Sin bordes en tablas de items para que parezca continuo */
-            .item-table td {
-                border-top: none;
-            }
-            .item-table tr:first-child td {
-                border-top: 1px solid #ddd;
+                word-wrap: break-word;
+                max-width: 300px; /* Limitar ancho para forzar saltos */
             }
             th, td {
                 padding: 8px;
@@ -439,8 +430,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
         </div>
     <?php endif; ?>
     
-    <!-- Tabla solo para encabezados -->
-    <table class="header-table">
+    <table>
         <thead>
             <tr>
                 <th>SERVICIO</th>
@@ -450,9 +440,8 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 <th>SUB-TOTAL</th>
             </tr>
         </thead>
-    </table>
-    
-    <?php 
+        <tbody>
+            <?php 
             // Procesar cada item
             foreach ($detailed_items as $item): 
                 // Separar extras con descripción y los de tipo variable
@@ -511,36 +500,33 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 
                 $item_subtotal_with_discount = $item_subtotal - $item_discount_amount;
                 ?>
-                <!-- Tabla separada para cada item -->
-                <table class="item-table">
-                    <tbody>
-                        <tr>
-                            <td><?php echo esc_html($item->title); ?></td>
-                            <td class="description">
+                <tr>
+                    <td><?php echo esc_html($item->title); ?></td>
+                    <td class="description">
 <?php echo nl2br(esc_html($item->description)); ?>
-                                <?php if ($item->is_date_range): ?>
-                                    <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
-                                <?php else: ?>
-                                    <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php 
-                                if ($item->is_date_range) {
-                                    echo esc_html($item->days_count);
-                                } else {
-                                    echo esc_html($item->quantity);
-                                }
-                            ?></td>
-                            <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
-                            <td>
-                                <?php if ($item_discount_amount > 0): ?>
-                                    <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
-                                    <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
-                                <?php else: ?>
-                                    <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
+                        <?php if ($item->is_date_range): ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                        <?php else: ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+                        <?php endif; ?>
+                    </td>
+                    <td><?php 
+                        if ($item->is_date_range) {
+                            echo esc_html($item->days_count);
+                        } else {
+                            echo esc_html($item->quantity);
+                        }
+                    ?></td>
+                    <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
+                    <td>
+                        <?php if ($item_discount_amount > 0): ?>
+                            <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
+                            <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
+                        <?php else: ?>
+                            <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
+                        <?php endif; ?>
+                    </td>
+                </tr>
                 
                 <?php 
                 // 2. Filas para extras con descripción
@@ -648,10 +634,10 @@ foreach ($extras_without_desc as $extra):
                         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
                     </tr>
                 <?php endforeach; ?>
-                    </tbody>
-                </table>
                 
             <?php endforeach; ?>
+        </tbody>
+    </table>
     
     <table class="totals-table">
         <?php 
