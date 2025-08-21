@@ -144,10 +144,18 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $it
             // Configurar opciones para permitir carga de imágenes
             $options = new \Dompdf\Options();
 			$options->set('isRemoteEnabled', true);
+			// Configurar márgenes más pequeños para aprovechar mejor el espacio
+			$options->set('defaultPaperSize', 'A4');
+			$options->set('defaultPaperOrientation', 'portrait');
 			$dompdf = new \Dompdf\Dompdf($options);
             
             $dompdf->loadHtml($html);
+            // Establecer márgenes más pequeños: left, top, right, bottom (en puntos)
             $dompdf->setPaper('A4', 'portrait');
+            $dompdf->set_option('margin_top', 10);
+            $dompdf->set_option('margin_bottom', 10);
+            $dompdf->set_option('margin_left', 10);
+            $dompdf->set_option('margin_right', 10);
             $dompdf->render();
                 
             // Guardar el PDF en uploads
@@ -282,10 +290,20 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 margin-bottom: 20px;
                 font-style: italic;
             }
+            /* Reglas de control de saltos de página */
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 20px;
+                page-break-inside: auto; /* Permitir que las tablas se dividan entre páginas */
+            }
+            tr {
+                page-break-inside: avoid; /* Evitar que las filas se corten a la mitad */
+                page-break-after: auto;
+            }
+            /* Agrupar item principal con sus extras inmediatos */
+            tbody {
+                page-break-inside: auto;
             }
             th, td {
                 padding: 8px;
@@ -310,6 +328,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 width: 300px;
                 margin-left: auto;
                 margin-top: 30px;
+                page-break-inside: avoid; /* La tabla de totales no debe dividirse */
             }
             .totals-table td {
                 text-align: right;
@@ -326,11 +345,13 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 text-align: center;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
+                page-break-inside: avoid; /* El footer no debe dividirse */
             }
             .vendor-info {
                 margin-top: 30px;
                 border-top: 1px solid #eee;
                 padding-top: 10px;
+                page-break-inside: avoid; /* La info del vendor no debe dividirse */
             }
         </style>
     </head>
@@ -1001,10 +1022,18 @@ private function markdown_to_html($text) {
         // Configurar opciones para permitir carga de imágenes
        $options = new \Dompdf\Options();
 $options->set('isRemoteEnabled', true);
+// Configurar márgenes más pequeños para aprovechar mejor el espacio
+$options->set('defaultPaperSize', 'A4');
+$options->set('defaultPaperOrientation', 'portrait');
 $dompdf = new \Dompdf\Dompdf($options);
         
         $dompdf->loadHtml($html);
+        // Establecer márgenes más pequeños: left, top, right, bottom (en puntos)
         $dompdf->setPaper('A4', 'portrait');
+        $dompdf->set_option('margin_top', 10);
+        $dompdf->set_option('margin_bottom', 10);
+        $dompdf->set_option('margin_left', 10);
+        $dompdf->set_option('margin_right', 10);
         $dompdf->render();
         
         return $dompdf->output();
