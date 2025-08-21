@@ -476,34 +476,50 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 }
                 
                 $item_subtotal_with_discount = $item_subtotal - $item_discount_amount;
+                
+                // Dividir la descripción en chunks si es muy larga
+                $description_chunks = $this->split_long_text($item->description, 12);
+                $is_first_row = true;
+                
+                foreach ($description_chunks as $chunk_index => $description_chunk):
                 ?>
                 <tr>
-                    <td><?php echo esc_html($item->title); ?></td>
+                    <td><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
                     <td class="description">
-<?php echo nl2br(esc_html($item->description)); ?>
-                        <?php if ($item->is_date_range): ?>
-                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
-                        <?php else: ?>
-                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+<?php echo nl2br(esc_html($description_chunk)); ?>
+                        <?php if ($chunk_index === count($description_chunks) - 1): // Solo en el último chunk ?>
+                            <?php if ($item->is_date_range): ?>
+                                <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                            <?php else: ?>
+                                <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
                     <td><?php 
-                        if ($item->is_date_range) {
-                            echo esc_html($item->days_count);
-                        } else {
-                            echo esc_html($item->quantity);
+                        if ($is_first_row) {
+                            if ($item->is_date_range) {
+                                echo esc_html($item->days_count);
+                            } else {
+                                echo esc_html($item->quantity);
+                            }
                         }
                     ?></td>
-                    <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
+                    <td><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_unit_price_without_tax) : ''; ?></td>
                     <td>
-                        <?php if ($item_discount_amount > 0): ?>
-                            <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
-                            <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
-                        <?php else: ?>
-                            <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
+                        <?php if ($is_first_row): ?>
+                            <?php if ($item_discount_amount > 0): ?>
+                                <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
+                                <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
+                            <?php else: ?>
+                                <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
                 </tr>
+                <?php 
+                    $is_first_row = false;
+                endforeach;
+                ?>
                 
                 <?php 
                 // 2. Filas para extras con descripción
@@ -531,22 +547,32 @@ foreach ($extras_with_desc as $extra):
             // Si no hay tipo especificado, tratarlo como per_quantity
             $extra_price = $extra['price'] * $item->quantity;
     }
+    // Dividir la descripción del extra si es muy larga
+    $extra_description_chunks = $this->split_long_text($extra['description'], 10);
+    $is_first_extra_row = true;
+    
+    foreach ($extra_description_chunks as $extra_chunk):
 ?>
     <tr>
-        <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
-<td class="description"><?php echo nl2br(esc_html($extra['description'])); ?></td>		
+        <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
+        <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
         <td><?php 
-            // Mostrar quantity apropiada para extras con descripción
-            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
-                echo esc_html($extra['display_quantity']);
-            } else {
-                echo esc_html($display_quantity);
+            if ($is_first_extra_row) {
+                // Mostrar quantity apropiada para extras con descripción
+                if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                    echo esc_html($extra['display_quantity']);
+                } else {
+                    echo esc_html($display_quantity);
+                }
             }
         ?></td>
-        <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
-        <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
+        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra['price']) : ''; ?></td>
+        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra_price) : ''; ?></td>
     </tr>
-<?php endforeach; ?>
+<?php 
+        $is_first_extra_row = false;
+    endforeach;
+endforeach; ?>
 			
 			<?php 
 // 2.5 Filas para extras sin descripción
@@ -1215,5 +1241,48 @@ private function ImageToDataUrl(String $filename) {
         return false;
     
     return "data:{$mime};base64," . base64_encode($raw_data);
+}
+
+/**
+ * Divide texto largo en chunks para evitar problemas de saltos de página
+ * 
+ * @param string $text El texto a dividir
+ * @param int $max_lines Número máximo de líneas por chunk
+ * @return array Array de chunks de texto
+ */
+private function split_long_text($text, $max_lines = 10) {
+    // Primero, dividir por saltos de línea existentes
+    $lines = explode("\n", $text);
+    $chunks = array();
+    $current_chunk = array();
+    $current_line_count = 0;
+    
+    foreach ($lines as $line) {
+        // Contar cuántas "líneas visuales" ocupa este texto
+        // Aproximadamente 80 caracteres por línea visual
+        $visual_lines = max(1, ceil(strlen($line) / 80));
+        
+        // Si agregar esta línea excede el límite, crear un nuevo chunk
+        if ($current_line_count + $visual_lines > $max_lines && !empty($current_chunk)) {
+            $chunks[] = implode("\n", $current_chunk);
+            $current_chunk = array();
+            $current_line_count = 0;
+        }
+        
+        $current_chunk[] = $line;
+        $current_line_count += $visual_lines;
+    }
+    
+    // Agregar el último chunk si existe
+    if (!empty($current_chunk)) {
+        $chunks[] = implode("\n", $current_chunk);
+    }
+    
+    // Si no hay chunks (texto vacío), devolver array con string vacío
+    if (empty($chunks)) {
+        $chunks[] = '';
+    }
+    
+    return $chunks;
 }
 }
