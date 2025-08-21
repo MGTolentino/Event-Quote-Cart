@@ -296,6 +296,11 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 border: 1px solid #ddd;
                 vertical-align: top;
             }
+            /* Quitar borde superior en filas de continuación */
+            tr.continuation-row td {
+                border-top: none;
+                padding-top: 0;
+            }
             th {
                 background-color: #f2f2f2;
                 font-weight: bold;
@@ -483,7 +488,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 
                 foreach ($description_chunks as $chunk_index => $description_chunk):
                 ?>
-                <tr>
+                <tr<?php echo !$is_first_row ? ' class="continuation-row"' : ''; ?>>
                     <td><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
                     <td class="description">
 <?php echo nl2br(esc_html($description_chunk)); ?>
@@ -553,7 +558,7 @@ foreach ($extras_with_desc as $extra):
     
     foreach ($extra_description_chunks as $extra_chunk):
 ?>
-    <tr>
+    <tr<?php echo !$is_first_extra_row ? ' class="continuation-row"' : ''; ?>>
         <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
         <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
         <td><?php 
