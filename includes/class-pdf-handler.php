@@ -298,8 +298,12 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 page-break-inside: auto; /* Permitir que las tablas se dividan entre páginas */
             }
             tr {
-                page-break-inside: avoid; /* Evitar que las filas se corten a la mitad */
+                page-break-inside: auto; /* Permitir que las filas se dividan si el contenido es muy largo */
                 page-break-after: auto;
+            }
+            /* Permitir que las celdas con mucho contenido se dividan */
+            td {
+                page-break-inside: auto;
             }
             /* Agrupar item principal con sus extras inmediatos */
             tbody {
