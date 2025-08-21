@@ -150,12 +150,7 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $it
 			$dompdf = new \Dompdf\Dompdf($options);
             
             $dompdf->loadHtml($html);
-            // Establecer márgenes más pequeños: left, top, right, bottom (en puntos)
             $dompdf->setPaper('A4', 'portrait');
-            $dompdf->set_option('margin_top', 10);
-            $dompdf->set_option('margin_bottom', 10);
-            $dompdf->set_option('margin_left', 10);
-            $dompdf->set_option('margin_right', 10);
             $dompdf->render();
                 
             // Guardar el PDF en uploads
@@ -290,28 +285,10 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 margin-bottom: 20px;
                 font-style: italic;
             }
-            /* Reglas de control de saltos de página */
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 20px;
-                page-break-inside: auto; /* Permitir que las tablas se dividan entre páginas */
-            }
-            thead {
-                display: table-header-group; /* Repetir encabezados en cada página */
-            }
-            tbody {
-                page-break-inside: auto;
-            }
-            tr {
-                page-break-inside: auto;
-                page-break-after: auto;
-            }
-            /* Permitir división dentro de celdas con mucho contenido */
-            td.description {
-                page-break-inside: auto;
-                word-wrap: break-word;
-                max-width: 300px; /* Limitar ancho para forzar saltos */
             }
             th, td {
                 padding: 8px;
@@ -1036,12 +1013,7 @@ $options->set('defaultPaperOrientation', 'portrait');
 $dompdf = new \Dompdf\Dompdf($options);
         
         $dompdf->loadHtml($html);
-        // Establecer márgenes más pequeños: left, top, right, bottom (en puntos)
         $dompdf->setPaper('A4', 'portrait');
-        $dompdf->set_option('margin_top', 10);
-        $dompdf->set_option('margin_bottom', 10);
-        $dompdf->set_option('margin_left', 10);
-        $dompdf->set_option('margin_right', 10);
         $dompdf->render();
         
         return $dompdf->output();
