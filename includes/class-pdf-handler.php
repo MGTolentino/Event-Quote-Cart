@@ -312,18 +312,22 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 border-top: none;
                 border-bottom: none;
             }
-            /* Para items con múltiples filas, la primera fila no tiene borde inferior en descripción */
+            /* Para items con múltiples filas, la primera fila tiene borde inferior punteado en descripción */
             tr.has-continuation td:nth-child(2) {
-                border-bottom: none;
+                border-bottom: 1px dotted #e0e0e0;
             }
-            /* Las filas de continuación no tienen borde superior ni inferior en descripción */
+            /* Las filas de continuación tienen bordes punteados sutiles en descripción */
             tr.item-continuation td:nth-child(2) {
                 border-top: none;
-                border-bottom: none;
+                border-bottom: 1px dotted #e0e0e0;
             }
-            /* La última fila de un grupo debe tener borde inferior en descripción */
+            /* La última fila de un grupo debe tener borde inferior sólido en descripción */
             tr.last-of-group td:nth-child(2) {
-                border-bottom: 1px solid #ddd;
+                border-bottom: 1px solid #ddd !important;
+            }
+            /* Agregar un poco más de padding en las continuaciones para mejor legibilidad */
+            tr.item-continuation td {
+                padding-top: 4px;
             }
             .description {
                 font-size: 11px;
@@ -502,7 +506,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
             $item_subtotal_with_discount = $item_subtotal - $item_discount_amount;
             
             // Dividir la descripción en chunks si es muy larga
-            $description_chunks = $this->split_long_text($item->description, 12);
+            $description_chunks = $this->split_long_text($item->description, 5);
             $chunks_count = count($description_chunks);
             $is_first_row = true;
             
@@ -585,7 +589,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                     }
                     
                     // Dividir la descripción del extra si es muy larga
-                    $extra_description_chunks = $this->split_long_text($extra['description'], 10);
+                    $extra_description_chunks = $this->split_long_text($extra['description'], 4);
                     $extra_chunks_count = count($extra_description_chunks);
                     $is_first_extra_row = true;
                     
@@ -1299,9 +1303,9 @@ private function ImageToDataUrl(String $filename) {
  * @param int $max_lines Número máximo de líneas por chunk
  * @return array Array de chunks de texto
  */
-private function split_long_text($text, $max_lines = 10) {
-    // Si el texto es corto, no dividir
-    if (strlen($text) < 400) { // Aproximadamente 5 líneas
+private function split_long_text($text, $max_lines = 5) {
+    // Si el texto es corto o mediano, no dividir
+    if (strlen($text) < 800) { // Aproximadamente 10-12 líneas
         return array($text);
     }
     
