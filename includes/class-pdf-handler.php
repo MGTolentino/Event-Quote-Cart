@@ -289,20 +289,62 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 20px;
+                border: none;
             }
-            th, td {
+            thead tr {
+                background-color: #f2f2f2;
+            }
+            th {
                 padding: 8px;
                 text-align: left;
                 border: 1px solid #ddd;
-                vertical-align: top;
-            }
-            th {
-                background-color: #f2f2f2;
                 font-weight: bold;
+                background-color: #f2f2f2;
+            }
+            td {
+                padding: 8px;
+                text-align: left;
+                vertical-align: top;
+                border-left: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+                border-top: none;
+                border-bottom: none;
+            }
+            /* Bordes para grupos de items */
+            .item-group {
+                border: 1px solid #ddd;
+                margin-bottom: 0;
+            }
+            .item-group td {
+                border-left: none;
+                border-right: none;
+            }
+            .item-group td:first-child {
+                border-left: 1px solid #ddd;
+            }
+            .item-group td:last-child {
+                border-right: 1px solid #ddd;
+            }
+            .item-group tr:first-child td {
+                border-top: 1px solid #ddd;
+            }
+            .item-group tr:last-child td {
+                border-bottom: 1px solid #ddd;
+            }
+            /* Separador entre grupos */
+            .item-separator {
+                height: 0;
+                border: none;
+            }
+            .item-separator td {
+                padding: 0;
+                border: none;
             }
             .description {
                 font-size: 11px;
                 color: #666;
+                white-space: pre-wrap;
+                word-wrap: break-word;
             }
             .extras-list {
                 font-size: 11px;
@@ -313,10 +355,11 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 width: 300px;
                 margin-left: auto;
                 margin-top: 30px;
-                page-break-inside: avoid; /* La tabla de totales no debe dividirse */
+                page-break-inside: avoid;
             }
             .totals-table td {
                 text-align: right;
+                border: 1px solid #ddd;
             }
             .total-row {
                 font-weight: bold;
@@ -330,13 +373,13 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 text-align: center;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
-                page-break-inside: avoid; /* El footer no debe dividirse */
+                page-break-inside: avoid;
             }
             .vendor-info {
                 margin-top: 30px;
                 border-top: 1px solid #eee;
                 padding-top: 10px;
-                page-break-inside: avoid; /* La info del vendor no debe dividirse */
+                page-break-inside: avoid;
             }
         </style>
     </head>
@@ -417,162 +460,138 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 <th>SUB-TOTAL</th>
             </tr>
         </thead>
-        <tbody>
-            <?php 
-            // Procesar cada item
-            foreach ($detailed_items as $item): 
-                // Separar extras con descripción y los de tipo variable
-                $extras_with_desc = array();
-                $variable_extras = array();
-                $extras_without_desc = array();
-                
-                foreach ($item->extras as $extra) {
-                    if ($extra['is_variable']) {
-                        $variable_extras[] = $extra;
-                    } elseif ($extra['has_description']) {
-                        $extras_with_desc[] = $extra;
-                    } else {
-                        $extras_without_desc[] = $extra;
-                    }
-                }
-                
-                // 1. Fila principal del servicio
-                // Calcular el precio unitario correcto (total sin impuestos dividido por cantidad)
-                // Usar exactamente la misma fuente de tax rate que el tema Kava-Child
-                global $wpdb;
-                $tax_rate_db = $wpdb->get_var(
-                    $wpdb->prepare(
-                        "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
-                        1
-                    )
-                );
-                $tax_rate = (floatval($tax_rate_db) ?: 16) / 100;
-                
-                // Si el item tiene precio base 0, usar ese precio base para el cálculo
-                if ($item->base_price == 0) {
-                    $item_unit_price_without_tax = 0;
-                    $item_subtotal = 0;
+        <?php 
+        // Procesar cada item
+        foreach ($detailed_items as $item_index => $item): 
+            // Separar extras con descripción y los de tipo variable
+            $extras_with_desc = array();
+            $variable_extras = array();
+            $extras_without_desc = array();
+            
+            foreach ($item->extras as $extra) {
+                if ($extra['is_variable']) {
+                    $variable_extras[] = $extra;
+                } elseif ($extra['has_description']) {
+                    $extras_with_desc[] = $extra;
                 } else {
-                    // Usar directamente el precio base del servicio principal (sin extras)
-                    $item_unit_price_without_tax = $item->base_price;
-                    $item_subtotal = $item->base_price * $item->quantity;
+                    $extras_without_desc[] = $extra;
                 }
-                
-                // Calcular descuento del item si existe
-                $item_discount_amount = 0;
-                if ($discounts && isset($discounts['itemDiscounts'][$item->id])) {
-                    $discount = $discounts['itemDiscounts'][$item->id];
-                    // Si tenemos el monto ya calculado, usarlo directamente
-                    if (isset($discount['amount'])) {
-                        $item_discount_amount = $discount['amount'];
+            }
+            
+            // Calcular el precio unitario correcto (total sin impuestos dividido por cantidad)
+            // Usar exactamente la misma fuente de tax rate que el tema Kava-Child
+            global $wpdb;
+            $tax_rate_db = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+                    1
+                )
+            );
+            $tax_rate = (floatval($tax_rate_db) ?: 16) / 100;
+            
+            // Si el item tiene precio base 0, usar ese precio base para el cálculo
+            if ($item->base_price == 0) {
+                $item_unit_price_without_tax = 0;
+                $item_subtotal = 0;
+            } else {
+                // Usar directamente el precio base del servicio principal (sin extras)
+                $item_unit_price_without_tax = $item->base_price;
+                $item_subtotal = $item->base_price * $item->quantity;
+            }
+            
+            // Calcular descuento del item si existe
+            $item_discount_amount = 0;
+            if ($discounts && isset($discounts['itemDiscounts'][$item->id])) {
+                $discount = $discounts['itemDiscounts'][$item->id];
+                // Si tenemos el monto ya calculado, usarlo directamente
+                if (isset($discount['amount'])) {
+                    $item_discount_amount = $discount['amount'];
+                } else {
+                    // Fallback al cálculo original
+                    if ($discount['type'] === 'percentage') {
+                        $item_discount_amount = $item_subtotal * ($discount['value'] / 100);
                     } else {
-                        // Fallback al cálculo original
-                        if ($discount['type'] === 'percentage') {
-                            $item_discount_amount = $item_subtotal * ($discount['value'] / 100);
-                        } else {
-                            $item_discount_amount = min($discount['value'], $item_subtotal);
-                        }
+                        $item_discount_amount = min($discount['value'], $item_subtotal);
                     }
                 }
-                
-                $item_subtotal_with_discount = $item_subtotal - $item_discount_amount;
-                
-                // Dividir la descripción en chunks si es muy larga
-                $description_chunks = $this->split_long_text($item->description, 12);
-                $is_first_row = true;
-                
-                foreach ($description_chunks as $chunk_index => $description_chunk):
-                ?>
+            }
+            
+            $item_subtotal_with_discount = $item_subtotal - $item_discount_amount;
+            ?>
+            
+            <!-- Grupo de filas para cada item -->
+            <tbody class="item-group">
+                <!-- Fila principal del servicio -->
                 <tr>
-                    <td><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
+                    <td><?php echo esc_html($item->title); ?></td>
                     <td class="description">
-<?php echo nl2br(esc_html($description_chunk)); ?>
-                        <?php if ($chunk_index === count($description_chunks) - 1): // Solo en el último chunk ?>
-                            <?php if ($item->is_date_range): ?>
-                                <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
-                            <?php else: ?>
-                                <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
-                            <?php endif; ?>
+                        <?php echo nl2br(esc_html($item->description)); ?>
+                        <?php if ($item->is_date_range): ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                        <?php else: ?>
+                            <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
                         <?php endif; ?>
                     </td>
                     <td><?php 
-                        if ($is_first_row) {
-                            if ($item->is_date_range) {
-                                echo esc_html($item->days_count);
-                            } else {
-                                echo esc_html($item->quantity);
-                            }
+                        if ($item->is_date_range) {
+                            echo esc_html($item->days_count);
+                        } else {
+                            echo esc_html($item->quantity);
                         }
                     ?></td>
-                    <td><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_unit_price_without_tax) : ''; ?></td>
+                    <td><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
                     <td>
-                        <?php if ($is_first_row): ?>
-                            <?php if ($item_discount_amount > 0): ?>
-                                <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
-                                <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
-                            <?php else: ?>
-                                <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
-                            <?php endif; ?>
+                        <?php if ($item_discount_amount > 0): ?>
+                            <span style="text-decoration: line-through;"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></span><br>
+                            <span><?php echo hivepress()->woocommerce->format_price($item_subtotal_with_discount); ?></span>
+                        <?php else: ?>
+                            <?php echo hivepress()->woocommerce->format_price($item_subtotal); ?>
                         <?php endif; ?>
                     </td>
                 </tr>
-                <?php 
-                    $is_first_row = false;
-                endforeach;
-                ?>
                 
                 <?php 
                 // 2. Filas para extras con descripción
-foreach ($extras_with_desc as $extra): 
-    // Calcular precio según el tipo de extra
-    $extra_price = 0;
-    $display_quantity = $item->quantity; // Por defecto, mostrar la cantidad del ítem principal
-    
-    switch($extra['type']) {
-        case 'per_quantity':
-            // Para extras tipo per_quantity, precio unitario × cantidad del ítem
-            $extra_price = $extra['price'] * $item->quantity;
-            break;
-            
-        case 'per_order':
-        case 'per_booking':
-        case 'per_item': // Tratar per_item igual que per_order/per_booking
-            // Para extras tipo per_order/per_item, mostrar solo el precio sin multiplicar
-            $extra_price = $extra['price'];
-            // Para estos tipos, mostramos "1" como cantidad para claridad
-            $display_quantity = 1;
-            break;
-            
-        default:
-            // Si no hay tipo especificado, tratarlo como per_quantity
-            $extra_price = $extra['price'] * $item->quantity;
-    }
-    // Dividir la descripción del extra si es muy larga
-    $extra_description_chunks = $this->split_long_text($extra['description'], 10);
-    $is_first_extra_row = true;
-    
-    foreach ($extra_description_chunks as $extra_chunk):
-?>
-    <tr>
-        <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
-        <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
-        <td><?php 
-            if ($is_first_extra_row) {
-                // Mostrar quantity apropiada para extras con descripción
-                if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
-                    echo esc_html($extra['display_quantity']);
-                } else {
-                    echo esc_html($display_quantity);
-                }
-            }
-        ?></td>
-        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra['price']) : ''; ?></td>
-        <td><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra_price) : ''; ?></td>
-    </tr>
-<?php 
-        $is_first_extra_row = false;
-    endforeach;
-endforeach; ?>
+                foreach ($extras_with_desc as $extra): 
+                    // Calcular precio según el tipo de extra
+                    $extra_price = 0;
+                    $display_quantity = $item->quantity; // Por defecto, mostrar la cantidad del ítem principal
+                    
+                    switch($extra['type']) {
+                        case 'per_quantity':
+                            // Para extras tipo per_quantity, precio unitario × cantidad del ítem
+                            $extra_price = $extra['price'] * $item->quantity;
+                            break;
+                            
+                        case 'per_order':
+                        case 'per_booking':
+                        case 'per_item': // Tratar per_item igual que per_order/per_booking
+                            // Para extras tipo per_order/per_item, mostrar solo el precio sin multiplicar
+                            $extra_price = $extra['price'];
+                            // Para estos tipos, mostramos "1" como cantidad para claridad
+                            $display_quantity = 1;
+                            break;
+                            
+                        default:
+                            // Si no hay tipo especificado, tratarlo como per_quantity
+                            $extra_price = $extra['price'] * $item->quantity;
+                    }
+                ?>
+                <tr>
+                    <td><?php echo esc_html($extra['name']) . ' by ' . esc_html($item->title); ?></td>
+                    <td class="description"><?php echo nl2br(esc_html($extra['description'])); ?></td>		
+                    <td><?php 
+                        // Mostrar quantity apropiada para extras con descripción
+                        if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                            echo esc_html($extra['display_quantity']);
+                        } else {
+                            echo esc_html($display_quantity);
+                        }
+                    ?></td>
+                    <td><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
+                    <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
+                </tr>
+                <?php endforeach; ?>
 			
 			<?php 
 // 2.5 Filas para extras sin descripción
@@ -637,9 +656,19 @@ foreach ($extras_without_desc as $extra):
                         <td><?php echo hivepress()->woocommerce->format_price($extra_price); ?></td>
                     </tr>
                 <?php endforeach; ?>
-                
-            <?php endforeach; ?>
-        </tbody>
+            </tbody>
+            
+            <?php 
+            // Agregar separador entre items (excepto después del último)
+            if ($item_index < count($detailed_items) - 1): ?>
+            <tbody class="item-separator">
+                <tr>
+                    <td colspan="5"></td>
+                </tr>
+            </tbody>
+            <?php endif; ?>
+            
+        <?php endforeach; ?>
     </table>
     
     <table class="totals-table">
@@ -1243,46 +1272,4 @@ private function ImageToDataUrl(String $filename) {
     return "data:{$mime};base64," . base64_encode($raw_data);
 }
 
-/**
- * Divide texto largo en chunks para evitar problemas de saltos de página
- * 
- * @param string $text El texto a dividir
- * @param int $max_lines Número máximo de líneas por chunk
- * @return array Array de chunks de texto
- */
-private function split_long_text($text, $max_lines = 10) {
-    // Primero, dividir por saltos de línea existentes
-    $lines = explode("\n", $text);
-    $chunks = array();
-    $current_chunk = array();
-    $current_line_count = 0;
-    
-    foreach ($lines as $line) {
-        // Contar cuántas "líneas visuales" ocupa este texto
-        // Aproximadamente 80 caracteres por línea visual
-        $visual_lines = max(1, ceil(strlen($line) / 80));
-        
-        // Si agregar esta línea excede el límite, crear un nuevo chunk
-        if ($current_line_count + $visual_lines > $max_lines && !empty($current_chunk)) {
-            $chunks[] = implode("\n", $current_chunk);
-            $current_chunk = array();
-            $current_line_count = 0;
-        }
-        
-        $current_chunk[] = $line;
-        $current_line_count += $visual_lines;
-    }
-    
-    // Agregar el último chunk si existe
-    if (!empty($current_chunk)) {
-        $chunks[] = implode("\n", $current_chunk);
-    }
-    
-    // Si no hay chunks (texto vacío), devolver array con string vacío
-    if (empty($chunks)) {
-        $chunks[] = '';
-    }
-    
-    return $chunks;
-}
 }
