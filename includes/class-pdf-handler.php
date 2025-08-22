@@ -300,16 +300,30 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 background-color: #f2f2f2;
                 font-weight: bold;
             }
-            /* Clases especiales para filas continuas */
+            /* Clases especiales para filas continuas del mismo item */
             tr.item-continuation td {
                 border-top: none;
             }
+            /* Para las columnas que no son descripción, quitar también el borde inferior */
             tr.item-continuation td:first-child,
             tr.item-continuation td:nth-child(3),
             tr.item-continuation td:nth-child(4),
             tr.item-continuation td:last-child {
                 border-top: none;
                 border-bottom: none;
+            }
+            /* Para items con múltiples filas, la primera fila no tiene borde inferior en descripción */
+            tr.has-continuation td:nth-child(2) {
+                border-bottom: none;
+            }
+            /* Las filas de continuación no tienen borde superior ni inferior en descripción */
+            tr.item-continuation td:nth-child(2) {
+                border-top: none;
+                border-bottom: none;
+            }
+            /* La última fila de un grupo debe tener borde inferior en descripción */
+            tr.last-of-group td:nth-child(2) {
+                border-bottom: 1px solid #ddd;
             }
             .description {
                 font-size: 11px;
@@ -324,7 +338,7 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 width: 300px;
                 margin-left: auto;
                 margin-top: 30px;
-                page-break-inside: avoid;
+                page-break-inside: avoid; /* Solo mantener para la tabla de totales */
             }
             .totals-table td {
                 text-align: right;
@@ -341,13 +355,13 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                 text-align: center;
                 border-top: 1px solid #eee;
                 padding-top: 20px;
-                page-break-inside: avoid;
+                page-break-inside: avoid; /* Solo mantener para el footer */
             }
             .vendor-info {
                 margin-top: 30px;
                 border-top: 1px solid #eee;
                 padding-top: 10px;
-                page-break-inside: avoid;
+                page-break-inside: avoid; /* Solo mantener para vendor info */
             }
         </style>
     </head>
@@ -489,11 +503,23 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
             
             // Dividir la descripción en chunks si es muy larga
             $description_chunks = $this->split_long_text($item->description, 12);
+            $chunks_count = count($description_chunks);
             $is_first_row = true;
             
             foreach ($description_chunks as $chunk_index => $description_chunk):
+                $row_classes = array();
+                if (!$is_first_row) {
+                    $row_classes[] = 'item-continuation';
+                }
+                if ($is_first_row && $chunks_count > 1) {
+                    $row_classes[] = 'has-continuation';
+                }
+                if ($chunk_index === $chunks_count - 1 && $chunks_count > 1) {
+                    $row_classes[] = 'last-of-group';
+                }
+                $class_string = !empty($row_classes) ? 'class="' . implode(' ', $row_classes) . '"' : '';
             ?>
-            <tr <?php echo !$is_first_row ? 'class="item-continuation"' : ''; ?>>
+            <tr <?php echo $class_string; ?>>
                 <td><?php echo $is_first_row ? esc_html($item->title) : ''; ?></td>
                 <td class="description">
                     <?php echo nl2br(esc_html($description_chunk)); ?>
@@ -560,11 +586,23 @@ private function generate_pdf_html($cart_items, $totals, $context = null, $disco
                     
                     // Dividir la descripción del extra si es muy larga
                     $extra_description_chunks = $this->split_long_text($extra['description'], 10);
+                    $extra_chunks_count = count($extra_description_chunks);
                     $is_first_extra_row = true;
                     
-                    foreach ($extra_description_chunks as $extra_chunk):
+                    foreach ($extra_description_chunks as $extra_chunk_index => $extra_chunk):
+                        $extra_row_classes = array();
+                        if (!$is_first_extra_row) {
+                            $extra_row_classes[] = 'item-continuation';
+                        }
+                        if ($is_first_extra_row && $extra_chunks_count > 1) {
+                            $extra_row_classes[] = 'has-continuation';
+                        }
+                        if ($extra_chunk_index === $extra_chunks_count - 1 && $extra_chunks_count > 1) {
+                            $extra_row_classes[] = 'last-of-group';
+                        }
+                        $extra_class_string = !empty($extra_row_classes) ? 'class="' . implode(' ', $extra_row_classes) . '"' : '';
                 ?>
-                <tr <?php echo !$is_first_extra_row ? 'class="item-continuation"' : ''; ?>>
+                <tr <?php echo $extra_class_string; ?>>
                     <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
                     <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>		
                     <td><?php 
@@ -1262,6 +1300,11 @@ private function ImageToDataUrl(String $filename) {
  * @return array Array de chunks de texto
  */
 private function split_long_text($text, $max_lines = 10) {
+    // Si el texto es corto, no dividir
+    if (strlen($text) < 400) { // Aproximadamente 5 líneas
+        return array($text);
+    }
+    
     // Primero, dividir por saltos de línea existentes
     $lines = explode("\n", $text);
     $chunks = array();
@@ -1270,8 +1313,8 @@ private function split_long_text($text, $max_lines = 10) {
     
     foreach ($lines as $line) {
         // Contar cuántas "líneas visuales" ocupa este texto
-        // Aproximadamente 80 caracteres por línea visual
-        $visual_lines = max(1, ceil(strlen($line) / 80));
+        // Ajustado para el ancho real de la columna de descripción (aproximadamente 70 caracteres)
+        $visual_lines = max(1, ceil(strlen($line) / 70));
         
         // Si agregar esta línea excede el límite, crear un nuevo chunk
         if ($current_line_count + $visual_lines > $max_lines && !empty($current_chunk)) {
