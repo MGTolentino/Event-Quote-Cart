@@ -34,6 +34,8 @@ add_action('wp_ajax_eq_update_cart_date', array($this, 'update_cart_date'));
 add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		add_action('wp_ajax_eq_check_event_exists', array($this, 'check_event_exists'));
 		add_action('wp_ajax_eq_get_lead_email', array($this, 'get_lead_email'));
+		add_action('wp_ajax_eq_get_email_template', array($this, 'get_email_template'));
+		add_action('wp_ajax_eq_get_whatsapp_template', array($this, 'get_whatsapp_template'));
 		add_action('wp_ajax_eq_validate_all_cart_items', array($this, 'validate_all_cart_items'));
         
         // Hooks para manejo de fechas
@@ -130,6 +132,11 @@ public function add_to_cart() {
     $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     $extras = isset($_POST['extras']) ? $_POST['extras'] : array();
+    
+    // Datos adicionales para rangos de fechas
+    $end_date = isset($_POST['end_date']) ? sanitize_text_field($_POST['end_date']) : '';
+    $days_count = isset($_POST['days_count']) ? intval($_POST['days_count']) : 1;
+    $is_date_range = isset($_POST['is_date_range']) ? (bool)$_POST['is_date_range'] : false;
 
     // Validar y convertir fecha si es timestamp
     if (!empty($date)) {
@@ -251,6 +258,15 @@ if (!empty($date)) {
             );
 
             $item_id = $existing_item->id;
+            
+            // Eliminar rango de fechas existente si hay uno
+            if ($is_date_range) {
+                $wpdb->delete(
+                    $wpdb->prefix . 'eq_cart_date_ranges',
+                    array('cart_item_id' => $item_id),
+                    array('%d')
+                );
+            }
 			
 			// Verificar otros ítems en el carrito
 $other_items = $wpdb->get_results($wpdb->prepare(
@@ -288,6 +304,33 @@ foreach ($other_items as $other_item) {
             );
 
             $item_id = $wpdb->insert_id;
+        }
+
+        // Guardar información de rango de fechas si aplica
+        if ($is_date_range && $end_date && $item_id) {
+            // Preparar información de extras que se multiplicaron por días
+            $extras_info = array();
+            foreach ($extras as $extra) {
+                if (isset($extra['multiplied_by_days']) && $extra['multiplied_by_days']) {
+                    $extras_info[] = array(
+                        'id' => $extra['id'],
+                        'original_days' => isset($extra['original_days']) ? $extra['original_days'] : $days_count
+                    );
+                }
+            }
+
+            $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_date_ranges',
+                array(
+                    'cart_item_id' => $item_id,
+                    'start_date' => $date,
+                    'end_date' => $end_date,
+                    'days_count' => $days_count,
+                    'extras_info' => json_encode($extras_info),
+                    'created_at' => current_time('mysql')
+                ),
+                array('%d', '%s', '%s', '%d', '%s', '%s')
+            );
         }
 
         // 9. Obtener datos completos del item
@@ -1209,6 +1252,12 @@ public function get_cart_item() {
         // Obtener la fecha del ítem
         $item_date = isset($form_data['date']) ? $form_data['date'] : '';
         
+        // Verificar si existe un rango de fechas para este item
+        $date_range = $wpdb->get_row($wpdb->prepare(
+            "SELECT start_date, end_date, days_count FROM {$wpdb->prefix}eq_cart_date_ranges WHERE cart_item_id = %d",
+            $item_id
+        ));
+        
         // Obtener datos del listing pasando la fecha
         $listing_data = $this->get_listing_data_for_edit($item->listing_id, $item_date);
         
@@ -1219,6 +1268,14 @@ public function get_cart_item() {
             'listing_data' => $listing_data,
             'form_data' => $form_data
         );
+        
+        // Agregar datos de rango de fechas si existen
+        if ($date_range) {
+            $response_data['is_date_range'] = true;
+            $response_data['start_date'] = $date_range->start_date;
+            $response_data['end_date'] = $date_range->end_date;
+            $response_data['days_count'] = $date_range->days_count;
+        }
 
         wp_send_json_success($response_data);
 
@@ -1822,7 +1879,6 @@ public function clear_context_meta() {
         ]);
         return;
     } else {
-        error_log('clear_context_meta: Session successfully removed from database');
     }
     
     // Establecer cookie para indicar que la sesión se ha finalizado
@@ -1907,10 +1963,8 @@ public function clear_context_meta() {
         return;
     }
     
-    error_log('DEBUG check_context_status: Session found - Lead ID: ' . $session->lead_id . ', Event ID: ' . $session->event_id);
     
     // Queries rápidas separadas solo si necesitamos los datos
-    error_log('DEBUG check_context_status: About to query lead name for lead_id: ' . $session->lead_id);
     $lead_name = $wpdb->get_var($wpdb->prepare(
         "SELECT CONCAT(lead_nombre, ' ', lead_apellido) 
         FROM {$wpdb->prefix}jet_cct_leads 
@@ -1919,14 +1973,11 @@ public function clear_context_meta() {
     ));
     
     if ($wpdb->last_error) {
-        error_log('DEBUG check_context_status: Database error in lead query: ' . $wpdb->last_error);
         wp_send_json_error('Database error in lead query');
         return;
     }
     
-    error_log('DEBUG check_context_status: Lead query completed. Lead name: ' . ($lead_name ? $lead_name : 'NOT FOUND'));
     
-    error_log('DEBUG check_context_status: About to query event data for event_id: ' . $session->event_id);
     $event_data = $wpdb->get_row($wpdb->prepare(
         "SELECT tipo_de_evento, fecha_de_evento 
         FROM {$wpdb->prefix}jet_cct_eventos 
@@ -1935,16 +1986,13 @@ public function clear_context_meta() {
     ));
     
     if ($wpdb->last_error) {
-        error_log('DEBUG check_context_status: Database error in event query: ' . $wpdb->last_error);
         wp_send_json_error('Database error in event query');
         return;
     }
     
-    error_log('DEBUG check_context_status: Event query completed. Event found: ' . ($event_data ? 'YES' : 'NO'));
     
     // Verificar que lead y evento existen
     if (!$lead_name || !$event_data) {
-        error_log('DEBUG check_context_status: Lead or event not found, cleaning invalid session');
         // Eliminar sesión inválida
         $wpdb->delete(
             $wpdb->prefix . 'eq_context_sessions',
@@ -1957,7 +2005,6 @@ public function clear_context_meta() {
             unset($_SESSION['eq_quote_context']);
         }
         
-        error_log('DEBUG check_context_status: Invalid session cleaned, returning false');
         
         // Cerrar sesión antes de enviar respuesta
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -1968,7 +2015,6 @@ public function clear_context_meta() {
         return;
     }
     
-    error_log('DEBUG check_context_status: All data valid, preparing response');
     
     // Sesión válida encontrada, devolver datos completos
     $response = array(
@@ -1982,7 +2028,6 @@ public function clear_context_meta() {
         'sessionToken' => $session->session_token
     );
     
-    error_log('DEBUG check_context_status: Response prepared: ' . json_encode($response));
     
     // Actualizar sesión PHP para mantener sincronización
     $_SESSION['eq_quote_context'] = array(
@@ -1996,16 +2041,13 @@ public function clear_context_meta() {
         'last_update' => time()
     );
     
-    error_log('DEBUG check_context_status: About to send success response');
     
     // IMPORTANTE: Cerrar la sesión PHP para liberar el lock antes de enviar la respuesta
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_write_close();
-        error_log('DEBUG check_context_status: Session closed to release lock');
     }
     
     wp_send_json_success($response);
-    error_log('DEBUG check_context_status: Response sent successfully');
 }
 	
 	/**
@@ -2055,8 +2097,6 @@ public function verify_context_cleared() {
     // Verificar en sesión PHP
     if (isset($_SESSION['eq_quote_context'])) {
         unset($_SESSION['eq_quote_context']);
-    } else {
-        error_log('verify_context_cleared: No session in PHP');
     }
     
     // Asegurarse de que la señal de no restaurar esté establecida
@@ -2877,6 +2917,137 @@ public function validate_all_cart_items() {
         // Establecer cookies para que el frontend sepa que debe limpiar
         setcookie('eq_session_ended', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
         setcookie('eq_context_force_clear', 'true', time() + 86400, COOKIEPATH, COOKIE_DOMAIN);
+    }
+
+    /**
+     * Get email template and lead email - integrates with Vendor Dashboard PRO plugin
+     */
+    public function get_email_template() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Get lead email
+            $context = eq_get_active_context();
+            $lead_email = '';
+            if ($context && isset($context['lead'])) {
+                $lead = $context['lead'];
+                if (!empty($lead->lead_e_mail)) {
+                    $lead_email = sanitize_email($lead->lead_e_mail);
+                }
+            }
+            
+            // Get vendor email template
+            $email_template = '';
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $email_template = get_post_meta($vendor->get_id(), 'email_message_template', true);
+                }
+            }
+            
+            // If no template, provide default
+            if (empty($email_template)) {
+                $user = wp_get_current_user();
+                $email_template = "Hola {customer_name},\n\nTe comparto la cotización #{quote_number} que solicitaste.\n\nSaludos,\n{vendor_name}";
+            }
+            
+            // Replace placeholders with actual values
+            $user = wp_get_current_user();
+            $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+            $lead_name = '';
+            if ($context && isset($context['lead'])) {
+                $lead_name = $context['lead']->lead_nombre ?: 'cliente';
+            }
+            
+            // Get product name for template
+            $cart_items = eq_get_cart_items();
+            $product_name = "";
+            if (count($cart_items) == 1) {
+                $product_name = $cart_items[0]->title;
+            } else {
+                $product_name = "los productos seleccionados";
+            }
+            
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}', '{product_name}'],
+                [$lead_name ?: 'cliente', $quote_number, $user->display_name, $product_name],
+                $email_template
+            );
+            
+            wp_send_json_success(array(
+                'email' => $lead_email,
+                'template' => $message
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Get WhatsApp template and lead phone - integrates with Vendor Dashboard PRO plugin
+     */
+    public function get_whatsapp_template() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Get lead phone
+            $context = eq_get_active_context();
+            $lead_phone = '';
+            $lead_name = 'cliente';
+            
+            if ($context && isset($context['lead'])) {
+                $lead = $context['lead'];
+                if (!empty($lead->lead_celular)) {
+                    $lead_phone = preg_replace('/[^0-9]/', '', $lead->lead_celular);
+                    if (substr($lead_phone, 0, 1) === '+') {
+                        $lead_phone = substr($lead_phone, 1);
+                    }
+                }
+                $lead_name = $lead->lead_nombre ?: 'cliente';
+            }
+            
+            // Get vendor WhatsApp template
+            $whatsapp_template = '';
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $whatsapp_template = get_post_meta($vendor->get_id(), 'whatsapp_message_template', true);
+                }
+            }
+            
+            // If no template, provide default
+            if (empty($whatsapp_template)) {
+                $user = wp_get_current_user();
+                $whatsapp_template = "¡Hola! Qué tal {customer_name}, soy {vendor_name}. Te comparto la cotización #{quote_number}. ¿Tienes alguna pregunta?";
+            }
+            
+            // Replace placeholders with actual values
+            $user = wp_get_current_user();
+            $quote_number = 'COT-' . date('Ymd') . '-' . get_current_user_id();
+            
+            $message = str_replace(
+                ['{customer_name}', '{quote_number}', '{vendor_name}'],
+                [$lead_name, $quote_number, $user->display_name],
+                $whatsapp_template
+            );
+            
+            wp_send_json_success(array(
+                'lead_phone' => $lead_phone,
+                'message' => $message
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
     }
 	
 }

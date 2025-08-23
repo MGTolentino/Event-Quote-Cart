@@ -811,13 +811,8 @@ $eventos = $wpdb->get_results($wpdb->prepare(
 
 // Formatear fechas para cada evento
 foreach ($eventos as $evento) {
-    error_log("DEBUG: get_lead_events - Fecha raw de BD: " . $evento->fecha_de_evento);
     if (is_numeric($evento->fecha_de_evento)) {
-        error_log("DEBUG: get_lead_events - Fecha es numérica, convirtiendo...");
         $evento->fecha_formateada = date_i18n(get_option('date_format'), $evento->fecha_de_evento);
-        error_log("DEBUG: get_lead_events - Fecha formateada: " . $evento->fecha_formateada);
-    } else {
-        error_log("DEBUG: get_lead_events - Fecha NO es numérica");
     }
 }
     
@@ -852,7 +847,6 @@ public function create_event() {
     }
     
     // IMPORTANTE: Convertir fecha a timestamp
-    error_log("DEBUG: create_event_public - Fecha recibida: " . $fecha_evento);
     
     // Intentar usar DateTime para conversión más robusta
     try {
@@ -860,18 +854,13 @@ public function create_event() {
         $timezone = new DateTimeZone(get_option('timezone_string') ?: 'America/Mexico_City');
         $dateObj = new DateTime($fecha_evento . ' 00:00:00', $timezone);
         $fecha_timestamp = $dateObj->getTimestamp();
-        error_log("DEBUG: create_event_public - DateTime timestamp: " . $fecha_timestamp . " (timezone: " . $timezone->getName() . ")");
     } catch (Exception $e) {
-        error_log("DEBUG: create_event_public - DateTime falló: " . $e->getMessage());
         // Fallback a strtotime
         $fecha_timestamp = strtotime($fecha_evento . ' 00:00:00');
-        error_log("DEBUG: create_event_public - strtotime fallback: " . $fecha_timestamp);
     }
     
     if ($fecha_timestamp === false || $fecha_timestamp === 0) {
-        error_log("DEBUG: create_event_public - ERROR: Conversión de fecha falló para: " . $fecha_evento);
         $fecha_timestamp = strtotime('+1 day'); // Usar mañana como fallback
-        error_log("DEBUG: create_event_public - Usando fallback timestamp: " . $fecha_timestamp);
     }
     
     global $wpdb;

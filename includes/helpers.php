@@ -70,6 +70,36 @@ if (!$has_active_context) {
                 $item->extras = isset($form_data['extras']) ? $form_data['extras'] : array();
                 $item->total_price = isset($form_data['total_price']) ? floatval($form_data['total_price']) : 0;
                 $item->price_formatted = hivepress()->woocommerce->format_price($item->total_price);
+                
+                // Verificar si hay información de rango de fechas para carritos personales
+                $date_range = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}eq_cart_date_ranges WHERE cart_item_id = %d",
+                    $item->id
+                ));
+                
+                if ($date_range) {
+                    $item->is_date_range = true;
+                    $item->start_date = $date_range->start_date;
+                    $item->end_date = $date_range->end_date;
+                    $item->days_count = $date_range->days_count;
+                    $item->quantity = $date_range->days_count; // Override quantity with days for display
+                    
+                    // Procesar información de extras que se multiplicaron por días
+                    $extras_info = json_decode($date_range->extras_info, true);
+                    if ($extras_info && is_array($extras_info)) {
+                        foreach ($item->extras as &$extra) {
+                            foreach ($extras_info as $extra_info) {
+                                if ($extra['id'] == $extra_info['id']) {
+                                    $extra['display_quantity'] = $extra_info['original_days'];
+                                    $extra['was_multiplied_by_days'] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    $item->is_date_range = false;
+                }
             }
             
             return $items;
@@ -245,6 +275,36 @@ if (!$has_active_context) {
         $item->extras = isset($form_data['extras']) ? $form_data['extras'] : array();
         $item->total_price = isset($form_data['total_price']) ? floatval($form_data['total_price']) : 0;
         $item->price_formatted = hivepress()->woocommerce->format_price($item->total_price);
+        
+        // Verificar si hay información de rango de fechas
+        $date_range = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}eq_cart_date_ranges WHERE cart_item_id = %d",
+            $item->id
+        ));
+        
+        if ($date_range) {
+            $item->is_date_range = true;
+            $item->start_date = $date_range->start_date;
+            $item->end_date = $date_range->end_date;
+            $item->days_count = $date_range->days_count;
+            $item->quantity = $date_range->days_count; // Override quantity with days for display
+            
+            // Procesar información de extras que se multiplicaron por días
+            $extras_info = json_decode($date_range->extras_info, true);
+            if ($extras_info && is_array($extras_info)) {
+                foreach ($item->extras as &$extra) {
+                    foreach ($extras_info as $extra_info) {
+                        if ($extra['id'] == $extra_info['id']) {
+                            $extra['display_quantity'] = $extra_info['original_days'];
+                            $extra['was_multiplied_by_days'] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            $item->is_date_range = false;
+        }
     }
     
     return $items;

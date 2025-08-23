@@ -76,10 +76,17 @@ function eq_can_view_quote_button() {
     }
 
     $user = wp_get_current_user();
-    return (
+    
+    // Check for admin and sales executive roles
+    $has_role_access = (
         in_array('administrator', $user->roles) || 
         in_array('ejecutivo_de_ventas', $user->roles)
     );
+    
+    // Check if user is a vendor (integrates with Vendor Dashboard PRO plugin)
+    $is_vendor = function_exists('vdp_is_user_vendor') ? vdp_is_user_vendor() : false;
+    
+    return $has_role_access || $is_vendor;
 }
 
 function eq_can_use_leads_integration() {

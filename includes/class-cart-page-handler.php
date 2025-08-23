@@ -93,9 +93,6 @@ class Event_Quote_Cart_Page_Handler {
         if ($context_user_id !== null && $context_user_id !== $user_id) {
             $context_lead_id = null;
             $context_event_id = null;
-        } else if ($context_lead_id && $context_event_id) {
-            error_log('get_cart_items: Using context from session - lead_id: ' . 
-                $context_lead_id . ', event_id: ' . $context_event_id);
         }
     }
     
@@ -116,8 +113,6 @@ class Event_Quote_Cart_Page_Handler {
             // Usar este carrito específico
             $active_cart_id = $context_cart_id;
         } else {
-            error_log('get_cart_items: No cart found for current context');
-            
             // Si no existe carrito para este contexto, no mostrar nada
             return array();
         }
@@ -197,7 +192,7 @@ class Event_Quote_Cart_Page_Handler {
             
             $processed_items[] = $processed_item;
         } catch (Exception $e) {
-            error_log('Error processing item #' . $item->id . ': ' . $e->getMessage());
+            // Skip items with processing errors
         }
     }
     
