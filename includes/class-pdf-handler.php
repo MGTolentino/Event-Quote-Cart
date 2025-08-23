@@ -703,18 +703,31 @@ foreach ($extras_without_desc as $extra):
         
         // Calcular descuentos totales
         $total_discounts = 0;
+        $item_discounts = 0;
+        $global_discount = 0;
+        
         if ($discounts) {
             if (isset($discounts['totalItemDiscounts'])) {
-                $total_discounts += $discounts['totalItemDiscounts'];
+                $item_discounts = $discounts['totalItemDiscounts'];
             }
             if (isset($discounts['globalDiscount']['amount'])) {
-                $total_discounts += $discounts['globalDiscount']['amount'];
+                $global_discount = $discounts['globalDiscount']['amount'];
             }
         }
         
-        // Calcular subtotal después de descuentos
+        // Calcular subtotal sin IVA
         $subtotal_raw = floatval(str_replace(['$', ',', ' '], '', $pdf_totals['subtotal']));
-        $subtotal_after_discounts = $subtotal_raw - $total_discounts;
+        
+        // Limitar descuentos al subtotal disponible
+        $total_discounts = $item_discounts + $global_discount;
+        if ($total_discounts > $subtotal_raw) {
+            // Si los descuentos exceden el subtotal, ajustar el descuento global
+            $global_discount = max(0, $subtotal_raw - $item_discounts);
+            $total_discounts = $subtotal_raw;
+        }
+        
+        // Calcular subtotal después de descuentos
+        $subtotal_after_discounts = max(0, $subtotal_raw - $total_discounts);
         
         // Recalcular IVA sobre el subtotal con descuentos
         $new_tax = $subtotal_after_discounts * ($tax_rate / 100);
@@ -728,20 +741,20 @@ foreach ($extras_without_desc as $extra):
         
         <?php 
         // Mostrar descuentos si existen
-        if ($discounts && isset($discounts['totalItemDiscounts']) && $discounts['totalItemDiscounts'] > 0): 
+        if ($item_discounts > 0): 
         ?>
         <tr>
             <td>DESCUENTOS POR ITEM:</td>
-            <td>-<?php echo hivepress()->woocommerce->format_price($discounts['totalItemDiscounts']); ?></td>
+            <td>-<?php echo hivepress()->woocommerce->format_price($item_discounts); ?></td>
         </tr>
         <?php endif; ?>
         
         <?php 
-        if ($discounts && isset($discounts['globalDiscount']['amount']) && $discounts['globalDiscount']['amount'] > 0): 
+        if ($global_discount > 0): 
         ?>
         <tr>
             <td>DESCUENTO GLOBAL:</td>
-            <td>-<?php echo hivepress()->woocommerce->format_price($discounts['globalDiscount']['amount']); ?></td>
+            <td>-<?php echo hivepress()->woocommerce->format_price($global_discount); ?></td>
         </tr>
         <?php endif; ?>
         
