@@ -700,6 +700,25 @@ foreach ($extras_without_desc as $extra):
         // Usar la función eq_calculate_cart_totals que ya funciona correctamente
         $pdf_totals = eq_calculate_cart_totals($cart_items);
         $tax_rate = eq_get_woocommerce_tax_rate();
+        
+        // Calcular descuentos totales
+        $total_discounts = 0;
+        if ($discounts) {
+            if (isset($discounts['totalItemDiscounts'])) {
+                $total_discounts += $discounts['totalItemDiscounts'];
+            }
+            if (isset($discounts['globalDiscount']['amount'])) {
+                $total_discounts += $discounts['globalDiscount']['amount'];
+            }
+        }
+        
+        // Calcular subtotal después de descuentos
+        $subtotal_raw = floatval(str_replace(['$', ',', ' '], '', $pdf_totals['subtotal']));
+        $subtotal_after_discounts = $subtotal_raw - $total_discounts;
+        
+        // Recalcular IVA sobre el subtotal con descuentos
+        $new_tax = $subtotal_after_discounts * ($tax_rate / 100);
+        $new_total = $subtotal_after_discounts + $new_tax;
         ?>
         
         <tr>
@@ -728,31 +747,12 @@ foreach ($extras_without_desc as $extra):
         
         <tr>
             <td>IVA (<?php echo number_format($tax_rate, 2); ?>%):</td>
-            <td><?php echo esc_html($pdf_totals['tax']); ?></td>
+            <td><?php echo hivepress()->woocommerce->format_price($new_tax); ?></td>
         </tr>
         
         <tr class="total-row">
             <td>TOTAL:</td>
-            <td><?php 
-                // Si hay descuentos, calcular el total ajustado
-                if ($discounts && (
-                    (isset($discounts['totalItemDiscounts']) && $discounts['totalItemDiscounts'] > 0) ||
-                    (isset($discounts['globalDiscount']['amount']) && $discounts['globalDiscount']['amount'] > 0)
-                )) {
-                    $total_discounts = 0;
-                    if (isset($discounts['totalItemDiscounts'])) {
-                        $total_discounts += $discounts['totalItemDiscounts'];
-                    }
-                    if (isset($discounts['globalDiscount']['amount'])) {
-                        $total_discounts += $discounts['globalDiscount']['amount'];
-                    }
-                    
-                    $final_total = $pdf_totals['total_raw'] - $total_discounts;
-                    echo hivepress()->woocommerce->format_price($final_total);
-                } else {
-                    echo esc_html($pdf_totals['total']);
-                }
-            ?></td>
+            <td><?php echo hivepress()->woocommerce->format_price($new_total); ?></td>
         </tr>
     </table>
     
