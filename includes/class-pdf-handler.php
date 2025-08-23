@@ -715,8 +715,8 @@ foreach ($extras_without_desc as $extra):
             }
         }
         
-        // Calcular subtotal sin IVA
-        $subtotal_raw = floatval(str_replace(['$', ',', ' '], '', $pdf_totals['subtotal']));
+        // Usar el valor raw del subtotal que ya viene calculado
+        $subtotal_raw = $pdf_totals['subtotal_raw'];
         
         // Limitar descuentos al subtotal disponible
         $total_discounts = $item_discounts + $global_discount;
