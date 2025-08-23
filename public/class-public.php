@@ -53,6 +53,16 @@ class Event_Quote_Cart_Public {
                 $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/stripe-integration.css')
             );
         }
+
+        // Enqueue cart history styles for admin and sales executives
+        if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')) {
+            wp_enqueue_style(
+                $this->plugin_name . '-cart-history',
+                EQ_CART_PLUGIN_URL . 'public/css/cart-history.css',
+                array(),
+                $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/cart-history.css')
+            );
+        }
 		
     }
 
@@ -407,6 +417,11 @@ public function render_context_panel() {
         
         if (!$result) {
             throw new Exception('No se pudo eliminar el item');
+        }
+
+        // Save history snapshot for admins and sales executives
+        if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')) {
+            $this->save_cart_history_snapshot('item_removed');
         }
 
         wp_send_json_success(array(
@@ -936,6 +951,67 @@ public function create_event() {
             return $this->version . '.' . filemtime($file_path);
         }
         return $this->version;
+    }
+
+    /**
+     * Save cart history snapshot (internal method)
+     */
+    private function save_cart_history_snapshot($action = 'automatic') {
+        // Only proceed if user has proper permissions
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            return;
+        }
+
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Get active cart
+            $cart = eq_get_active_cart();
+            if (!$cart) {
+                return;
+            }
+            
+            // Get cart items
+            $cart_items = eq_get_cart_items();
+            if (empty($cart_items)) {
+                return;
+            }
+            
+            // Calculate totals
+            $totals = eq_calculate_cart_totals($cart_items);
+            $total_amount = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+            
+            // Get next version number
+            $version = $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d",
+                $cart->id
+            ));
+            
+            // Prepare items snapshot
+            $items_snapshot = json_encode($cart_items);
+            
+            // Insert into history
+            $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_history',
+                array(
+                    'cart_id' => $cart->id,
+                    'lead_id' => $cart->lead_id,
+                    'event_id' => $cart->event_id,
+                    'user_id' => $user_id,
+                    'version' => $version,
+                    'items_snapshot' => $items_snapshot,
+                    'total_amount' => $total_amount,
+                    'action' => $action
+                ),
+                array('%d', '%d', '%d', '%d', '%d', '%s', '%f', '%s')
+            );
+            
+        } catch (Exception $e) {
+            // Silent fail - history is not critical
+            error_log('EQ Cart History Error: ' . $e->getMessage());
+        }
     }
 	
 }

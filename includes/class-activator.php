@@ -19,7 +19,8 @@ class Event_Quote_Cart_Activator {
     self::update_tables();
     self::update_cart_table_structure();
     self::create_quotes_table();
-    self::create_context_sessions_table(); 
+    self::create_context_sessions_table();
+    self::create_cart_history_table(); 
     self::add_capabilities();
     self::set_default_options();
 }
@@ -327,6 +328,41 @@ private static function create_context_sessions_table() {
     
     // Crear tabla
     dbDelta($sql_context_sessions);
+}
+
+/**
+ * Crear tabla para historial de carritos
+ */
+private static function create_cart_history_table() {
+    global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate();
+
+    // Nombre de la tabla con prefijo
+    $cart_history_table = $wpdb->prefix . 'eq_cart_history';
+
+    // SQL para tabla de historial de carritos
+    $sql_cart_history = "CREATE TABLE IF NOT EXISTS $cart_history_table (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        cart_id bigint(20) unsigned NOT NULL,
+        lead_id bigint(20) unsigned NULL DEFAULT NULL,
+        event_id bigint(20) unsigned NULL DEFAULT NULL,
+        user_id bigint(20) unsigned NOT NULL,
+        version int(11) NOT NULL DEFAULT 1,
+        items_snapshot longtext NOT NULL,
+        total_amount decimal(10,2) NOT NULL DEFAULT 0,
+        action varchar(255) NULL DEFAULT NULL,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY cart_id (cart_id),
+        KEY user_id (user_id),
+        KEY lead_event_idx (lead_id, event_id),
+        KEY created_at_idx (created_at)
+    ) $charset_collate;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    
+    // Crear tabla
+    dbDelta($sql_cart_history);
 }
 	
 }

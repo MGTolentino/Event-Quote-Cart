@@ -1657,4 +1657,203 @@ window.updateHeaderCartCount = function(count) {
     }
 };
 
+// Cart History functionality
+window.EQCartHistory = {
+    init: function() {
+        this.bindEvents();
+    },
+    
+    bindEvents: function() {
+        // Open history modal
+        $(document).on('click', '#eq-cart-history-btn', this.openHistoryModal.bind(this));
+        
+        // Close modal
+        $(document).on('click', '#eq-cart-history-modal .eq-modal-close', this.closeHistoryModal.bind(this));
+        
+        // Close modal on outside click
+        $(document).on('click', '#eq-cart-history-modal', function(e) {
+            if (e.target === this) {
+                window.EQCartHistory.closeHistoryModal();
+            }
+        });
+        
+        // History item selection
+        $(document).on('change', '.eq-history-item input[type="radio"]', this.onHistorySelection.bind(this));
+        
+        // Restore button
+        $(document).on('click', '#eq-restore-history', this.restoreHistory.bind(this));
+    },
+    
+    openHistoryModal: function() {
+        $('#eq-cart-history-modal').show();
+        $('#eq-history-loading').show();
+        $('#eq-history-content').hide();
+        $('#eq-history-empty').hide();
+        
+        this.loadHistory();
+    },
+    
+    closeHistoryModal: function() {
+        $('#eq-cart-history-modal').hide();
+    },
+    
+    loadHistory: function() {
+        $.ajax({
+            url: eqCartData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_get_cart_history',
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                $('#eq-history-loading').hide();
+                
+                if (response.success && response.data.history && response.data.history.length > 0) {
+                    this.renderHistory(response.data.history);
+                    $('#eq-history-content').show();
+                } else {
+                    $('#eq-history-empty').show();
+                }
+            },
+            error: () => {
+                $('#eq-history-loading').hide();
+                $('#eq-history-empty').show();
+                this.showNotification('Error loading cart history', 'error');
+            }
+        });
+    },
+    
+    renderHistory: function(history) {
+        const historyList = $('.eq-history-list');
+        historyList.empty();
+        
+        history.forEach((entry, index) => {
+            const isFirst = index === 0;
+            const itemHtml = `
+                <div class="eq-history-item ${isFirst ? 'current' : ''}">
+                    <div class="eq-history-radio">
+                        <input type="radio" name="history_selection" value="${entry.id}" ${isFirst ? 'disabled' : ''}>
+                    </div>
+                    <div class="eq-history-details">
+                        <div class="eq-history-version">
+                            Version ${entry.version} ${isFirst ? '(Current)' : ''}
+                        </div>
+                        <div class="eq-history-date">
+                            ${entry.created_formatted}
+                        </div>
+                        <div class="eq-history-action">
+                            Action: ${this.formatAction(entry.action)}
+                        </div>
+                        <div class="eq-history-total">
+                            Total: ${entry.total_formatted}
+                        </div>
+                    </div>
+                </div>
+            `;
+            historyList.append(itemHtml);
+        });
+    },
+    
+    formatAction: function(action) {
+        const actionMap = {
+            'manual_save': 'Manual Save',
+            'item_added': 'Item Added',
+            'item_removed': 'Item Removed',
+            'item_updated': 'Item Updated',
+            'before_restore': 'Before Restore',
+            'after_restore': 'After Restore',
+            'automatic': 'Automatic'
+        };
+        
+        return actionMap[action] || action;
+    },
+    
+    onHistorySelection: function() {
+        const hasSelection = $('.eq-history-list input[type="radio"]:checked').length > 0;
+        $('#eq-restore-history').prop('disabled', !hasSelection);
+    },
+    
+    restoreHistory: function() {
+        const selectedHistoryId = $('.eq-history-list input[type="radio"]:checked').val();
+        
+        if (!selectedHistoryId) {
+            this.showNotification('Please select a version to restore', 'error');
+            return;
+        }
+        
+        const confirmRestore = confirm('Are you sure you want to restore this cart version? This will replace your current cart items.');
+        
+        if (!confirmRestore) {
+            return;
+        }
+        
+        $('#eq-restore-history').prop('disabled', true).text('Restoring...');
+        
+        $.ajax({
+            url: eqCartData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_restore_cart_history',
+                history_id: selectedHistoryId,
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.showNotification('Cart restored successfully', 'success');
+                    this.closeHistoryModal();
+                    
+                    // Reload the page to show restored cart
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    this.showNotification(response.data || 'Failed to restore cart', 'error');
+                }
+            },
+            error: () => {
+                this.showNotification('Error restoring cart', 'error');
+            },
+            complete: () => {
+                $('#eq-restore-history').prop('disabled', false).text('Restore Selected Version');
+            }
+        });
+    },
+    
+    saveHistorySnapshot: function(action = 'automatic') {
+        // This method can be called from other parts of the code to save history
+        $.ajax({
+            url: eqCartData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_save_cart_history',
+                action_type: action,
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                // Silent operation, only log for debugging
+                console.log('Cart history saved:', response);
+            },
+            error: () => {
+                console.log('Error saving cart history');
+            }
+        });
+    },
+    
+    showNotification: function(message, type) {
+        // Use existing notification system if available, otherwise use alert
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        } else {
+            alert(message);
+        }
+    }
+};
+
+// Initialize cart history when document is ready
+$(document).ready(function() {
+    if (typeof eqCartData !== 'undefined') {
+        window.EQCartHistory.init();
+    }
+});
+
 })(jQuery);

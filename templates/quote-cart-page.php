@@ -62,9 +62,16 @@ if ($show_context_banner):
     <!-- Header -->
 <div class="eq-cart-header">
     <h1><?php esc_html_e('Your Quote Cart', 'event-quote-cart'); ?></h1>
-    <a href="<?php echo esc_url(home_url()); ?>" class="eq-continue-shopping">
-        <?php esc_html_e('Continue Shopping', 'event-quote-cart'); ?>
-    </a>
+    <div class="eq-header-actions">
+        <?php if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')): ?>
+            <button type="button" class="eq-cart-history-button" id="eq-cart-history-btn">
+                <i class="fas fa-history"></i> <?php esc_html_e('Cart History', 'event-quote-cart'); ?>
+            </button>
+        <?php endif; ?>
+        <a href="<?php echo esc_url(home_url()); ?>" class="eq-continue-shopping">
+            <?php esc_html_e('Continue Shopping', 'event-quote-cart'); ?>
+        </a>
+    </div>
 </div>
 
 <?php
@@ -425,6 +432,36 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
             <div class="eq-payment-link-note">
                 <p><?php esc_html_e('Note: This link is valid for 24 hours and can only be used once.', 'event-quote-cart'); ?></p>
             </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Cart History Modal -->
+<?php if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')): ?>
+<div id="eq-cart-history-modal" class="eq-modal">
+    <div class="eq-modal-content">
+        <span class="eq-modal-close">&times;</span>
+        <h2><?php esc_html_e('Cart History', 'event-quote-cart'); ?></h2>
+        
+        <div id="eq-history-loading">
+            <p><?php esc_html_e('Loading cart history...', 'event-quote-cart'); ?></p>
+        </div>
+        
+        <div id="eq-history-content" style="display: none;">
+            <div class="eq-history-list">
+                <!-- History items will be populated here -->
+            </div>
+            
+            <div class="eq-history-actions">
+                <button id="eq-restore-history" class="eq-restore-button" disabled>
+                    <?php esc_html_e('Restore Selected Version', 'event-quote-cart'); ?>
+                </button>
+            </div>
+        </div>
+        
+        <div id="eq-history-empty" style="display: none;">
+            <p><?php esc_html_e('No cart history found.', 'event-quote-cart'); ?></p>
         </div>
     </div>
 </div>
