@@ -1697,8 +1697,11 @@ window.EQCartHistory = {
             console.log('EQCartHistory: Button exists?', !!button);
             if (button) {
                 console.log('EQCartHistory: Button found, adding direct click listener');
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function(e) {
                     console.log('Direct click listener triggered!');
+                    e.preventDefault();
+                    console.log('Calling restoreHistory...');
+                    window.EQCartHistory.restoreHistory();
                 });
             }
         }, 2000);
