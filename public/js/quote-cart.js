@@ -1747,16 +1747,30 @@ window.EQCartHistory = {
             if (entry.items_summary && entry.items_summary.length > 0) {
                 itemsListHtml = '<div class="eq-history-items"><h5>Items in this version:</h5><ul>';
                 entry.items_summary.forEach(item => {
-                    const extrasText = item.extras && item.extras.length > 0 ? 
-                        ` (+${item.extras.length} extras)` : '';
+                    // Item principal
                     itemsListHtml += `
                         <li class="eq-history-item-detail">
                             <span class="eq-item-name">${item.title}</span>
                             <span class="eq-item-quantity">×${item.quantity}</span>
                             <span class="eq-item-price">${item.price_formatted}</span>
-                            ${extrasText ? `<span class="eq-item-extras">${extrasText}</span>` : ''}
                         </li>
                     `;
+                    
+                    // Mostrar extras si existen
+                    if (item.extras && item.extras.length > 0) {
+                        item.extras.forEach(extra => {
+                            const extraPrice = extra.price ? ` - $${parseFloat(extra.price).toFixed(2)}` : '';
+                            const extraQuantity = extra.quantity && extra.quantity != 1 ? ` ×${extra.quantity}` : '';
+                            itemsListHtml += `
+                                <li class="eq-history-extra-detail">
+                                    <span class="eq-extra-icon">↳</span>
+                                    <span class="eq-extra-name">${extra.name}</span>
+                                    <span class="eq-extra-quantity">${extraQuantity}</span>
+                                    <span class="eq-extra-price">${extraPrice}</span>
+                                </li>
+                            `;
+                        });
+                    }
                 });
                 itemsListHtml += '</ul></div>';
             } else {
@@ -1815,19 +1829,26 @@ window.EQCartHistory = {
     },
     
     restoreHistory: function() {
+        console.log('Restore Debug: Starting restore process');
         const selectedHistoryId = $('.eq-history-list input[type="radio"]:checked').val();
+        console.log('Restore Debug: Selected history ID:', selectedHistoryId);
         
         if (!selectedHistoryId) {
+            console.log('Restore Debug: No history ID selected');
             this.showNotification('Please select a version to restore', 'error');
             return;
         }
         
+        console.log('Restore Debug: Showing confirmation dialog');
         const confirmRestore = confirm('Are you sure you want to restore this cart version? This will replace your current cart items.');
+        console.log('Restore Debug: User confirmation:', confirmRestore);
         
         if (!confirmRestore) {
+            console.log('Restore Debug: User cancelled restore');
             return;
         }
         
+        console.log('Restore Debug: Starting AJAX request');
         $('#eq-restore-history').prop('disabled', true).text('Restoring...');
         
         $.ajax({
@@ -1839,22 +1860,31 @@ window.EQCartHistory = {
                 nonce: eqCartData.nonce
             },
             success: (response) => {
+                console.log('Restore Debug: AJAX Success Response:', response);
                 if (response.success) {
+                    console.log('Restore Debug: Restore successful, showing notification');
                     this.showNotification('Cart restored successfully', 'success');
                     this.closeHistoryModal();
                     
                     // Reload the page to show restored cart
+                    console.log('Restore Debug: Reloading page in 1 second');
                     setTimeout(() => {
+                        console.log('Restore Debug: Executing page reload');
                         location.reload();
                     }, 1000);
                 } else {
+                    console.log('Restore Debug: Restore failed:', response.data);
                     this.showNotification(response.data || 'Failed to restore cart', 'error');
                 }
             },
-            error: () => {
+            error: (xhr, status, error) => {
+                console.log('Restore Debug: AJAX Error:', error);
+                console.log('Restore Debug: XHR:', xhr);
+                console.log('Restore Debug: Status:', status);
                 this.showNotification('Error restoring cart', 'error');
             },
             complete: () => {
+                console.log('Restore Debug: AJAX Complete');
                 $('#eq-restore-history').prop('disabled', false).text('Restore Selected Version');
             }
         });

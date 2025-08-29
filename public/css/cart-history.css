@@ -259,6 +259,49 @@
     padding: 10px;
 }
 
+/* Extras styling */
+.eq-history-extra-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0 4px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    background: #fafafa;
+}
+
+.eq-history-extra-detail:last-child {
+    border-bottom: none;
+}
+
+.eq-extra-icon {
+    color: #999;
+    font-size: 14px;
+    min-width: 15px;
+}
+
+.eq-extra-name {
+    flex: 1;
+    font-weight: 400;
+    color: #555;
+    font-style: italic;
+}
+
+.eq-extra-quantity {
+    color: #777;
+    font-weight: 500;
+    min-width: 30px;
+    font-size: 11px;
+}
+
+.eq-extra-price {
+    color: #666;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: right;
+    font-size: 11px;
+}
+
 /* History Actions */
 .eq-history-actions {
     text-align: right;
