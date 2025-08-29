@@ -40,3 +40,63 @@ msgstr "Enviar Email"
 
 msgid "Cancel"
 msgstr "Cancelar"
+
+msgid "Cart History"
+msgstr "Historial del Carrito"
+
+msgid "Are you sure you want to restore this cart version?"
+msgstr "¿Estás seguro de que quieres restaurar esta versión del carrito?"
+
+msgid "Cart restored successfully"
+msgstr "Carrito restaurado exitosamente"
+
+msgid "Error restoring cart"
+msgstr "Error al restaurar el carrito"
+
+msgid "Please select a version to restore"
+msgstr "Por favor selecciona una versión para restaurar"
+
+msgid "Loading history..."
+msgstr "Cargando historial..."
+
+msgid "No history found for this cart"
+msgstr "No se encontró historial para este carrito"
+
+msgid "Version"
+msgstr "Versión"
+
+msgid "Current"
+msgstr "Actual"
+
+msgid "items"
+msgstr "artículos"
+
+msgid "Restore selected version"
+msgstr "Restaurar versión seleccionada"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Unauthorized"
+msgstr "No autorizado"
+
+msgid "No active cart found"
+msgstr "No se encontró carrito activo"
+
+msgid "Cart not found"
+msgstr "Carrito no encontrado"
+
+msgid "Invalid history ID"
+msgstr "ID de historial inválido"
+
+msgid "History entry not found"
+msgstr "Entrada de historial no encontrada"
+
+msgid "Invalid items snapshot"
+msgstr "Captura de artículos inválida"
+
+msgid "Unknown Item"
+msgstr "Artículo desconocido"
+
+msgid "No history found for cart %d"
+msgstr "No se encontró historial para el carrito %d"
