@@ -1698,6 +1698,10 @@ window.EQCartHistory = {
     },
     
     loadHistory: function() {
+        console.log('Cart History Debug: Starting loadHistory');
+        console.log('Cart History Debug: ajaxUrl =', eqCartData.ajaxUrl);
+        console.log('Cart History Debug: nonce =', eqCartData.nonce);
+        
         $.ajax({
             url: eqCartData.ajaxUrl,
             type: 'POST',
@@ -1706,16 +1710,24 @@ window.EQCartHistory = {
                 nonce: eqCartData.nonce
             },
             success: (response) => {
+                console.log('Cart History Debug: AJAX Success Response:', response);
                 $('#eq-history-loading').hide();
                 
                 if (response.success && response.data.history && response.data.history.length > 0) {
+                    console.log('Cart History Debug: Found history entries:', response.data.history.length);
                     this.renderHistory(response.data.history);
                     $('#eq-history-content').show();
                 } else {
+                    console.log('Cart History Debug: No history entries found or response failed');
+                    console.log('Cart History Debug: response.success =', response.success);
+                    console.log('Cart History Debug: response.data =', response.data);
                     $('#eq-history-empty').show();
                 }
             },
-            error: () => {
+            error: (xhr, status, error) => {
+                console.log('Cart History Debug: AJAX Error:', error);
+                console.log('Cart History Debug: XHR:', xhr);
+                console.log('Cart History Debug: Status:', status);
                 $('#eq-history-loading').hide();
                 $('#eq-history-empty').show();
                 this.showNotification('Error loading cart history', 'error');
