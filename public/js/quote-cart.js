@@ -1660,13 +1660,10 @@ window.updateHeaderCartCount = function(count) {
 // Cart History functionality
 window.EQCartHistory = {
     init: function() {
-        console.log('EQCartHistory: Initializing...');
         this.bindEvents();
-        console.log('EQCartHistory: Initialized successfully');
     },
     
     bindEvents: function() {
-        console.log('EQCartHistory: Binding events...');
         // Open history modal
         $(document).on('click', '#eq-cart-history-btn', this.openHistoryModal.bind(this));
         
@@ -1684,9 +1681,7 @@ window.EQCartHistory = {
         $(document).on('change', '.eq-history-item input[type="radio"]', this.onHistorySelection.bind(this));
         
         // Restore button - testing if event is binding
-        console.log('EQCartHistory: Attempting to bind restore button event');
         $(document).on('click', '#eq-restore-history', function(e) {
-            console.log('Restore button clicked!');
             e.preventDefault();
             window.EQCartHistory.restoreHistory();
         });
@@ -1694,13 +1689,9 @@ window.EQCartHistory = {
         // Test if button exists
         setTimeout(() => {
             const button = document.getElementById('eq-restore-history');
-            console.log('EQCartHistory: Button exists?', !!button);
             if (button) {
-                console.log('EQCartHistory: Button found, adding direct click listener');
                 button.addEventListener('click', function(e) {
-                    console.log('Direct click listener triggered!');
                     e.preventDefault();
-                    console.log('Calling restoreHistory...');
                     window.EQCartHistory.restoreHistory();
                 });
             }
@@ -1721,9 +1712,6 @@ window.EQCartHistory = {
     },
     
     loadHistory: function() {
-        console.log('Cart History Debug: Starting loadHistory');
-        console.log('Cart History Debug: ajaxUrl =', eqCartData.ajaxurl);
-        console.log('Cart History Debug: nonce =', eqCartData.nonce);
         
         $.ajax({
             url: eqCartData.ajaxurl,
@@ -1733,37 +1721,37 @@ window.EQCartHistory = {
                 nonce: eqCartData.nonce
             },
             success: (response) => {
-                console.log('Cart History Debug: AJAX Success Response:', response);
                 $('#eq-history-loading').hide();
                 
                 if (response.success && response.data.history && response.data.history.length > 0) {
-                    console.log('Cart History Debug: Found history entries:', response.data.history.length);
-                    this.renderHistory(response.data.history);
+                    this.renderHistory(response.data.history, response.data.current_snapshot);
                     $('#eq-history-content').show();
                 } else {
-                    console.log('Cart History Debug: No history entries found or response failed');
-                    console.log('Cart History Debug: response.success =', response.success);
-                    console.log('Cart History Debug: response.data =', response.data);
                     $('#eq-history-empty').show();
                 }
             },
             error: (xhr, status, error) => {
-                console.log('Cart History Debug: AJAX Error:', error);
-                console.log('Cart History Debug: XHR:', xhr);
-                console.log('Cart History Debug: Status:', status);
                 $('#eq-history-loading').hide();
                 $('#eq-history-empty').show();
-                this.showNotification('Error loading cart history', 'error');
+                this.showNotification(eqCartData.i18n.errorLoadingHistory, 'error');
             }
         });
     },
     
-    renderHistory: function(history) {
+    renderHistory: function(history, currentSnapshot) {
         const historyList = $('.eq-history-list');
         historyList.empty();
         
         history.forEach((entry, index) => {
-            const isFirst = index === 0;
+            // Comparar el snapshot de esta versión con el snapshot actual para determinar si es current
+            const isCurrent = currentSnapshot && JSON.stringify(entry.items_summary) === JSON.stringify(JSON.parse(currentSnapshot || '[]').map(item => ({
+                title: item.title,
+                quantity: item.quantity,
+                price_formatted: item.price_formatted,
+                date: item.date,
+                image: item.image,
+                extras: item.extras
+            })));
             
             // Generar lista de items
             let itemsListHtml = '';
@@ -1802,14 +1790,14 @@ window.EQCartHistory = {
             
             // Generar HTML del item de historial
             const itemHtml = `
-                <div class="eq-history-item ${isFirst ? 'current' : ''}">
+                <div class="eq-history-item ${isCurrent ? 'current' : ''}">
                     <div class="eq-history-radio">
-                        <input type="radio" name="history_selection" value="${entry.id}" ${isFirst ? 'disabled' : ''}>
+                        <input type="radio" name="history_selection" value="${entry.id}" ${isCurrent ? 'disabled' : ''}>
                     </div>
                     <div class="eq-history-details">
                         <div class="eq-history-header">
                             <div class="eq-history-version">
-                                Version ${entry.version} ${isFirst ? '(Current)' : ''}
+                                Version ${entry.version} ${isCurrent ? '(Current)' : ''}
                                 <span class="eq-history-item-count">${entry.total_items || 0} item${entry.total_items !== 1 ? 's' : ''}</span>
                             </div>
                             <div class="eq-history-total">
@@ -1852,27 +1840,20 @@ window.EQCartHistory = {
     },
     
     restoreHistory: function() {
-        console.log('Restore Debug: Starting restore process');
         const selectedHistoryId = $('.eq-history-list input[type="radio"]:checked').val();
-        console.log('Restore Debug: Selected history ID:', selectedHistoryId);
         
         if (!selectedHistoryId) {
-            console.log('Restore Debug: No history ID selected');
-            this.showNotification('Please select a version to restore', 'error');
+            this.showNotification(eqCartData.i18n.selectVersionRestore, 'error');
             return;
         }
         
-        console.log('Restore Debug: Showing confirmation dialog');
-        const confirmRestore = confirm('Are you sure you want to restore this cart version? This will replace your current cart items.');
-        console.log('Restore Debug: User confirmation:', confirmRestore);
+        const confirmRestore = confirm(eqCartData.i18n.confirmRestore);
         
         if (!confirmRestore) {
-            console.log('Restore Debug: User cancelled restore');
             return;
         }
         
-        console.log('Restore Debug: Starting AJAX request');
-        $('#eq-restore-history').prop('disabled', true).text('Restoring...');
+        $('#eq-restore-history').prop('disabled', true).text(eqCartData.i18n.restoring);
         
         $.ajax({
             url: eqCartData.ajaxurl,
@@ -1883,32 +1864,23 @@ window.EQCartHistory = {
                 nonce: eqCartData.nonce
             },
             success: (response) => {
-                console.log('Restore Debug: AJAX Success Response:', response);
                 if (response.success) {
-                    console.log('Restore Debug: Restore successful, showing notification');
-                    this.showNotification('Cart restored successfully', 'success');
+                    this.showNotification(eqCartData.i18n.cartRestoredSuccess, 'success');
                     this.closeHistoryModal();
                     
                     // Reload the page to show restored cart
-                    console.log('Restore Debug: Reloading page in 1 second');
                     setTimeout(() => {
-                        console.log('Restore Debug: Executing page reload');
                         location.reload();
                     }, 1000);
                 } else {
-                    console.log('Restore Debug: Restore failed:', response.data);
-                    this.showNotification(response.data || 'Failed to restore cart', 'error');
+                    this.showNotification(response.data || eqCartData.i18n.errorRestoringCart, 'error');
                 }
             },
             error: (xhr, status, error) => {
-                console.log('Restore Debug: AJAX Error:', error);
-                console.log('Restore Debug: XHR:', xhr);
-                console.log('Restore Debug: Status:', status);
-                this.showNotification('Error restoring cart', 'error');
+                this.showNotification(eqCartData.i18n.errorRestoringCart, 'error');
             },
             complete: () => {
-                console.log('Restore Debug: AJAX Complete');
-                $('#eq-restore-history').prop('disabled', false).text('Restore Selected Version');
+                $('#eq-restore-history').prop('disabled', false).text(eqCartData.i18n.restoreSelectedVersion);
             }
         });
     },
@@ -1925,10 +1897,8 @@ window.EQCartHistory = {
             },
             success: (response) => {
                 // Silent operation, only log for debugging
-                console.log('Cart history saved:', response);
             },
             error: () => {
-                console.log('Error saving cart history');
             }
         });
     },
@@ -1945,23 +1915,17 @@ window.EQCartHistory = {
 
 // Initialize cart history when document is ready
 $(document).ready(function() {
-    console.log('Document ready, eqCartData:', typeof eqCartData);
     if (typeof eqCartData !== 'undefined') {
-        console.log('Initializing EQCartHistory...');
         window.EQCartHistory.init();
     } else {
-        console.log('eqCartData is undefined, not initializing EQCartHistory');
     }
     
     // Alternative binding as fallback
     setTimeout(() => {
-        console.log('Fallback: Adding direct event listener to restore button');
         $(document).on('click', '#eq-restore-history', function() {
-            console.log('FALLBACK: Restore button clicked via fallback listener!');
             if (window.EQCartHistory && window.EQCartHistory.restoreHistory) {
                 window.EQCartHistory.restoreHistory();
             } else {
-                console.log('EQCartHistory.restoreHistory not available');
             }
         });
     }, 1000);

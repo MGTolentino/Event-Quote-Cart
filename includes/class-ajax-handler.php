@@ -3139,23 +3139,18 @@ public function validate_all_cart_items() {
         check_ajax_referer('eq_cart_public_nonce', 'nonce');
         
         if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
-            error_log('Cart History Debug: Unauthorized user');
-            wp_send_json_error('Unauthorized');
+            wp_send_json_error(__('Unauthorized', 'event-quote-cart'));
         }
         
         try {
             global $wpdb;
             $user_id = get_current_user_id();
-            error_log('Cart History Debug: User ID = ' . $user_id);
             
             // Obtener el carrito activo
             $cart = eq_get_active_cart();
             if (!$cart) {
-                error_log('Cart History Debug: No active cart found for user ' . $user_id);
-                wp_send_json_error('No active cart found');
+                wp_send_json_error(__('No active cart found', 'event-quote-cart'));
             }
-            
-            error_log('Cart History Debug: Active cart ID = ' . $cart->id);
             
             // Obtener historial del carrito
             $history = $wpdb->get_results($wpdb->prepare(
@@ -3166,22 +3161,17 @@ public function validate_all_cart_items() {
                 $cart->id
             ));
             
-            error_log('Cart History Debug: Found ' . count($history) . ' history entries for cart ' . $cart->id);
-            error_log('Cart History Debug: History query: ' . $wpdb->last_query);
-            
             if (empty($history)) {
-                error_log('Cart History Debug: No history entries found, returning empty');
                 wp_send_json_success(array(
                     'history' => array(),
                     'cart_id' => $cart->id,
-                    'message' => 'No history found for cart ' . $cart->id
+                    'message' => sprintf(__('No history found for cart %d', 'event-quote-cart'), $cart->id)
                 ));
                 return;
             }
             
             $formatted_history = array();
             foreach ($history as $entry) {
-                error_log('Cart History Debug: Processing entry ID ' . $entry->id . ', version ' . $entry->version);
                 
                 // Decodificar items_snapshot (como objetos para consistencia)
                 $items_data = json_decode($entry->items_snapshot);
@@ -3192,7 +3182,7 @@ public function validate_all_cart_items() {
                     foreach ($items_data as $item) {
                         $total_items += isset($item->quantity) ? intval($item->quantity) : 1;
                         $items_summary[] = array(
-                            'title' => isset($item->title) ? $item->title : 'Unknown Item',
+                            'title' => isset($item->title) ? $item->title : __('Unknown Item', 'event-quote-cart'),
                             'quantity' => isset($item->quantity) ? intval($item->quantity) : 1,
                             'price_formatted' => isset($item->price_formatted) ? $item->price_formatted : '$0.00',
                             'date' => isset($item->date) ? $item->date : '',
@@ -3215,15 +3205,18 @@ public function validate_all_cart_items() {
                 );
             }
             
-            error_log('Cart History Debug: Sending success response with ' . count($formatted_history) . ' entries');
+            
+            // Obtener items actuales del carrito para determinar cuál es la versión current
+            $current_cart_items = eq_get_cart_items();
+            $current_cart_snapshot = json_encode($current_cart_items);
             
             wp_send_json_success(array(
                 'history' => $formatted_history,
-                'cart_id' => $cart->id
+                'cart_id' => $cart->id,
+                'current_snapshot' => $current_cart_snapshot
             ));
             
         } catch (Exception $e) {
-            error_log('Cart History Debug: Exception = ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
     }
@@ -3235,13 +3228,13 @@ public function validate_all_cart_items() {
         check_ajax_referer('eq_cart_public_nonce', 'nonce');
         
         if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
-            wp_send_json_error('Unauthorized');
+            wp_send_json_error(__('Unauthorized', 'event-quote-cart'));
         }
         
         $history_id = isset($_POST['history_id']) ? intval($_POST['history_id']) : 0;
         
         if (!$history_id) {
-            wp_send_json_error('Invalid history ID');
+            wp_send_json_error(__('Invalid history ID', 'event-quote-cart'));
         }
         
         try {
@@ -3256,7 +3249,7 @@ public function validate_all_cart_items() {
             ));
             
             if (!$history_entry) {
-                wp_send_json_error('History entry not found');
+                wp_send_json_error(__('History entry not found', 'event-quote-cart'));
             }
             
             // Verificar que el carrito existe
@@ -3267,17 +3260,22 @@ public function validate_all_cart_items() {
             ));
             
             if (!$cart) {
-                wp_send_json_error('Cart not found');
+                wp_send_json_error(__('Cart not found', 'event-quote-cart'));
             }
             
             // Obtener el snapshot de items (sin true para mantener como objetos)
             $items_snapshot = json_decode($history_entry->items_snapshot);
             if (!$items_snapshot) {
-                wp_send_json_error('Invalid items snapshot');
+                wp_send_json_error(__('Invalid items snapshot', 'event-quote-cart'));
             }
             
-            // Guardar snapshot actual antes de restaurar
-            $this->save_cart_history_internal($cart->id, 'before_restore');
+            // Obtener items del carrito actual para determinar si guardar snapshot
+            $current_cart_items = eq_get_cart_items();
+            
+            // Solo guardar snapshot si hay items actuales (evitar versiones vacías)
+            if (!empty($current_cart_items)) {
+                $this->save_cart_history_internal($cart->id, 'before_restore');
+            }
             
             // Eliminar items actuales del carrito
             $wpdb->delete(
@@ -3330,11 +3328,11 @@ public function validate_all_cart_items() {
                 }
             }
             
-            // Guardar snapshot después de restaurar
-            $this->save_cart_history_internal($cart->id, 'after_restore');
+            // No guardar snapshot después de restaurar para evitar historial innecesario
+            // El restore ya restauró el contenido deseado
             
             wp_send_json_success(array(
-                'message' => 'Cart restored successfully',
+                'message' => __('Cart restored successfully', 'event-quote-cart'),
                 'version' => $history_entry->version
             ));
             
@@ -3457,7 +3455,6 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             // Silent fail - history is not critical
-            error_log('EQ Cart History Error: ' . $e->getMessage());
         }
     }
 	

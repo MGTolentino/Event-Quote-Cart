@@ -117,7 +117,15 @@ class Event_Quote_Cart_Public {
                     'invalidQuantity' => __('Please enter a valid quantity', 'event-quote-cart'),
                     'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
 					'viewQuotes' => get_locale() === 'es_ES' ? 'Ver Cotizaciones' : 'View Quotes',
-					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote'
+					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
+                    // Cart History texts
+                    'confirmRestore' => __('Are you sure you want to restore this cart version? This will replace your current cart items.', 'event-quote-cart'),
+                    'selectVersionRestore' => __('Please select a version to restore', 'event-quote-cart'),
+                    'cartRestoredSuccess' => __('Cart restored successfully', 'event-quote-cart'),
+                    'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
+                    'errorLoadingHistory' => __('Error loading cart history', 'event-quote-cart'),
+                    'restoring' => __('Restoring...', 'event-quote-cart'),
+                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart')
                 ),
                 'texts' => array(
                     'showContextPanel' => __('Show context panel', 'event-quote-cart'),
@@ -1010,7 +1018,6 @@ public function create_event() {
             
         } catch (Exception $e) {
             // Silent fail - history is not critical
-            error_log('EQ Cart History Error: ' . $e->getMessage());
         }
     }
 	
