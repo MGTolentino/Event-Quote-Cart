@@ -1683,12 +1683,25 @@ window.EQCartHistory = {
         // History item selection
         $(document).on('change', '.eq-history-item input[type="radio"]', this.onHistorySelection.bind(this));
         
-        // Restore button
+        // Restore button - testing if event is binding
+        console.log('EQCartHistory: Attempting to bind restore button event');
         $(document).on('click', '#eq-restore-history', function(e) {
             console.log('Restore button clicked!');
             e.preventDefault();
             window.EQCartHistory.restoreHistory();
         });
+        
+        // Test if button exists
+        setTimeout(() => {
+            const button = document.getElementById('eq-restore-history');
+            console.log('EQCartHistory: Button exists?', !!button);
+            if (button) {
+                console.log('EQCartHistory: Button found, adding direct click listener');
+                button.addEventListener('click', function() {
+                    console.log('Direct click listener triggered!');
+                });
+            }
+        }, 2000);
     },
     
     openHistoryModal: function() {
@@ -1929,9 +1942,26 @@ window.EQCartHistory = {
 
 // Initialize cart history when document is ready
 $(document).ready(function() {
+    console.log('Document ready, eqCartData:', typeof eqCartData);
     if (typeof eqCartData !== 'undefined') {
+        console.log('Initializing EQCartHistory...');
         window.EQCartHistory.init();
+    } else {
+        console.log('eqCartData is undefined, not initializing EQCartHistory');
     }
+    
+    // Alternative binding as fallback
+    setTimeout(() => {
+        console.log('Fallback: Adding direct event listener to restore button');
+        $(document).on('click', '#eq-restore-history', function() {
+            console.log('FALLBACK: Restore button clicked via fallback listener!');
+            if (window.EQCartHistory && window.EQCartHistory.restoreHistory) {
+                window.EQCartHistory.restoreHistory();
+            } else {
+                console.log('EQCartHistory.restoreHistory not available');
+            }
+        });
+    }, 1000);
 });
 
 })(jQuery);
