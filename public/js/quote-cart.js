@@ -1660,10 +1660,13 @@ window.updateHeaderCartCount = function(count) {
 // Cart History functionality
 window.EQCartHistory = {
     init: function() {
+        console.log('EQCartHistory: Initializing...');
         this.bindEvents();
+        console.log('EQCartHistory: Initialized successfully');
     },
     
     bindEvents: function() {
+        console.log('EQCartHistory: Binding events...');
         // Open history modal
         $(document).on('click', '#eq-cart-history-btn', this.openHistoryModal.bind(this));
         
@@ -1681,7 +1684,11 @@ window.EQCartHistory = {
         $(document).on('change', '.eq-history-item input[type="radio"]', this.onHistorySelection.bind(this));
         
         // Restore button
-        $(document).on('click', '#eq-restore-history', this.restoreHistory.bind(this));
+        $(document).on('click', '#eq-restore-history', function(e) {
+            console.log('Restore button clicked!');
+            e.preventDefault();
+            window.EQCartHistory.restoreHistory();
+        });
     },
     
     openHistoryModal: function() {
