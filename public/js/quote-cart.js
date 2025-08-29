@@ -1699,11 +1699,11 @@ window.EQCartHistory = {
     
     loadHistory: function() {
         console.log('Cart History Debug: Starting loadHistory');
-        console.log('Cart History Debug: ajaxUrl =', eqCartData.ajaxUrl);
+        console.log('Cart History Debug: ajaxUrl =', eqCartData.ajaxurl);
         console.log('Cart History Debug: nonce =', eqCartData.nonce);
         
         $.ajax({
-            url: eqCartData.ajaxUrl,
+            url: eqCartData.ajaxurl,
             type: 'POST',
             data: {
                 action: 'eq_get_cart_history',
