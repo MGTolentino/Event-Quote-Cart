@@ -3183,21 +3183,21 @@ public function validate_all_cart_items() {
             foreach ($history as $entry) {
                 error_log('Cart History Debug: Processing entry ID ' . $entry->id . ', version ' . $entry->version);
                 
-                // Decodificar items_snapshot
-                $items_data = json_decode($entry->items_snapshot, true);
+                // Decodificar items_snapshot (como objetos para consistencia)
+                $items_data = json_decode($entry->items_snapshot);
                 $items_summary = array();
                 $total_items = 0;
                 
                 if ($items_data && is_array($items_data)) {
                     foreach ($items_data as $item) {
-                        $total_items += isset($item['quantity']) ? intval($item['quantity']) : 1;
+                        $total_items += isset($item->quantity) ? intval($item->quantity) : 1;
                         $items_summary[] = array(
-                            'title' => isset($item['title']) ? $item['title'] : 'Unknown Item',
-                            'quantity' => isset($item['quantity']) ? intval($item['quantity']) : 1,
-                            'price_formatted' => isset($item['price_formatted']) ? $item['price_formatted'] : '$0.00',
-                            'date' => isset($item['date']) ? $item['date'] : '',
-                            'image' => isset($item['image']) ? $item['image'] : '',
-                            'extras' => isset($item['extras']) ? $item['extras'] : array()
+                            'title' => isset($item->title) ? $item->title : 'Unknown Item',
+                            'quantity' => isset($item->quantity) ? intval($item->quantity) : 1,
+                            'price_formatted' => isset($item->price_formatted) ? $item->price_formatted : '$0.00',
+                            'date' => isset($item->date) ? $item->date : '',
+                            'image' => isset($item->image) ? $item->image : '',
+                            'extras' => isset($item->extras) ? $item->extras : array()
                         );
                     }
                 }
@@ -3270,8 +3270,8 @@ public function validate_all_cart_items() {
                 wp_send_json_error('Cart not found');
             }
             
-            // Obtener el snapshot de items
-            $items_snapshot = json_decode($history_entry->items_snapshot, true);
+            // Obtener el snapshot de items (sin true para mantener como objetos)
+            $items_snapshot = json_decode($history_entry->items_snapshot);
             if (!$items_snapshot) {
                 wp_send_json_error('Invalid items snapshot');
             }
