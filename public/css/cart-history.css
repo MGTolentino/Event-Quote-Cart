@@ -139,29 +139,124 @@
     flex: 1;
 }
 
+.eq-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
 .eq-history-version {
     font-weight: bold;
     font-size: 16px;
     color: #333;
-    margin-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.eq-history-date {
+.eq-history-item-count {
+    font-size: 12px;
+    font-weight: normal;
     color: #666;
-    font-size: 14px;
-    margin-bottom: 5px;
-}
-
-.eq-history-action {
-    color: #888;
-    font-size: 13px;
-    margin-bottom: 5px;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 10px;
+    width: fit-content;
 }
 
 .eq-history-total {
     color: #0073aa;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 16px;
+}
+
+.eq-history-meta {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.eq-history-date,
+.eq-history-action {
+    color: #666;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.eq-history-date i,
+.eq-history-action i {
+    color: #999;
+    font-size: 11px;
+}
+
+/* Items in history */
+.eq-history-items {
+    margin-top: 12px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.eq-history-items h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+}
+
+.eq-history-items ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.eq-history-item-detail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.eq-history-item-detail:last-child {
+    border-bottom: none;
+}
+
+.eq-item-name {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+}
+
+.eq-item-quantity {
+    color: #666;
+    font-weight: 600;
+    min-width: 30px;
+}
+
+.eq-item-price {
+    color: #0073aa;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+}
+
+.eq-item-extras {
+    color: #888;
+    font-size: 11px;
+    font-style: italic;
+}
+
+.eq-no-items {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+    text-align: center;
+    padding: 10px;
 }
 
 /* History Actions */

@@ -1741,24 +1741,53 @@ window.EQCartHistory = {
         
         history.forEach((entry, index) => {
             const isFirst = index === 0;
+            
+            // Generar lista de items
+            let itemsListHtml = '';
+            if (entry.items_summary && entry.items_summary.length > 0) {
+                itemsListHtml = '<div class="eq-history-items"><h5>Items in this version:</h5><ul>';
+                entry.items_summary.forEach(item => {
+                    const extrasText = item.extras && item.extras.length > 0 ? 
+                        ` (+${item.extras.length} extras)` : '';
+                    itemsListHtml += `
+                        <li class="eq-history-item-detail">
+                            <span class="eq-item-name">${item.title}</span>
+                            <span class="eq-item-quantity">×${item.quantity}</span>
+                            <span class="eq-item-price">${item.price_formatted}</span>
+                            ${extrasText ? `<span class="eq-item-extras">${extrasText}</span>` : ''}
+                        </li>
+                    `;
+                });
+                itemsListHtml += '</ul></div>';
+            } else {
+                itemsListHtml = '<div class="eq-history-items"><p class="eq-no-items">No items in this version</p></div>';
+            }
+            
+            // Generar HTML del item de historial
             const itemHtml = `
                 <div class="eq-history-item ${isFirst ? 'current' : ''}">
                     <div class="eq-history-radio">
                         <input type="radio" name="history_selection" value="${entry.id}" ${isFirst ? 'disabled' : ''}>
                     </div>
                     <div class="eq-history-details">
-                        <div class="eq-history-version">
-                            Version ${entry.version} ${isFirst ? '(Current)' : ''}
+                        <div class="eq-history-header">
+                            <div class="eq-history-version">
+                                Version ${entry.version} ${isFirst ? '(Current)' : ''}
+                                <span class="eq-history-item-count">${entry.total_items || 0} item${entry.total_items !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div class="eq-history-total">
+                                ${entry.total_formatted}
+                            </div>
                         </div>
-                        <div class="eq-history-date">
-                            ${entry.created_formatted}
+                        <div class="eq-history-meta">
+                            <div class="eq-history-date">
+                                <i class="fas fa-clock"></i> ${entry.created_formatted}
+                            </div>
+                            <div class="eq-history-action">
+                                <i class="fas fa-tag"></i> ${this.formatAction(entry.action)}
+                            </div>
                         </div>
-                        <div class="eq-history-action">
-                            Action: ${this.formatAction(entry.action)}
-                        </div>
-                        <div class="eq-history-total">
-                            Total: ${entry.total_formatted}
-                        </div>
+                        ${itemsListHtml}
                     </div>
                 </div>
             `;
@@ -1802,7 +1831,7 @@ window.EQCartHistory = {
         $('#eq-restore-history').prop('disabled', true).text('Restoring...');
         
         $.ajax({
-            url: eqCartData.ajaxUrl,
+            url: eqCartData.ajaxurl,
             type: 'POST',
             data: {
                 action: 'eq_restore_cart_history',

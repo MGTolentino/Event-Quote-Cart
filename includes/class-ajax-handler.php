@@ -3159,7 +3159,7 @@ public function validate_all_cart_items() {
             
             // Obtener historial del carrito
             $history = $wpdb->get_results($wpdb->prepare(
-                "SELECT id, version, total_amount, action, created_at 
+                "SELECT id, version, total_amount, action, created_at, items_snapshot 
                 FROM {$wpdb->prefix}eq_cart_history 
                 WHERE cart_id = %d 
                 ORDER BY created_at DESC",
@@ -3182,6 +3182,26 @@ public function validate_all_cart_items() {
             $formatted_history = array();
             foreach ($history as $entry) {
                 error_log('Cart History Debug: Processing entry ID ' . $entry->id . ', version ' . $entry->version);
+                
+                // Decodificar items_snapshot
+                $items_data = json_decode($entry->items_snapshot, true);
+                $items_summary = array();
+                $total_items = 0;
+                
+                if ($items_data && is_array($items_data)) {
+                    foreach ($items_data as $item) {
+                        $total_items += isset($item['quantity']) ? intval($item['quantity']) : 1;
+                        $items_summary[] = array(
+                            'title' => isset($item['title']) ? $item['title'] : 'Unknown Item',
+                            'quantity' => isset($item['quantity']) ? intval($item['quantity']) : 1,
+                            'price_formatted' => isset($item['price_formatted']) ? $item['price_formatted'] : '$0.00',
+                            'date' => isset($item['date']) ? $item['date'] : '',
+                            'image' => isset($item['image']) ? $item['image'] : '',
+                            'extras' => isset($item['extras']) ? $item['extras'] : array()
+                        );
+                    }
+                }
+                
                 $formatted_history[] = array(
                     'id' => $entry->id,
                     'version' => $entry->version,
@@ -3189,7 +3209,9 @@ public function validate_all_cart_items() {
                     'total_formatted' => hivepress()->woocommerce->format_price($entry->total_amount),
                     'action' => $entry->action,
                     'created_at' => $entry->created_at,
-                    'created_formatted' => date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($entry->created_at))
+                    'created_formatted' => date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($entry->created_at)),
+                    'items_summary' => $items_summary,
+                    'total_items' => $total_items
                 );
             }
             
