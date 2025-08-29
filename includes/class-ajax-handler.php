@@ -3139,18 +3139,23 @@ public function validate_all_cart_items() {
         check_ajax_referer('eq_cart_public_nonce', 'nonce');
         
         if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            error_log('Cart History Debug: Unauthorized user');
             wp_send_json_error('Unauthorized');
         }
         
         try {
             global $wpdb;
             $user_id = get_current_user_id();
+            error_log('Cart History Debug: User ID = ' . $user_id);
             
             // Obtener el carrito activo
             $cart = eq_get_active_cart();
             if (!$cart) {
+                error_log('Cart History Debug: No active cart found for user ' . $user_id);
                 wp_send_json_error('No active cart found');
             }
+            
+            error_log('Cart History Debug: Active cart ID = ' . $cart->id);
             
             // Obtener historial del carrito
             $history = $wpdb->get_results($wpdb->prepare(
@@ -3161,8 +3166,22 @@ public function validate_all_cart_items() {
                 $cart->id
             ));
             
+            error_log('Cart History Debug: Found ' . count($history) . ' history entries for cart ' . $cart->id);
+            error_log('Cart History Debug: History query: ' . $wpdb->last_query);
+            
+            if (empty($history)) {
+                error_log('Cart History Debug: No history entries found, returning empty');
+                wp_send_json_success(array(
+                    'history' => array(),
+                    'cart_id' => $cart->id,
+                    'message' => 'No history found for cart ' . $cart->id
+                ));
+                return;
+            }
+            
             $formatted_history = array();
             foreach ($history as $entry) {
+                error_log('Cart History Debug: Processing entry ID ' . $entry->id . ', version ' . $entry->version);
                 $formatted_history[] = array(
                     'id' => $entry->id,
                     'version' => $entry->version,
@@ -3174,12 +3193,15 @@ public function validate_all_cart_items() {
                 );
             }
             
+            error_log('Cart History Debug: Sending success response with ' . count($formatted_history) . ' entries');
+            
             wp_send_json_success(array(
                 'history' => $formatted_history,
                 'cart_id' => $cart->id
             ));
             
         } catch (Exception $e) {
+            error_log('Cart History Debug: Exception = ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
     }
