@@ -1298,14 +1298,37 @@ if (typeof flatpickr !== 'undefined') {
         initServiceAutocomplete: function() {
             var self = this;
             
+            console.log('DEBUG: Iniciando initServiceAutocomplete');
+            
             // Verificar si jQuery UI está disponible
             if (typeof $.fn.autocomplete === 'undefined') {
-                console.warn('jQuery UI Autocomplete no está disponible');
+                console.warn('ERROR: jQuery UI Autocomplete no está disponible');
                 return;
             }
             
-            $('#eq-new-event-servicio-search').autocomplete({
+            console.log('DEBUG: jQuery UI disponible');
+            
+            // Verificar si el elemento existe
+            var element = $('#eq-new-event-servicio-search');
+            console.log('DEBUG: Elemento encontrado:', element.length, element);
+            
+            if (element.length === 0) {
+                console.warn('ERROR: Elemento #eq-new-event-servicio-search no existe aún');
+                // Intentar de nuevo después de un delay
+                setTimeout(function() {
+                    self.initServiceAutocomplete();
+                }, 500);
+                return;
+            }
+            
+            console.log('DEBUG: Configurando autocomplete en elemento');
+            
+            element.autocomplete({
                 source: function(request, response) {
+                    console.log('DEBUG: Autocomplete source llamado con término:', request.term);
+                    console.log('DEBUG: AJAX URL:', eqCartData.ajaxurl);
+                    console.log('DEBUG: Nonce:', eqCartData.nonce);
+                    
                     $.ajax({
                         url: eqCartData.ajaxurl,
                         type: 'GET',
@@ -1315,14 +1338,21 @@ if (typeof flatpickr !== 'undefined') {
                             nonce: eqCartData.nonce,
                             term: request.term
                         },
+                        beforeSend: function() {
+                            console.log('DEBUG: Enviando petición AJAX...');
+                        },
                         success: function(data) {
+                            console.log('DEBUG: Respuesta AJAX recibida:', data);
                             if (data.success && Array.isArray(data.data)) {
+                                console.log('DEBUG: Datos válidos, enviando respuesta:', data.data);
                                 response(data.data);
                             } else {
+                                console.log('DEBUG: Respuesta sin datos válidos, enviando array vacío');
                                 response([]);
                             }
                         },
                         error: function(xhr, status, error) {
+                            console.error('DEBUG: Error en petición AJAX:', status, error, xhr);
                             response([]);
                         }
                     });
@@ -1332,21 +1362,34 @@ if (typeof flatpickr !== 'undefined') {
                 appendTo: '#eq-event-modal',
                 position: { collision: 'flip' },
                 select: function(event, ui) {
+                    console.log('DEBUG: Elemento seleccionado:', ui.item);
                     $('#eq-new-event-servicio').val(ui.item.url);
                     $(this).val(ui.item.label);
                     return false;
                 },
                 open: function() {
+                    console.log('DEBUG: Autocomplete abierto');
                     // Asegurar z-index correcto
                     $('.ui-autocomplete').css('z-index', '1000010');
                 },
                 close: function() {
+                    console.log('DEBUG: Autocomplete cerrado');
                     // Mantener el foco en el input
                 }
             });
             
+            console.log('DEBUG: Autocomplete configurado correctamente');
+            
+            // Verificar que el autocomplete se inicializó
+            if (element.hasClass('ui-autocomplete-input')) {
+                console.log('DEBUG: Autocomplete inicializado exitosamente');
+            } else {
+                console.error('DEBUG: ERROR - Autocomplete no se inicializó correctamente');
+            }
+            
             // Agregar estilos CSS para el autocomplete si no existen
             if (!$('#eq-autocomplete-styles').length) {
+                console.log('DEBUG: Agregando estilos CSS para autocomplete');
                 const autocompleteStyles = `
                     <style id="eq-autocomplete-styles">
                         .ui-autocomplete {
@@ -1408,6 +1451,8 @@ if (typeof flatpickr !== 'undefined') {
                 `;
                 
                 $('head').append(autocompleteStyles);
+            } else {
+                console.log('DEBUG: Estilos CSS ya existen');
             }
         },
         
