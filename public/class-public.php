@@ -274,6 +274,8 @@ public function init() {
 add_action('wp_ajax_eq_create_lead', array($this, 'create_lead'));
 add_action('wp_ajax_eq_get_lead_events', array($this, 'get_lead_events'));
 add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
+add_action('wp_ajax_search_services', array($this, 'search_services'));
+add_action('wp_ajax_nopriv_search_services', array($this, 'search_services'));
 
     add_action('wp_ajax_eq_remove_from_cart', array($this, 'remove_from_cart'));
     
@@ -1019,6 +1021,54 @@ public function create_event() {
         } catch (Exception $e) {
             // Silent fail - history is not critical
         }
+    }
+    
+    /**
+     * Busca servicios por título para autocomplete
+     */
+    public function search_services() {
+        // Verificar nonce
+        if (!check_ajax_referer('eq_cart_nonce', 'nonce', false)) {
+            wp_send_json_error('Error de seguridad');
+            return;
+        }
+        
+        // Obtener término de búsqueda
+        $search_term = isset($_GET['term']) ? sanitize_text_field($_GET['term']) : '';
+        
+        if (empty($search_term)) {
+            wp_send_json_error('Término de búsqueda vacío');
+            return;
+        }
+        
+        // Buscar posts de tipo hp_listing
+        $args = array(
+            'post_type' => 'hp_listing',
+            'post_status' => 'publish',
+            'posts_per_page' => 10,
+            's' => $search_term,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        );
+        
+        $query = new WP_Query($args);
+        $results = array();
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $results[] = array(
+                    'id' => get_the_ID(),
+                    'label' => get_the_title(),
+                    'value' => get_the_title(),
+                    'url' => get_permalink()
+                );
+            }
+        }
+        
+        wp_reset_postdata();
+        
+        wp_send_json_success($results);
     }
 	
 }
