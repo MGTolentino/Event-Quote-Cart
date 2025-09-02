@@ -1027,22 +1027,14 @@ public function create_event() {
      * Busca servicios por título para autocomplete
      */
     public function search_services() {
-        // Debug log
-        error_log('DEBUG search_services: Iniciando búsqueda de servicios');
-        error_log('DEBUG search_services: Nonce recibido: ' . (isset($_GET['nonce']) ? $_GET['nonce'] : 'NO_NONCE'));
-        
-        // Verificar nonce - usar el mismo que se está enviando desde el frontend
+        // Verificar nonce
         if (!check_ajax_referer('eq_cart_public_nonce', 'nonce', false)) {
-            error_log('DEBUG search_services: ERROR - Nonce inválido');
             wp_send_json_error('Error de seguridad');
             return;
         }
         
-        error_log('DEBUG search_services: Nonce válido, continuando...');
-        
         // Obtener término de búsqueda
         $search_term = isset($_GET['term']) ? sanitize_text_field($_GET['term']) : '';
-        error_log('DEBUG search_services: Término de búsqueda: ' . $search_term);
         
         if (empty($search_term)) {
             wp_send_json_error('Término de búsqueda vacío');
@@ -1075,9 +1067,6 @@ public function create_event() {
         }
         
         wp_reset_postdata();
-        
-        error_log('DEBUG search_services: Resultados encontrados: ' . count($results));
-        error_log('DEBUG search_services: Enviando respuesta exitosa');
         
         wp_send_json_success($results);
     }
