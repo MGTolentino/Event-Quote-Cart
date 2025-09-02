@@ -995,7 +995,7 @@ formatFriendlyDate: function(date) {
                     '<div class="eq-form-row eq-form-two-columns">' +
                         '<div class="eq-form-column">' +
                             '<div class="eq-form-field">' +
-                                '<label class="eq-form-label">' + (eqCartData.texts?.companyName || 'Company Name') + '</label>' +
+                                '<label class="eq-form-label">' + (eqCartData.texts?.companyName || 'Razón Social') + '</label>' +
                                 '<input type="text" class="eq-form-input" id="eq-new-lead-razon-social">' +
                             '</div>' +
                             '<div class="eq-form-field">' +
@@ -1091,6 +1091,11 @@ modalsHtml += '</select>' +
                         '<label class="eq-form-label">Dirección</label>' +
                         '<input type="text" class="eq-form-input" id="eq-new-event-direccion">' +
                     '</div>' +
+                    '<div class="eq-form-field">' +
+                        '<label class="eq-form-label">Servicio de Interés</label>' +
+                        '<input type="text" class="eq-form-input" id="eq-new-event-servicio-search" placeholder="Buscar servicio...">' +
+                        '<input type="hidden" id="eq-new-event-servicio" name="evento_servicio_de_interes" value="">' +
+                    '</div>' +
 							// Campos ocultos para ubicación y categoría
 					'<input type="hidden" id="eq-new-event-ubicacion" name="ubicacion_evento" value="">' +
 					'<input type="hidden" id="eq-new-event-categoria" name="categoria_listing_post" value="">' +
@@ -1119,6 +1124,9 @@ modalsHtml += '</select>' +
             
             // Inicializar controladores de eventos para modales
             this.initModalEvents();
+            
+            // Inicializar autocomplete para servicios
+            this.initServiceAutocomplete();
         },
         
         // Inicializar eventos para modales
@@ -1176,6 +1184,7 @@ modalsHtml += '</select>' +
             
             // Crear nuevo lead
             $('#eq-lead-create').on('click', function() {
+                var razonSocial = $('#eq-new-lead-razon-social').val();
                 var name = $('#eq-new-lead-name').val();
                 var apellido = $('#eq-new-lead-apellido').val();
                 var email = $('#eq-new-lead-email').val();
@@ -1186,7 +1195,7 @@ modalsHtml += '</select>' +
                     return;
                 }
                 
-                self.createLead(name, apellido, email, phone);
+                self.createLead(razonSocial, name, apellido, email, phone);
             });
             
             // Seleccionar evento desde la lista
@@ -1211,6 +1220,7 @@ modalsHtml += '</select>' +
                 var type = $('#eq-new-event-type').val();
                 var date = $('#eq-new-event-date').val();
                 var guests = $('#eq-new-event-guests').val();
+                var servicio = $('#eq-new-event-servicio').val();
                 
                 if (!type || !date) {
                     alert('Tipo y fecha son obligatorios');
@@ -1231,7 +1241,7 @@ modalsHtml += '</select>' +
                     return;
                 }
                 
-                self.createEvent(type, date, guests);
+                self.createEvent(type, date, guests, servicio);
             });
             
 // Inicializar flatpickr para selector de fecha
@@ -1282,6 +1292,123 @@ if (typeof flatpickr !== 'undefined') {
         }
     });
 }
+        },
+        
+        // Inicializar autocomplete para servicios
+        initServiceAutocomplete: function() {
+            var self = this;
+            
+            // Verificar si jQuery UI está disponible
+            if (typeof $.fn.autocomplete === 'undefined') {
+                console.warn('jQuery UI Autocomplete no está disponible');
+                return;
+            }
+            
+            $('#eq-new-event-servicio-search').autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: eqCartData.ajaxurl,
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {
+                            action: 'search_services',
+                            nonce: eqCartData.nonce,
+                            term: request.term
+                        },
+                        success: function(data) {
+                            if (data.success && Array.isArray(data.data)) {
+                                response(data.data);
+                            } else {
+                                response([]);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 2,
+                delay: 300,
+                appendTo: '#eq-event-modal',
+                position: { collision: 'flip' },
+                select: function(event, ui) {
+                    $('#eq-new-event-servicio').val(ui.item.url);
+                    $(this).val(ui.item.label);
+                    return false;
+                },
+                open: function() {
+                    // Asegurar z-index correcto
+                    $('.ui-autocomplete').css('z-index', '1000010');
+                },
+                close: function() {
+                    // Mantener el foco en el input
+                }
+            });
+            
+            // Agregar estilos CSS para el autocomplete si no existen
+            if (!$('#eq-autocomplete-styles').length) {
+                const autocompleteStyles = `
+                    <style id="eq-autocomplete-styles">
+                        .ui-autocomplete {
+                            max-height: 200px !important;
+                            overflow-y: auto !important;
+                            overflow-x: hidden !important;
+                            background: white !important;
+                            border: 1px solid #ddd !important;
+                            border-radius: 4px !important;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+                            z-index: 1000010 !important;
+                            padding: 0 !important;
+                            list-style: none !important;
+                            position: absolute !important;
+                            font-family: inherit !important;
+                        }
+
+                        .ui-autocomplete .ui-menu-item {
+                            padding: 8px 12px !important;
+                            cursor: pointer !important;
+                            transition: background-color 0.2s !important;
+                            border: none !important;
+                            margin: 0 !important;
+                            display: block !important;
+                            width: 100% !important;
+                            box-sizing: border-box !important;
+                        }
+
+                        .ui-autocomplete .ui-menu-item:hover,
+                        .ui-autocomplete .ui-menu-item.ui-state-focus {
+                            background-color: #f8f9fa !important;
+                            color: inherit !important;
+                        }
+
+                        .ui-autocomplete .ui-state-active,
+                        .ui-autocomplete .ui-widget-content .ui-state-active {
+                            background: #e9ecef !important;
+                            border: none !important;
+                            margin: 0 !important;
+                            font-weight: normal !important;
+                            color: inherit !important;
+                        }
+
+                        .ui-autocomplete .ui-menu-item-wrapper {
+                            padding: 0 !important;
+                            display: block !important;
+                            width: 100% !important;
+                        }
+                        
+                        #eq-new-event-servicio-search {
+                            width: 100% !important;
+                            padding: 8px 10px !important;
+                            border: 1px solid #ced4da !important;
+                            border-radius: 4px !important;
+                            font-size: 14px !important;
+                            background: white !important;
+                        }
+                    </style>
+                `;
+                
+                $('head').append(autocompleteStyles);
+            }
         },
         
         // Abrir modal de lead
@@ -1388,7 +1515,7 @@ if (typeof flatpickr !== 'undefined') {
         },
         
         // Crear un nuevo lead
-        createLead: function(name, apellido, email, phone) {
+        createLead: function(razonSocial, name, apellido, email, phone) {
             var self = this;
             
             $.ajax({
@@ -1398,6 +1525,7 @@ if (typeof flatpickr !== 'undefined') {
                 data: {
                     action: 'eq_create_lead',
                     nonce: eqCartData.nonce,
+                    razon_social: razonSocial,
                     nombre: name,
                     apellido: apellido,
                     email: email,
@@ -1840,7 +1968,7 @@ updateDateDisplays: function(formattedDate, dateObj) {
     }
 },
         
-     createEvent: function(type, date, guests) {
+     createEvent: function(type, date, guests, servicio) {
     var self = this;
     
     if (!this.data.leadId) {
@@ -1873,7 +2001,8 @@ updateDateDisplays: function(formattedDate, dateObj) {
             ubicacion_evento: ubicacion,
             categoria_listing_post: categoria,
             direccion_evento: direccion,
-            comentarios_evento: comentarios
+            comentarios_evento: comentarios,
+            evento_servicio_de_interes: servicio
         },
         success: function(response) {
             if (response.success) {
