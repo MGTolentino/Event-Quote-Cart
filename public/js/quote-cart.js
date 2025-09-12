@@ -1657,4 +1657,278 @@ window.updateHeaderCartCount = function(count) {
     }
 };
 
+// Cart History functionality
+window.EQCartHistory = {
+    init: function() {
+        this.bindEvents();
+    },
+    
+    bindEvents: function() {
+        // Open history modal
+        $(document).on('click', '#eq-cart-history-btn', this.openHistoryModal.bind(this));
+        
+        // Close modal
+        $(document).on('click', '#eq-cart-history-modal .eq-modal-close', this.closeHistoryModal.bind(this));
+        
+        // Close modal on outside click
+        $(document).on('click', '#eq-cart-history-modal', function(e) {
+            if (e.target === this) {
+                window.EQCartHistory.closeHistoryModal();
+            }
+        });
+        
+        // History item selection
+        $(document).on('change', '.eq-history-item input[type="radio"]', this.onHistorySelection.bind(this));
+        
+        // Restore button - testing if event is binding
+        $(document).on('click', '#eq-restore-history', function(e) {
+            e.preventDefault();
+            window.EQCartHistory.restoreHistory();
+        });
+        
+        // Test if button exists
+        setTimeout(() => {
+            const button = document.getElementById('eq-restore-history');
+            if (button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.EQCartHistory.restoreHistory();
+                });
+            }
+        }, 2000);
+    },
+    
+    openHistoryModal: function() {
+        $('#eq-cart-history-modal').show();
+        $('#eq-history-loading').show();
+        $('#eq-history-content').hide();
+        $('#eq-history-empty').hide();
+        
+        this.loadHistory();
+    },
+    
+    closeHistoryModal: function() {
+        $('#eq-cart-history-modal').hide();
+    },
+    
+    loadHistory: function() {
+        
+        $.ajax({
+            url: eqCartData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'eq_get_cart_history',
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                $('#eq-history-loading').hide();
+                
+                if (response.success && response.data.history && response.data.history.length > 0) {
+                    this.renderHistory(response.data.history, response.data.current_snapshot);
+                    $('#eq-history-content').show();
+                } else {
+                    $('#eq-history-empty').show();
+                }
+            },
+            error: (xhr, status, error) => {
+                $('#eq-history-loading').hide();
+                $('#eq-history-empty').show();
+                this.showNotification(eqCartData.i18n.errorLoadingHistory, 'error');
+            }
+        });
+    },
+    
+    renderHistory: function(history, currentSnapshot) {
+        const historyList = $('.eq-history-list');
+        historyList.empty();
+        
+        history.forEach((entry, index) => {
+            // Comparar el snapshot de esta versión con el snapshot actual para determinar si es current
+            const isCurrent = currentSnapshot && JSON.stringify(entry.items_summary) === JSON.stringify(JSON.parse(currentSnapshot || '[]').map(item => ({
+                title: item.title,
+                quantity: item.quantity,
+                price_formatted: item.price_formatted,
+                date: item.date,
+                image: item.image,
+                extras: item.extras
+            })));
+            
+            // Generar lista de items
+            let itemsListHtml = '';
+            if (entry.items_summary && entry.items_summary.length > 0) {
+                itemsListHtml = '<div class="eq-history-items"><h5>Items in this version:</h5><ul>';
+                entry.items_summary.forEach(item => {
+                    // Item principal
+                    itemsListHtml += `
+                        <li class="eq-history-item-detail">
+                            <span class="eq-item-name">${item.title}</span>
+                            <span class="eq-item-quantity">×${item.quantity}</span>
+                            <span class="eq-item-price">${item.price_formatted}</span>
+                        </li>
+                    `;
+                    
+                    // Mostrar extras si existen
+                    if (item.extras && item.extras.length > 0) {
+                        item.extras.forEach(extra => {
+                            const extraPrice = extra.price ? ` - $${parseFloat(extra.price).toFixed(2)}` : '';
+                            const extraQuantity = extra.quantity && extra.quantity != 1 ? ` ×${extra.quantity}` : '';
+                            itemsListHtml += `
+                                <li class="eq-history-extra-detail">
+                                    <span class="eq-extra-icon">↳</span>
+                                    <span class="eq-extra-name">${extra.name}</span>
+                                    <span class="eq-extra-quantity">${extraQuantity}</span>
+                                    <span class="eq-extra-price">${extraPrice}</span>
+                                </li>
+                            `;
+                        });
+                    }
+                });
+                itemsListHtml += '</ul></div>';
+            } else {
+                itemsListHtml = '<div class="eq-history-items"><p class="eq-no-items">No items in this version</p></div>';
+            }
+            
+            // Generar HTML del item de historial
+            const itemHtml = `
+                <div class="eq-history-item ${isCurrent ? 'current' : ''}">
+                    <div class="eq-history-radio">
+                        <input type="radio" name="history_selection" value="${entry.id}" ${isCurrent ? 'disabled' : ''}>
+                    </div>
+                    <div class="eq-history-details">
+                        <div class="eq-history-header">
+                            <div class="eq-history-version">
+                                Version ${entry.version} ${isCurrent ? '(Current)' : ''}
+                                <span class="eq-history-item-count">${entry.total_items || 0} item${entry.total_items !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div class="eq-history-total">
+                                ${entry.total_formatted}
+                            </div>
+                        </div>
+                        <div class="eq-history-meta">
+                            <div class="eq-history-date">
+                                <i class="fas fa-clock"></i> ${entry.created_formatted}
+                            </div>
+                            <div class="eq-history-action">
+                                <i class="fas fa-tag"></i> ${this.formatAction(entry.action)}
+                            </div>
+                        </div>
+                        ${itemsListHtml}
+                    </div>
+                </div>
+            `;
+            historyList.append(itemHtml);
+        });
+    },
+    
+    formatAction: function(action) {
+        const actionMap = {
+            'manual_save': 'Manual Save',
+            'item_added': 'Item Added',
+            'item_removed': 'Item Removed',
+            'item_updated': 'Item Updated',
+            'before_restore': 'Before Restore',
+            'after_restore': 'After Restore',
+            'automatic': 'Automatic'
+        };
+        
+        return actionMap[action] || action;
+    },
+    
+    onHistorySelection: function() {
+        const hasSelection = $('.eq-history-list input[type="radio"]:checked').length > 0;
+        $('#eq-restore-history').prop('disabled', !hasSelection);
+    },
+    
+    restoreHistory: function() {
+        const selectedHistoryId = $('.eq-history-list input[type="radio"]:checked').val();
+        
+        if (!selectedHistoryId) {
+            this.showNotification(eqCartData.i18n.selectVersionRestore, 'error');
+            return;
+        }
+        
+        const confirmRestore = confirm(eqCartData.i18n.confirmRestore);
+        
+        if (!confirmRestore) {
+            return;
+        }
+        
+        $('#eq-restore-history').prop('disabled', true).text(eqCartData.i18n.restoring);
+        
+        $.ajax({
+            url: eqCartData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'eq_restore_cart_history',
+                history_id: selectedHistoryId,
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                if (response.success) {
+                    this.showNotification(eqCartData.i18n.cartRestoredSuccess, 'success');
+                    this.closeHistoryModal();
+                    
+                    // Reload the page to show restored cart
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    this.showNotification(response.data || eqCartData.i18n.errorRestoringCart, 'error');
+                }
+            },
+            error: (xhr, status, error) => {
+                this.showNotification(eqCartData.i18n.errorRestoringCart, 'error');
+            },
+            complete: () => {
+                $('#eq-restore-history').prop('disabled', false).text(eqCartData.i18n.restoreSelectedVersion);
+            }
+        });
+    },
+    
+    saveHistorySnapshot: function(action = 'automatic') {
+        // This method can be called from other parts of the code to save history
+        $.ajax({
+            url: eqCartData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_save_cart_history',
+                action_type: action,
+                nonce: eqCartData.nonce
+            },
+            success: (response) => {
+                // Silent operation, only log for debugging
+            },
+            error: () => {
+            }
+        });
+    },
+    
+    showNotification: function(message, type) {
+        // Use existing notification system if available, otherwise use alert
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        } else {
+            alert(message);
+        }
+    }
+};
+
+// Initialize cart history when document is ready
+$(document).ready(function() {
+    if (typeof eqCartData !== 'undefined') {
+        window.EQCartHistory.init();
+    } else {
+    }
+    
+    // Alternative binding as fallback
+    setTimeout(() => {
+        $(document).on('click', '#eq-restore-history', function() {
+            if (window.EQCartHistory && window.EQCartHistory.restoreHistory) {
+                window.EQCartHistory.restoreHistory();
+            } else {
+            }
+        });
+    }, 1000);
+});
+
 })(jQuery);

@@ -49,6 +49,11 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
 		add_action('wp_ajax_eq_check_item_in_cart', array($this, 'check_item_in_cart'));
 		
+		// Hooks para historial de carrito
+		add_action('wp_ajax_eq_save_cart_history', array($this, 'save_cart_history'));
+		add_action('wp_ajax_eq_get_cart_history', array($this, 'get_cart_history'));
+		add_action('wp_ajax_eq_restore_cart_history', array($this, 'restore_cart_history'));
+		
 		// Hook para limpiar contexto al hacer logout
 		add_action('wp_logout', array($this, 'clear_context_on_logout'));
 }
@@ -335,6 +340,11 @@ foreach ($other_items as $other_item) {
 
         // 9. Obtener datos completos del item
         $item_data = $this->get_cart_item_data($item_id);
+
+        // 10. Save history snapshot for admins and sales executives
+        if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')) {
+            $this->save_cart_history_snapshot($existing_item ? 'item_updated' : 'item_added');
+        }
 
         wp_send_json_success(array(
             'item' => $item_data,
@@ -3047,6 +3057,404 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Guardar un snapshot del carrito en el historial
+     */
+    public function save_cart_history() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $action = isset($_POST['action_type']) ? sanitize_text_field($_POST['action_type']) : 'manual_save';
+        
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Obtener el carrito activo
+            $cart = eq_get_active_cart();
+            if (!$cart) {
+                wp_send_json_error('No active cart found');
+            }
+            
+            // Obtener items del carrito
+            $cart_items = eq_get_cart_items();
+            if (empty($cart_items)) {
+                wp_send_json_error('Cart is empty');
+            }
+            
+            // Calcular totales
+            $totals = eq_calculate_cart_totals($cart_items);
+            $total_amount = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+            
+            // Obtener el siguiente número de versión
+            $version = $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d",
+                $cart->id
+            ));
+            
+            // Preparar snapshot de items
+            $items_snapshot = json_encode($cart_items);
+            
+            // Insertar en historial
+            $result = $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_history',
+                array(
+                    'cart_id' => $cart->id,
+                    'lead_id' => $cart->lead_id,
+                    'event_id' => $cart->event_id,
+                    'user_id' => $user_id,
+                    'version' => $version,
+                    'items_snapshot' => $items_snapshot,
+                    'total_amount' => $total_amount,
+                    'action' => $action
+                ),
+                array('%d', '%d', '%d', '%d', '%d', '%s', '%f', '%s')
+            );
+            
+            if ($result === false) {
+                wp_send_json_error('Failed to save cart history');
+            }
+            
+            wp_send_json_success(array(
+                'message' => 'Cart history saved successfully',
+                'version' => $version
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener el historial del carrito
+     */
+    public function get_cart_history() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            wp_send_json_error(__('Unauthorized', 'event-quote-cart'));
+        }
+        
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Obtener el carrito activo
+            $cart = eq_get_active_cart();
+            if (!$cart) {
+                wp_send_json_error(__('No active cart found', 'event-quote-cart'));
+            }
+            
+            // Obtener historial del carrito
+            $history = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, version, total_amount, action, created_at, items_snapshot 
+                FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d 
+                ORDER BY created_at DESC",
+                $cart->id
+            ));
+            
+            if (empty($history)) {
+                wp_send_json_success(array(
+                    'history' => array(),
+                    'cart_id' => $cart->id,
+                    'message' => sprintf(__('No history found for cart %d', 'event-quote-cart'), $cart->id)
+                ));
+                return;
+            }
+            
+            $formatted_history = array();
+            foreach ($history as $entry) {
+                
+                // Decodificar items_snapshot (como objetos para consistencia)
+                $items_data = json_decode($entry->items_snapshot);
+                $items_summary = array();
+                $total_items = 0;
+                
+                if ($items_data && is_array($items_data)) {
+                    foreach ($items_data as $item) {
+                        $total_items += isset($item->quantity) ? intval($item->quantity) : 1;
+                        $items_summary[] = array(
+                            'title' => isset($item->title) ? $item->title : __('Unknown Item', 'event-quote-cart'),
+                            'quantity' => isset($item->quantity) ? intval($item->quantity) : 1,
+                            'price_formatted' => isset($item->price_formatted) ? $item->price_formatted : '$0.00',
+                            'date' => isset($item->date) ? $item->date : '',
+                            'image' => isset($item->image) ? $item->image : '',
+                            'extras' => isset($item->extras) ? $item->extras : array()
+                        );
+                    }
+                }
+                
+                $formatted_history[] = array(
+                    'id' => $entry->id,
+                    'version' => $entry->version,
+                    'total_amount' => $entry->total_amount,
+                    'total_formatted' => hivepress()->woocommerce->format_price($entry->total_amount),
+                    'action' => $entry->action,
+                    'created_at' => $entry->created_at,
+                    'created_formatted' => date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($entry->created_at)),
+                    'items_summary' => $items_summary,
+                    'total_items' => $total_items
+                );
+            }
+            
+            
+            // Obtener items actuales del carrito para determinar cuál es la versión current
+            $current_cart_items = eq_get_cart_items();
+            $current_cart_snapshot = json_encode($current_cart_items);
+            
+            wp_send_json_success(array(
+                'history' => $formatted_history,
+                'cart_id' => $cart->id,
+                'current_snapshot' => $current_cart_snapshot
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Restaurar el carrito desde una versión del historial
+     */
+    public function restore_cart_history() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            wp_send_json_error(__('Unauthorized', 'event-quote-cart'));
+        }
+        
+        $history_id = isset($_POST['history_id']) ? intval($_POST['history_id']) : 0;
+        
+        if (!$history_id) {
+            wp_send_json_error(__('Invalid history ID', 'event-quote-cart'));
+        }
+        
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Obtener la versión del historial
+            $history_entry = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}eq_cart_history 
+                WHERE id = %d AND user_id = %d",
+                $history_id, $user_id
+            ));
+            
+            if (!$history_entry) {
+                wp_send_json_error(__('History entry not found', 'event-quote-cart'));
+            }
+            
+            // Verificar que el carrito existe
+            $cart = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}eq_carts 
+                WHERE id = %d AND user_id = %d",
+                $history_entry->cart_id, $user_id
+            ));
+            
+            if (!$cart) {
+                wp_send_json_error(__('Cart not found', 'event-quote-cart'));
+            }
+            
+            // Obtener el snapshot de items (sin true para mantener como objetos)
+            $items_snapshot = json_decode($history_entry->items_snapshot);
+            if (!$items_snapshot) {
+                wp_send_json_error(__('Invalid items snapshot', 'event-quote-cart'));
+            }
+            
+            // Obtener items del carrito actual para determinar si guardar snapshot
+            $current_cart_items = eq_get_cart_items();
+            
+            // Solo guardar snapshot si hay items actuales (evitar versiones vacías)
+            if (!empty($current_cart_items)) {
+                $this->save_cart_history_internal($cart->id, 'before_restore');
+            }
+            
+            // Eliminar items actuales del carrito
+            $wpdb->delete(
+                $wpdb->prefix . 'eq_cart_items',
+                array('cart_id' => $cart->id),
+                array('%d')
+            );
+            
+            // También eliminar rangos de fechas asociados
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM {$wpdb->prefix}eq_cart_date_ranges 
+                WHERE cart_item_id IN (
+                    SELECT id FROM {$wpdb->prefix}eq_cart_items 
+                    WHERE cart_id = %d
+                )",
+                $cart->id
+            ));
+            
+            // Restaurar items desde el snapshot
+            foreach ($items_snapshot as $item) {
+                // Insertar item
+                $result = $wpdb->insert(
+                    $wpdb->prefix . 'eq_cart_items',
+                    array(
+                        'cart_id' => $cart->id,
+                        'listing_id' => $item->listing_id,
+                        'form_data' => $item->form_data,
+                        'status' => 'active'
+                    ),
+                    array('%d', '%d', '%s', '%s')
+                );
+                
+                if ($result) {
+                    $new_item_id = $wpdb->insert_id;
+                    
+                    // Si el item tenía rango de fechas, restaurarlo
+                    if (isset($item->is_date_range) && $item->is_date_range) {
+                        $wpdb->insert(
+                            $wpdb->prefix . 'eq_cart_date_ranges',
+                            array(
+                                'cart_item_id' => $new_item_id,
+                                'start_date' => $item->start_date,
+                                'end_date' => $item->end_date,
+                                'days_count' => $item->days_count,
+                                'extras_info' => isset($item->extras_info) ? json_encode($item->extras_info) : null
+                            ),
+                            array('%d', '%s', '%s', '%d', '%s')
+                        );
+                    }
+                }
+            }
+            
+            // No guardar snapshot después de restaurar para evitar historial innecesario
+            // El restore ya restauró el contenido deseado
+            
+            wp_send_json_success(array(
+                'message' => __('Cart restored successfully', 'event-quote-cart'),
+                'version' => $history_entry->version
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+    
+    /**
+     * Método interno para guardar historial sin verificar AJAX nonce
+     */
+    private function save_cart_history_internal($cart_id, $action = 'automatic') {
+        global $wpdb;
+        $user_id = get_current_user_id();
+        
+        try {
+            // Obtener items del carrito
+            $cart_items = eq_get_cart_items();
+            if (empty($cart_items)) {
+                return false;
+            }
+            
+            // Calcular totales
+            $totals = eq_calculate_cart_totals($cart_items);
+            $total_amount = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+            
+            // Obtener el siguiente número de versión
+            $version = $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d",
+                $cart_id
+            ));
+            
+            // Preparar snapshot de items
+            $items_snapshot = json_encode($cart_items);
+            
+            // Obtener información del carrito
+            $cart = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}eq_carts WHERE id = %d",
+                $cart_id
+            ));
+            
+            // Insertar en historial
+            $result = $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_history',
+                array(
+                    'cart_id' => $cart_id,
+                    'lead_id' => $cart ? $cart->lead_id : null,
+                    'event_id' => $cart ? $cart->event_id : null,
+                    'user_id' => $user_id,
+                    'version' => $version,
+                    'items_snapshot' => $items_snapshot,
+                    'total_amount' => $total_amount,
+                    'action' => $action
+                ),
+                array('%d', '%d', '%d', '%d', '%d', '%s', '%f', '%s')
+            );
+            
+            return $result !== false;
+            
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Save cart history snapshot (internal method)
+     */
+    private function save_cart_history_snapshot($action = 'automatic') {
+        // Only proceed if user has proper permissions
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            return;
+        }
+
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Get active cart
+            $cart = eq_get_active_cart();
+            if (!$cart) {
+                return;
+            }
+            
+            // Get cart items
+            $cart_items = eq_get_cart_items();
+            if (empty($cart_items)) {
+                return;
+            }
+            
+            // Calculate totals
+            $totals = eq_calculate_cart_totals($cart_items);
+            $total_amount = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+            
+            // Get next version number
+            $version = $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d",
+                $cart->id
+            ));
+            
+            // Prepare items snapshot
+            $items_snapshot = json_encode($cart_items);
+            
+            // Insert into history
+            $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_history',
+                array(
+                    'cart_id' => $cart->id,
+                    'lead_id' => $cart->lead_id,
+                    'event_id' => $cart->event_id,
+                    'user_id' => $user_id,
+                    'version' => $version,
+                    'items_snapshot' => $items_snapshot,
+                    'total_amount' => $total_amount,
+                    'action' => $action
+                ),
+                array('%d', '%d', '%d', '%d', '%d', '%s', '%f', '%s')
+            );
+            
+        } catch (Exception $e) {
+            // Silent fail - history is not critical
         }
     }
 	

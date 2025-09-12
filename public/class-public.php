@@ -53,6 +53,16 @@ class Event_Quote_Cart_Public {
                 $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/stripe-integration.css')
             );
         }
+
+        // Enqueue cart history styles for admin and sales executives
+        if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')) {
+            wp_enqueue_style(
+                $this->plugin_name . '-cart-history',
+                EQ_CART_PLUGIN_URL . 'public/css/cart-history.css',
+                array(),
+                $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/css/cart-history.css')
+            );
+        }
 		
     }
 
@@ -107,7 +117,15 @@ class Event_Quote_Cart_Public {
                     'invalidQuantity' => __('Please enter a valid quantity', 'event-quote-cart'),
                     'confirmRemove' => __('Are you sure you want to remove this item?', 'event-quote-cart'),
 					'viewQuotes' => get_locale() === 'es_ES' ? 'Ver Cotizaciones' : 'View Quotes',
-					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote'
+					'viewQuote' => get_locale() === 'es_ES' ? 'Ver Cotización' : 'View Quote',
+                    // Cart History texts
+                    'confirmRestore' => __('Are you sure you want to restore this cart version? This will replace your current cart items.', 'event-quote-cart'),
+                    'selectVersionRestore' => __('Please select a version to restore', 'event-quote-cart'),
+                    'cartRestoredSuccess' => __('Cart restored successfully', 'event-quote-cart'),
+                    'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
+                    'errorLoadingHistory' => __('Error loading cart history', 'event-quote-cart'),
+                    'restoring' => __('Restoring...', 'event-quote-cart'),
+                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart')
                 ),
                 'texts' => array(
                     'showContextPanel' => __('Show context panel', 'event-quote-cart'),
@@ -256,6 +274,8 @@ public function init() {
 add_action('wp_ajax_eq_create_lead', array($this, 'create_lead'));
 add_action('wp_ajax_eq_get_lead_events', array($this, 'get_lead_events'));
 add_action('wp_ajax_eq_create_event', array($this, 'create_event'));
+add_action('wp_ajax_search_services', array($this, 'search_services'));
+add_action('wp_ajax_nopriv_search_services', array($this, 'search_services'));
 
     add_action('wp_ajax_eq_remove_from_cart', array($this, 'remove_from_cart'));
     
@@ -407,6 +427,11 @@ public function render_context_panel() {
         
         if (!$result) {
             throw new Exception('No se pudo eliminar el item');
+        }
+
+        // Save history snapshot for admins and sales executives
+        if (current_user_can('administrator') || current_user_can('ejecutivo_de_ventas')) {
+            $this->save_cart_history_snapshot('item_removed');
         }
 
         wp_send_json_success(array(
@@ -936,6 +961,114 @@ public function create_event() {
             return $this->version . '.' . filemtime($file_path);
         }
         return $this->version;
+    }
+
+    /**
+     * Save cart history snapshot (internal method)
+     */
+    private function save_cart_history_snapshot($action = 'automatic') {
+        // Only proceed if user has proper permissions
+        if (!current_user_can('administrator') && !current_user_can('ejecutivo_de_ventas')) {
+            return;
+        }
+
+        try {
+            global $wpdb;
+            $user_id = get_current_user_id();
+            
+            // Get active cart
+            $cart = eq_get_active_cart();
+            if (!$cart) {
+                return;
+            }
+            
+            // Get cart items
+            $cart_items = eq_get_cart_items();
+            if (empty($cart_items)) {
+                return;
+            }
+            
+            // Calculate totals
+            $totals = eq_calculate_cart_totals($cart_items);
+            $total_amount = isset($totals['total_raw']) ? $totals['total_raw'] : 0;
+            
+            // Get next version number
+            $version = $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(MAX(version), 0) + 1 FROM {$wpdb->prefix}eq_cart_history 
+                WHERE cart_id = %d",
+                $cart->id
+            ));
+            
+            // Prepare items snapshot
+            $items_snapshot = json_encode($cart_items);
+            
+            // Insert into history
+            $wpdb->insert(
+                $wpdb->prefix . 'eq_cart_history',
+                array(
+                    'cart_id' => $cart->id,
+                    'lead_id' => $cart->lead_id,
+                    'event_id' => $cart->event_id,
+                    'user_id' => $user_id,
+                    'version' => $version,
+                    'items_snapshot' => $items_snapshot,
+                    'total_amount' => $total_amount,
+                    'action' => $action
+                ),
+                array('%d', '%d', '%d', '%d', '%d', '%s', '%f', '%s')
+            );
+            
+        } catch (Exception $e) {
+            // Silent fail - history is not critical
+        }
+    }
+    
+    /**
+     * Busca servicios por título para autocomplete
+     */
+    public function search_services() {
+        // Verificar nonce
+        if (!check_ajax_referer('eq_cart_public_nonce', 'nonce', false)) {
+            wp_send_json_error('Error de seguridad');
+            return;
+        }
+        
+        // Obtener término de búsqueda
+        $search_term = isset($_GET['term']) ? sanitize_text_field($_GET['term']) : '';
+        
+        if (empty($search_term)) {
+            wp_send_json_error('Término de búsqueda vacío');
+            return;
+        }
+        
+        // Buscar posts de tipo hp_listing
+        $args = array(
+            'post_type' => 'hp_listing',
+            'post_status' => 'publish',
+            'posts_per_page' => 10,
+            's' => $search_term,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        );
+        
+        $query = new WP_Query($args);
+        $results = array();
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $results[] = array(
+                    'id' => get_the_ID(),
+                    'label' => get_the_title(),
+                    'value' => get_the_title(),
+                    'url' => get_permalink()
+                );
+            }
+        }
+        
+        wp_reset_postdata();
+        
+        wp_send_json_success($results);
     }
 	
 }

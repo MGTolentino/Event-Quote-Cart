@@ -94,7 +94,7 @@ body.has-eq-context-panel {
     display: none;
 }
 
-.eq-modal {
+.eq-modal:not(#eq-cart-history-modal) {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -356,8 +356,8 @@ body.has-eq-context-panel {
     100% { transform: rotate(360deg); }
 }
 
-/* Mejoras de diseño para modales */
-.eq-modal {
+/* Mejoras de diseño para modales (excluyendo cart history) */
+.eq-modal:not(#eq-cart-history-modal) {
     width: 90%;
     max-width: 800px; /* Aumentar el ancho máximo */
     max-height: 85vh;
