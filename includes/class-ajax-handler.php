@@ -59,28 +59,20 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 }
 
     public function get_listing_data() {
-		
-		
-		
-        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        // Verificar seguridad y permisos
+        $security_check = Event_Quote_Cart_Security_Helper::verify_ajax_request('view_quotes');
+        if (is_wp_error($security_check)) {
+            wp_send_json_error($security_check->get_error_message());
+            return;
+        }
 
-        // Verificación estricta de permisos
-    if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
-        wp_send_json_error('Unauthorized');
-        return;
-    }
-    
-    // Verificación adicional - comprobar roles directamente
-    $user = wp_get_current_user();
-    if (!$user || !in_array('administrator', $user->roles) && !in_array('ejecutivo_de_ventas', $user->roles)) {
-        wp_send_json_error('Unauthorized');
-        return;
-    }
-
-        $listing_id = isset($_POST['listing_id']) ? intval($_POST['listing_id']) : 0;
+        $listing_id = Event_Quote_Cart_Security_Helper::validate_post_id(
+            isset($_POST['listing_id']) ? $_POST['listing_id'] : 0,
+            'hp_listing'
+        );
         
         if (!$listing_id) {
-            wp_send_json_error('Invalid listing ID');
+            wp_send_json_error(Event_Quote_Cart_Constants::get_error_message('invalid_data'));
         }
 
         try {
@@ -118,30 +110,41 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 
 public function add_to_cart() {
     global $wpdb;
-    check_ajax_referer('eq_cart_public_nonce', 'nonce');
-
-     // Verificación estricta de permisos
-    if (!function_exists('eq_can_view_quote_button') || !eq_can_view_quote_button()) {
-        wp_send_json_error('Unauthorized');
-        return;
-    }
     
-    // Verificación adicional - comprobar roles directamente
-    $user = wp_get_current_user();
-    if (!$user || !in_array('administrator', $user->roles) && !in_array('ejecutivo_de_ventas', $user->roles)) {
-        wp_send_json_error('Unauthorized');
+    // Verificar seguridad y permisos
+    $security_check = Event_Quote_Cart_Security_Helper::verify_ajax_request('manage_quotes');
+    if (is_wp_error($security_check)) {
+        wp_send_json_error($security_check->get_error_message());
         return;
     }
 
-    $listing_id = isset($_POST['listing_id']) ? intval($_POST['listing_id']) : 0;
-    $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
-    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
-    $extras = isset($_POST['extras']) ? $_POST['extras'] : array();
+    // Sanitizar todos los inputs
+    $sanitize_rules = array(
+        'listing_id' => 'int',
+        'date' => 'text',
+        'quantity' => 'int',
+        'end_date' => 'text',
+        'days_count' => 'int',
+        'is_date_range' => 'bool',
+        'context_lead_id' => 'int',
+        'context_event_id' => 'int',
+        'calculated_price' => 'float'
+    );
     
-    // Datos adicionales para rangos de fechas
-    $end_date = isset($_POST['end_date']) ? sanitize_text_field($_POST['end_date']) : '';
-    $days_count = isset($_POST['days_count']) ? intval($_POST['days_count']) : 1;
-    $is_date_range = isset($_POST['is_date_range']) ? (bool)$_POST['is_date_range'] : false;
+    $sanitized_data = Event_Quote_Cart_Security_Helper::sanitize_array($_POST, $sanitize_rules);
+    
+    $listing_id = Event_Quote_Cart_Security_Helper::validate_post_id(
+        $sanitized_data['listing_id'] ?? 0,
+        'hp_listing'
+    );
+    $date = $sanitized_data['date'] ?? '';
+    $quantity = max(1, $sanitized_data['quantity'] ?? 1);
+    $extras = Event_Quote_Cart_Security_Helper::sanitize_array($_POST['extras'] ?? array());
+    
+    // Datos adicionales para rangos de fechas (ya sanitizados)
+    $end_date = $sanitized_data['end_date'] ?? '';
+    $days_count = $sanitized_data['days_count'] ?? 1;
+    $is_date_range = $sanitized_data['is_date_range'] ?? false;
 
     // Validar y convertir fecha si es timestamp
     if (!empty($date)) {
@@ -167,24 +170,14 @@ public function add_to_cart() {
     try {
 		
         // 1. Primero obtener el cart_id
-        // Obtener lead_id y event_id del contexto de cotización (si existe)
-$lead_id = null;
-$event_id = null;
-
-// Si hay un contexto activo en sessionStorage, los parámetros vendrán en la solicitud AJAX
-if (isset($_POST['context_lead_id']) && !empty($_POST['context_lead_id'])) {
-    $lead_id = intval($_POST['context_lead_id']);
-}
-
-if (isset($_POST['context_event_id']) && !empty($_POST['context_event_id'])) {
-    $event_id = intval($_POST['context_event_id']);
-}
+        // Obtener lead_id y event_id del contexto de cotización (ya sanitizados)
+        $lead_id = $sanitized_data['context_lead_id'] ?? null;
+        $event_id = $sanitized_data['context_event_id'] ?? null;
 
 $cart_id = $this->get_or_create_cart($lead_id, $event_id);
 		
 		
-$total_price = isset($_POST['calculated_price']) ? 
-    floatval($_POST['calculated_price']) : 
+$total_price = $sanitized_data['calculated_price'] ?? 
     $this->calculate_price($listing_id, $quantity, $extras, $date);
 
 if (!$this->date_handler->check_listing_availability($listing_id, $date)) {

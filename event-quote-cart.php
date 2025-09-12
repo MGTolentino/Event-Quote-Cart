@@ -16,7 +16,7 @@ if (!defined('WPINC')) {
     die;
 }
 
-define('EQ_CART_VERSION', '1.0.0');
+define('EQ_CART_VERSION', '2.0.0');
 
 define('EQ_CART_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EQ_CART_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -32,12 +32,16 @@ define('DOMPDF_ENABLE_REMOTE', true);
 
 function activate_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-activator.php';
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
     Event_Quote_Cart_Activator::activate();
+    Event_Quote_Cart_Security_Helper::register_capabilities();
 }
 
 function deactivate_event_quote_cart() {
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-deactivator.php';
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
     Event_Quote_Cart_Deactivator::deactivate();
+    Event_Quote_Cart_Security_Helper::remove_capabilities();
 }
 
 register_activation_hook(__FILE__, 'activate_event_quote_cart');
@@ -71,33 +75,13 @@ function eq_cart_check_requirements() {
 add_action('admin_init', 'eq_cart_check_requirements');
 
 function eq_can_view_quote_button() {
-    if (!is_user_logged_in()) {
-        return false;
-    }
-
-    $user = wp_get_current_user();
-    
-    // Check for admin and sales executive roles
-    $has_role_access = (
-        in_array('administrator', $user->roles) || 
-        in_array('ejecutivo_de_ventas', $user->roles)
-    );
-    
-    // Check if user is a vendor (integrates with Vendor Dashboard PRO plugin)
-    $is_vendor = function_exists('vdp_is_user_vendor') ? vdp_is_user_vendor() : false;
-    
-    return $has_role_access || $is_vendor;
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
+    return Event_Quote_Cart_Security_Helper::can_view_quote_button();
 }
 
 function eq_can_use_leads_integration() {
-    if (!is_user_logged_in()) {
-        return false;
-    }
-    $user = wp_get_current_user();
-    return (
-        in_array('administrator', $user->roles) || 
-        in_array('ejecutivo_de_ventas', $user->roles)
-    );
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
+    return Event_Quote_Cart_Security_Helper::can_use_leads_integration();
 }
 
 /**
@@ -105,22 +89,18 @@ function eq_can_use_leads_integration() {
  * Se usa en todas las páginas para consistencia
  */
 function eq_get_woocommerce_tax_rate() {
-    global $wpdb;
-    
-    $tax_rate = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
-            1
-        )
-    );
-    
-    // Si no se encuentra, usar 16 como fallback
-    return floatval($tax_rate) ?: 16;
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-constants.php';
+    return Event_Quote_Cart_Constants::get_tax_rate();
 }
 
 function init_event_quote_cart() {
+    // Cargar clases de utilidad primero
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-constants.php';
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
+    
+    // Cargar clases principales
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-loader.php';
-    require_once EQ_CART_PLUGIN_DIR . 'includes/class-ajax-handler.php';
+    require_once EQ_CART_PLUGIN_DIR . 'includes/class-ajax-handler-loader.php';
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-date-handler.php';
 	require_once EQ_CART_PLUGIN_DIR . 'includes/class-single-handler.php';
 	require_once EQ_CART_PLUGIN_DIR . 'includes/helpers.php';
@@ -135,7 +115,7 @@ function init_event_quote_cart() {
     new Event_Quote_Cart_Quote_View_Handler();
     
     $plugin = new Event_Quote_Cart_Loader();
-    new Event_Quote_Cart_Ajax_Handler();
+    new Event_Quote_Cart_Ajax_Handler_Loader();
     
     $plugin->run();
 
