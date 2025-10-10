@@ -147,6 +147,11 @@ class Event_Quote_Cart_Activator {
         dbDelta($sql_vendors);
         dbDelta($sql_bookings);
 		
+        // Create additional tables
+        self::create_quotes_table();
+        self::create_contracts_table();
+        self::create_context_sessions_table();
+		
         // Store database version
         add_option('eq_cart_db_version', EQ_CART_VERSION);
     }
@@ -298,6 +303,49 @@ private static function create_quotes_table() {
     
     // Crear tabla
     dbDelta($sql_quotes);
+}
+	
+	/**
+ * Crear tabla para contratos
+ */
+private static function create_contracts_table() {
+    global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate();
+
+    // Nombre de la tabla con prefijo
+    $contracts_table = $wpdb->prefix . 'eq_contracts';
+
+    // SQL para tabla de contratos
+    $sql_contracts = "CREATE TABLE IF NOT EXISTS $contracts_table (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        quote_id bigint(20) unsigned NULL DEFAULT NULL,
+        lead_id bigint(20) unsigned NOT NULL,
+        event_id bigint(20) unsigned NOT NULL,
+        user_id bigint(20) unsigned NOT NULL,
+        pdf_url varchar(255) NOT NULL,
+        pdf_path varchar(255) NOT NULL,
+        contract_data longtext NULL,
+        payment_schedule longtext NULL,
+        company_data text NULL,
+        bank_data text NULL,
+        clauses text NULL,
+        total_amount decimal(10,2) NOT NULL,
+        status varchar(50) DEFAULT 'draft',
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        signed_at datetime NULL,
+        nombre_pdf varchar(255) NULL,
+        PRIMARY KEY (id),
+        KEY lead_id (lead_id),
+        KEY event_id (event_id),
+        KEY quote_id (quote_id),
+        KEY user_id (user_id),
+        KEY status (status)
+    ) $charset_collate;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    
+    // Crear tabla
+    dbDelta($sql_contracts);
 }
 	
 	/**

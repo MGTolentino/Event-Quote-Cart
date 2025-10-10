@@ -304,6 +304,9 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                 </div>
 
                 <div class="eq-cart-actions">
+    <button class="eq-generate-contract">
+        <?php esc_html_e('Generate Contract', 'event-quote-cart'); ?>
+    </button>
     <button class="eq-generate-quote">
         <?php esc_html_e('Generate Quote', 'event-quote-cart'); ?>
     </button>
@@ -466,3 +469,203 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
     </div>
 </div>
 <?php endif; ?>
+
+<!-- Contract Generation Modal -->
+<div id="eq-contract-modal" class="eq-modal">
+    <div class="eq-modal-content eq-contract-modal-content">
+        <span class="eq-modal-close">&times;</span>
+        <h2><?php esc_html_e('Generate Contract', 'event-quote-cart'); ?></h2>
+        
+        <form id="eq-contract-form">
+            <div class="eq-contract-tabs">
+                <ul class="eq-contract-tab-nav">
+                    <li class="active" data-tab="company"><?php esc_html_e('Company Info', 'event-quote-cart'); ?></li>
+                    <li data-tab="client"><?php esc_html_e('Client Info', 'event-quote-cart'); ?></li>
+                    <li data-tab="event"><?php esc_html_e('Event Details', 'event-quote-cart'); ?></li>
+                    <li data-tab="payment"><?php esc_html_e('Payment Schedule', 'event-quote-cart'); ?></li>
+                    <li data-tab="terms"><?php esc_html_e('Terms & Bank', 'event-quote-cart'); ?></li>
+                </ul>
+                
+                <!-- Company Info Tab -->
+                <div class="eq-contract-tab-content active" data-tab="company">
+                    <h3><?php esc_html_e('Company Information', 'event-quote-cart'); ?></h3>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Company Name', 'event-quote-cart'); ?></label>
+                        <input type="text" name="company_name" id="eq-company-name" required>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Company Address', 'event-quote-cart'); ?></label>
+                        <textarea name="company_address" id="eq-company-address" rows="3" required></textarea>
+                    </div>
+                    <div class="eq-form-row">
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Phone', 'event-quote-cart'); ?></label>
+                            <input type="tel" name="company_phone" id="eq-company-phone" required>
+                        </div>
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
+                            <input type="email" name="company_email" id="eq-company-email" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Client Info Tab -->
+                <div class="eq-contract-tab-content" data-tab="client">
+                    <h3><?php esc_html_e('Client Information', 'event-quote-cart'); ?></h3>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Client Name', 'event-quote-cart'); ?></label>
+                        <input type="text" name="client_name" id="eq-client-name" required>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Client Address', 'event-quote-cart'); ?></label>
+                        <textarea name="client_address" id="eq-client-address" rows="3" required></textarea>
+                    </div>
+                    <div class="eq-form-row">
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Phone', 'event-quote-cart'); ?></label>
+                            <input type="tel" name="client_phone" id="eq-client-phone">
+                        </div>
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
+                            <input type="email" name="client_email" id="eq-client-email">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Event Details Tab -->
+                <div class="eq-contract-tab-content" data-tab="event">
+                    <h3><?php esc_html_e('Event Information', 'event-quote-cart'); ?></h3>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Event Date', 'event-quote-cart'); ?></label>
+                        <input type="date" name="event_date" id="eq-event-date" required>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Event Time', 'event-quote-cart'); ?></label>
+                        <div class="eq-time-inputs">
+                            <input type="time" name="event_start_time" id="eq-event-start-time" placeholder="Start time">
+                            <span><?php esc_html_e('to', 'event-quote-cart'); ?></span>
+                            <input type="time" name="event_end_time" id="eq-event-end-time" placeholder="End time">
+                        </div>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Event Location', 'event-quote-cart'); ?></label>
+                        <input type="text" name="event_location" id="eq-event-location" required>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Number of Guests', 'event-quote-cart'); ?></label>
+                        <input type="number" name="event_guests" id="eq-event-guests" min="1">
+                    </div>
+                </div>
+                
+                <!-- Payment Schedule Tab -->
+                <div class="eq-contract-tab-content" data-tab="payment">
+                    <h3><?php esc_html_e('Payment Schedule', 'event-quote-cart'); ?></h3>
+                    
+                    <div class="eq-payment-template-selector">
+                        <label><?php esc_html_e('Select Template', 'event-quote-cart'); ?></label>
+                        <select id="eq-payment-template">
+                            <option value="full"><?php esc_html_e('Full Payment (100%)', 'event-quote-cart'); ?></option>
+                            <option value="50-50"><?php esc_html_e('50% - 50%', 'event-quote-cart'); ?></option>
+                            <option value="3-months"><?php esc_html_e('3 Monthly Payments', 'event-quote-cart'); ?></option>
+                            <option value="6-months"><?php esc_html_e('6 Monthly Payments', 'event-quote-cart'); ?></option>
+                            <option value="custom"><?php esc_html_e('Custom', 'event-quote-cart'); ?></option>
+                        </select>
+                    </div>
+                    
+                    <div class="eq-payment-schedule-container">
+                        <div class="eq-payment-validation-notice" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span class="eq-validation-message"></span>
+                        </div>
+                        
+                        <div id="eq-payment-schedule-items">
+                            <!-- Payment items will be dynamically added here -->
+                        </div>
+                        
+                        <button type="button" class="eq-add-payment-btn">
+                            <i class="fas fa-plus"></i> <?php esc_html_e('Add Payment', 'event-quote-cart'); ?>
+                        </button>
+                        
+                        <div class="eq-payment-summary">
+                            <div class="eq-summary-row">
+                                <span><?php esc_html_e('Contract Total:', 'event-quote-cart'); ?></span>
+                                <span class="eq-contract-total">$0.00</span>
+                            </div>
+                            <div class="eq-summary-row">
+                                <span><?php esc_html_e('Scheduled Payments:', 'event-quote-cart'); ?></span>
+                                <span class="eq-scheduled-total">$0.00</span>
+                            </div>
+                            <div class="eq-summary-row eq-difference" style="display: none;">
+                                <span><?php esc_html_e('Difference:', 'event-quote-cart'); ?></span>
+                                <span class="eq-payment-difference">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Terms & Bank Tab -->
+                <div class="eq-contract-tab-content" data-tab="terms">
+                    <h3><?php esc_html_e('Terms and Bank Information', 'event-quote-cart'); ?></h3>
+                    
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Contract Terms', 'event-quote-cart'); ?></label>
+                        <textarea name="contract_terms" id="eq-contract-terms" rows="8"></textarea>
+                    </div>
+                    
+                    <h4><?php esc_html_e('Bank Information', 'event-quote-cart'); ?></h4>
+                    <div class="eq-form-row">
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Bank Name', 'event-quote-cart'); ?></label>
+                            <input type="text" name="bank_name" id="eq-bank-name">
+                        </div>
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Account Number', 'event-quote-cart'); ?></label>
+                            <input type="text" name="bank_account" id="eq-bank-account">
+                        </div>
+                    </div>
+                    <div class="eq-form-row">
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('CLABE', 'event-quote-cart'); ?></label>
+                            <input type="text" name="bank_clabe" id="eq-bank-clabe">
+                        </div>
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Company Tax ID', 'event-quote-cart'); ?></label>
+                            <input type="text" name="company_rfc" id="eq-company-rfc">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="eq-contract-actions">
+                <button type="button" class="eq-btn eq-btn-secondary eq-contract-preview">
+                    <i class="fas fa-eye"></i> <?php esc_html_e('Preview', 'event-quote-cart'); ?>
+                </button>
+                <button type="submit" class="eq-btn eq-btn-primary eq-contract-generate">
+                    <i class="fas fa-file-contract"></i> <?php esc_html_e('Generate Contract', 'event-quote-cart'); ?>
+                </button>
+            </div>
+        </form>
+        
+        <div id="eq-contract-loading" style="display: none;">
+            <div class="eq-spinner"></div>
+            <p><?php esc_html_e('Generating contract...', 'event-quote-cart'); ?></p>
+        </div>
+        
+        <div id="eq-contract-success" style="display: none;">
+            <div class="eq-success-icon">✓</div>
+            <h3><?php esc_html_e('Contract Generated Successfully!', 'event-quote-cart'); ?></h3>
+            <p><?php esc_html_e('The contract has been generated and saved.', 'event-quote-cart'); ?></p>
+            <div class="eq-contract-success-actions">
+                <a href="#" id="eq-contract-download" class="eq-btn eq-btn-primary" target="_blank">
+                    <i class="fas fa-download"></i> <?php esc_html_e('Download Contract', 'event-quote-cart'); ?>
+                </a>
+                <button type="button" id="eq-contract-send" class="eq-btn eq-btn-secondary">
+                    <i class="fas fa-envelope"></i> <?php esc_html_e('Send to Client', 'event-quote-cart'); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?php echo esc_url(EQ_CART_PLUGIN_URL . 'public/js/contracts.js'); ?>?v=<?php echo EQ_CART_VERSION; ?>"></script>
+<link rel="stylesheet" href="<?php echo esc_url(EQ_CART_PLUGIN_URL . 'public/css/contracts.css'); ?>?v=<?php echo EQ_CART_VERSION; ?>">

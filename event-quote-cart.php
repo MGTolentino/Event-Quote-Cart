@@ -105,6 +105,7 @@ function init_event_quote_cart() {
 	require_once EQ_CART_PLUGIN_DIR . 'includes/class-single-handler.php';
 	require_once EQ_CART_PLUGIN_DIR . 'includes/helpers.php';
 	require_once EQ_CART_PLUGIN_DIR . 'includes/class-pdf-handler.php';
+	require_once EQ_CART_PLUGIN_DIR . 'includes/class-contract-handler.php';
 
 	new Event_Quote_Cart_Single_Handler();
 

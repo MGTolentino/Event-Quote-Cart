@@ -56,6 +56,11 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		
 		// Hook para limpiar contexto al hacer logout
 		add_action('wp_logout', array($this, 'clear_context_on_logout'));
+		
+		// Hooks para contratos
+		add_action('wp_ajax_eq_generate_contract_pdf', array($this, 'generate_contract_pdf'));
+		add_action('wp_ajax_eq_get_contract_data', array($this, 'get_contract_data'));
+		add_action('wp_ajax_eq_validate_payment_schedule', array($this, 'validate_payment_schedule'));
 }
 
     public function get_listing_data() {
@@ -3448,6 +3453,155 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             // Silent fail - history is not critical
+        }
+    }
+    
+    /**
+     * Generate contract PDF
+     */
+    public function generate_contract_pdf() {
+        $contract_handler = new Event_Quote_Cart_Contract_Handler();
+        $contract_handler->generate_contract_pdf();
+    }
+    
+    /**
+     * Get contract data for modal pre-fill
+     */
+    public function get_contract_data() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            $context = eq_get_active_context();
+            $data = array();
+            
+            // Get vendor contract settings from VDP if available
+            if (function_exists('vdp_get_current_vendor')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor && class_exists('VDP_Contracts')) {
+                    $contracts_module = VDP_Contracts::get_instance();
+                    $contract_settings = $contracts_module->get_contract_settings($vendor->get_id());
+                    
+                    $data['company_data'] = $contract_settings['company_data'];
+                    $data['bank_data'] = $contract_settings['bank_data'];
+                    $data['contract_terms'] = $contract_settings['contract_terms'];
+                    $data['payment_templates'] = $contract_settings['payment_templates'];
+                    $data['validation_rules'] = $contract_settings['validation_rules'];
+                }
+            }
+            
+            // Get client and event data from context
+            if ($context) {
+                if (isset($context['lead'])) {
+                    $lead = $context['lead'];
+                    $data['client_data'] = array(
+                        'name' => ($lead->lead_nombre ?? '') . ' ' . ($lead->lead_apellido ?? ''),
+                        'email' => $lead->lead_e_mail ?? '',
+                        'phone' => $lead->lead_celular ?? '',
+                        'address' => $lead->lead_direccion ?? ''
+                    );
+                }
+                
+                if (isset($context['event'])) {
+                    $event = $context['event'];
+                    $event_date = '';
+                    if (!empty($event->fecha_de_evento)) {
+                        if (is_numeric($event->fecha_de_evento)) {
+                            $event_date = date('Y-m-d', intval($event->fecha_de_evento));
+                        } else {
+                            $timestamp = strtotime($event->fecha_de_evento);
+                            if ($timestamp !== false) {
+                                $event_date = date('Y-m-d', $timestamp);
+                            }
+                        }
+                    }
+                    
+                    $data['event_data'] = array(
+                        'date' => $event_date,
+                        'type' => $event->tipo_de_evento ?? '',
+                        'location' => $event->lugar ?? '',
+                        'guests' => $event->numero_de_invitados ?? ''
+                    );
+                }
+            }
+            
+            // Get cart totals
+            $cart_items = eq_get_cart_items();
+            if (!empty($cart_items)) {
+                $totals = eq_calculate_cart_totals($cart_items);
+                $data['cart_total'] = $totals['total'];
+                $data['cart_total_raw'] = floatval(str_replace(['$', ','], '', $totals['total']));
+            }
+            
+            wp_send_json_success($data);
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error getting contract data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Validate payment schedule
+     */
+    public function validate_payment_schedule() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            $event_date = sanitize_text_field($_POST['event_date'] ?? '');
+            $payment_schedule = json_decode(stripslashes($_POST['payment_schedule'] ?? '[]'), true);
+            
+            if (empty($event_date) || empty($payment_schedule)) {
+                wp_send_json_error('Event date and payment schedule required');
+            }
+            
+            // Get validation rules
+            $validation_rules = null;
+            if (function_exists('vdp_get_current_vendor') && class_exists('VDP_Contracts')) {
+                $vendor = vdp_get_current_vendor();
+                if ($vendor) {
+                    $contracts_module = VDP_Contracts::get_instance();
+                    $validation_result = $contracts_module->validate_payment_schedule($event_date, $payment_schedule);
+                    wp_send_json_success($validation_result);
+                    return;
+                }
+            }
+            
+            // Fallback validation
+            $today = new DateTime();
+            $event = new DateTime($event_date);
+            $days_until_event = $today->diff($event)->days;
+            
+            $errors = array();
+            $warnings = array();
+            
+            if ($days_until_event <= 15 && count($payment_schedule) > 1) {
+                $errors[] = sprintf('Event in %d days - Only full payment allowed', $days_until_event);
+            }
+            
+            foreach ($payment_schedule as $payment) {
+                $payment_date = new DateTime($payment['date']);
+                if ($payment_date > $event) {
+                    $errors[] = 'Payment scheduled after event date';
+                    break;
+                }
+            }
+            
+            wp_send_json_success(array(
+                'valid' => empty($errors),
+                'errors' => $errors,
+                'warnings' => $warnings,
+                'days_until_event' => $days_until_event
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error validating payment schedule: ' . $e->getMessage());
         }
     }
 	
