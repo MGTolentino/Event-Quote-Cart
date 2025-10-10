@@ -109,6 +109,9 @@ function init_event_quote_cart() {
 
 	new Event_Quote_Cart_Single_Handler();
 
+    // Cargar Ajax Handler Loader ANTES de las clases que lo usan
+    new Event_Quote_Cart_Ajax_Handler_Loader();
+
     require_once EQ_CART_PLUGIN_DIR . 'includes/class-cart-page-handler.php';
     new Event_Quote_Cart_Page_Handler();
 
@@ -116,7 +119,6 @@ function init_event_quote_cart() {
     new Event_Quote_Cart_Quote_View_Handler();
     
     $plugin = new Event_Quote_Cart_Loader();
-    new Event_Quote_Cart_Ajax_Handler_Loader();
     
     $plugin->run();
 
