@@ -99,6 +99,15 @@ class Event_Quote_Cart_Public {
         $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/quote-context.js'),
         true
     );
+    
+    // Enqueue contracts JavaScript
+    wp_enqueue_script(
+        $this->plugin_name . '-contracts',
+        EQ_CART_PLUGIN_URL . 'public/js/contracts.js',
+        array('jquery'),
+        $this->get_file_version(EQ_CART_PLUGIN_DIR . 'public/js/contracts.js'),
+        true
+    );
 
         wp_localize_script(
             $this->plugin_name,

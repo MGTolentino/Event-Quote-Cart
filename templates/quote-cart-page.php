@@ -667,5 +667,4 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
     </div>
 </div>
 
-<script src="<?php echo esc_url(EQ_CART_PLUGIN_URL . 'public/js/contracts.js'); ?>?v=<?php echo EQ_CART_VERSION; ?>"></script>
 <link rel="stylesheet" href="<?php echo esc_url(EQ_CART_PLUGIN_URL . 'public/css/contracts.css'); ?>?v=<?php echo EQ_CART_VERSION; ?>">
