@@ -31,7 +31,7 @@
     text-align: center;
 }
 
-.eq-contract-tab-nav li:not(.active) {
+.eq-contract-tab-nav li {
     cursor: pointer;
 }
 
