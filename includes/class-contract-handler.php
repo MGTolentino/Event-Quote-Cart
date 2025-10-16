@@ -84,16 +84,21 @@ class Event_Quote_Cart_Contract_Handler {
             // Guardar PDF
             file_put_contents($file_path, $dompdf->output());
             
+            // Verificar que tenemos lead_id y event_id requeridos
+            if (!$context || !$context['lead'] || !$context['event']) {
+                throw new Exception('Missing lead or event context for contract');
+            }
+            
             // Guardar registro en base de datos
             $contract_record = array(
                 'quote_id' => null, // Puede relacionarse con un quote si existe
-                'lead_id' => $context ? $context['lead']->_ID : null,
-                'event_id' => $context ? $context['event']->_ID : null,
+                'lead_id' => $context['lead']->_ID,
+                'event_id' => $context['event']->_ID,
                 'user_id' => $user_id,
                 'pdf_url' => $file_url,
                 'pdf_path' => $file_path,
                 'contract_data' => json_encode($contract_data),
-                'payment_schedule' => json_encode($contract_data['payment_schedule']),
+                'payment_schedule' => json_encode($contract_data['payment_schedule'] ?? []),
                 'company_data' => json_encode($contract_data['company_data']),
                 'bank_data' => json_encode($contract_data['bank_data']),
                 'clauses' => $contract_data['contract_terms'],

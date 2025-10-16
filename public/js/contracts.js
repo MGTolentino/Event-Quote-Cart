@@ -11,10 +11,8 @@
 
     // Initialize contracts functionality
     $(document).ready(function() {
-        console.log('Contracts JS initializing...');
         initContractModal();
         bindContractEvents();
-        console.log('Contracts JS initialized');
     });
 
     /**
@@ -44,34 +42,11 @@
      * Bind contract events
      */
     function bindContractEvents() {
-        console.log('Binding contract events...');
-        
         // Remove existing listeners to prevent duplicates
         $(document).off('click', '.eq-contract-tab-nav li');
         
-        // DEBUGGING: Verificar si los elementos existen
-        console.log('Tab elements found:', $('.eq-contract-tab-nav li').length);
-        
-        // DEBUGGING: Agregar listeners a TODOS los eventos de click en el modal
-        $('#eq-contract-modal').on('click', '*', function(e) {
-            console.log('CLICK DETECTED ON:', e.target, 'TAG:', e.target.tagName, 'CLASSES:', e.target.className);
-            if (e.target.tagName === 'LI') {
-                console.log('LI CLICKED - Data-tab:', $(e.target).data('tab'));
-            }
-        });
-        
-        // DEBUGGING: Listener específico en el ul
-        $(document).on('click', '.eq-contract-tab-nav', function(e) {
-            console.log('CLICK ON UL:', e.target, 'Is LI?', e.target.tagName === 'LI');
-        });
-        
-        // Tab navigation - USAR MÉTODO DIRECTO EN LUGAR DE DELEGATION
+        // Tab navigation - use direct method to avoid conflicts
         $('#eq-contract-modal .eq-contract-tab-nav li').off('click').on('click', function(e) {
-            console.log('=== DIRECT TAB LI CLICKED ===');
-            console.log('Element:', this);
-            console.log('Data-tab:', $(this).data('tab'));
-            console.log('Event target:', e.target);
-            console.log('Current target:', e.currentTarget);
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -136,7 +111,6 @@
      * Open contract modal and load data
      */
     function openContractModal() {
-        console.log('Opening contract modal...');
         showLoading('Loading contract data...');
         
         $.ajax({
@@ -153,18 +127,10 @@
                     contractData = response.data;
                     populateContractForm();
                     $('#eq-contract-modal').show();
-                    console.log('Modal opened successfully');
                     
-                    // DEBUGGING: Re-bind events después de mostrar el modal
-                    console.log('Re-binding events after modal open...');
-                    bindContractEvents();
-                    
-                    // DEBUGGING: Verificar elementos después del modal
+                    // Re-bind events after modal is shown
                     setTimeout(() => {
-                        console.log('Elements after modal open:', $('.eq-contract-tab-nav li').length);
-                        $('.eq-contract-tab-nav li').each(function(i) {
-                            console.log('Tab', i, ':', $(this).text(), 'data-tab:', $(this).data('tab'));
-                        });
+                        bindContractEvents();
                     }, 100);
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
@@ -591,8 +557,6 @@
      * Switch contract tab
      */
     function switchContractTab(tabName) {
-        console.log('Switching to tab:', tabName);
-        
         // Update nav
         $('.eq-contract-tab-nav li').removeClass('active');
         $(`.eq-contract-tab-nav li[data-tab="${tabName}"]`).addClass('active');
@@ -600,8 +564,6 @@
         // Update content
         $('.eq-contract-tab-content').removeClass('active');
         $(`.eq-contract-tab-content[data-tab="${tabName}"]`).addClass('active');
-        
-        console.log('Tab switched. Active tab content:', $(`.eq-contract-tab-content[data-tab="${tabName}"]`).length);
     }
 
     /**
@@ -717,11 +679,14 @@
 
         requiredFields.forEach(function(field) {
             const $field = $(field);
+            const $formGroup = $field.closest('.eq-form-group');
             if (!$field.val().trim()) {
                 $field.addClass('error');
+                $formGroup.addClass('error');
                 isValid = false;
             } else {
                 $field.removeClass('error');
+                $formGroup.removeClass('error');
             }
         });
 
@@ -799,8 +764,66 @@
      * Preview contract
      */
     function previewContract() {
-        // Implementation for contract preview
-        showNotification('info', 'Contract preview functionality to be implemented');
+        // Validate form first
+        if (!validateContractForm()) {
+            return;
+        }
+        
+        // Collect form data
+        const formData = collectFormData();
+        
+        // Open preview in new window
+        const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+        previewWindow.document.write(`
+            <html>
+            <head><title>Contract Preview</title></head>
+            <body style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
+                <h1>Contract Preview</h1>
+                <h2>Company Information</h2>
+                <p><strong>Name:</strong> ${formData.company_name}</p>
+                <p><strong>Address:</strong> ${formData.company_address}</p>
+                <p><strong>Phone:</strong> ${formData.company_phone}</p>
+                <p><strong>Email:</strong> ${formData.company_email}</p>
+                
+                <h2>Client Information</h2>
+                <p><strong>Name:</strong> ${formData.client_name}</p>
+                <p><strong>Address:</strong> ${formData.client_address}</p>
+                <p><strong>Phone:</strong> ${formData.client_phone}</p>
+                <p><strong>Email:</strong> ${formData.client_email}</p>
+                
+                <h2>Event Details</h2>
+                <p><strong>Date:</strong> ${formData.event_date}</p>
+                <p><strong>Time:</strong> ${formData.event_start_time} - ${formData.event_end_time}</p>
+                <p><strong>Location:</strong> ${formData.event_location}</p>
+                <p><strong>Guests:</strong> ${formData.event_guests}</p>
+                
+                <h2>Contract Terms</h2>
+                <p>${formData.contract_terms.replace(/\n/g, '<br>')}</p>
+                
+                <button onclick="window.print()">Print</button>
+                <button onclick="window.close()">Close</button>
+            </body>
+            </html>
+        `);
+    }
+    
+    function collectFormData() {
+        return {
+            company_name: $('#eq-company-name').val(),
+            company_address: $('#eq-company-address').val(),
+            company_phone: $('#eq-company-phone').val(),
+            company_email: $('#eq-company-email').val(),
+            client_name: $('#eq-client-name').val(),
+            client_address: $('#eq-client-address').val(),
+            client_phone: $('#eq-client-phone').val(),
+            client_email: $('#eq-client-email').val(),
+            event_date: $('#eq-event-date').val(),
+            event_start_time: $('#eq-event-start-time').val(),
+            event_end_time: $('#eq-event-end-time').val(),
+            event_location: $('#eq-event-location').val(),
+            event_guests: $('#eq-event-guests').val(),
+            contract_terms: $('#eq-contract-terms').val()
+        };
     }
 
     /**
