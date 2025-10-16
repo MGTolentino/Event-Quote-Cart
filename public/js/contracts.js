@@ -49,10 +49,28 @@
         // Remove existing listeners to prevent duplicates
         $(document).off('click', '.eq-contract-tab-nav li');
         
+        // DEBUGGING: Verificar si los elementos existen
+        console.log('Tab elements found:', $('.eq-contract-tab-nav li').length);
+        
+        // DEBUGGING: Agregar listeners a TODOS los eventos de click en el modal
+        $(document).on('click', '#eq-contract-modal *', function(e) {
+            console.log('CLICK DETECTED ON:', e.target, 'TAG:', e.target.tagName, 'CLASSES:', e.target.className);
+        });
+        
+        // DEBUGGING: Listener específico en el ul
+        $(document).on('click', '.eq-contract-tab-nav', function(e) {
+            console.log('CLICK ON UL:', e.target, 'Is LI?', e.target.tagName === 'LI');
+        });
+        
         // Tab navigation
         $(document).on('click', '.eq-contract-tab-nav li', function(e) {
+            console.log('=== TAB LI CLICKED ===');
+            console.log('Element:', this);
+            console.log('Data-tab:', $(this).data('tab'));
+            console.log('Event target:', e.target);
+            console.log('Current target:', e.currentTarget);
             e.preventDefault();
-            console.log('Tab clicked:', $(this).data('tab'));
+            e.stopPropagation();
             switchContractTab($(this).data('tab'));
         });
 
@@ -131,6 +149,18 @@
                     populateContractForm();
                     $('#eq-contract-modal').show();
                     console.log('Modal opened successfully');
+                    
+                    // DEBUGGING: Re-bind events después de mostrar el modal
+                    console.log('Re-binding events after modal open...');
+                    bindContractEvents();
+                    
+                    // DEBUGGING: Verificar elementos después del modal
+                    setTimeout(() => {
+                        console.log('Elements after modal open:', $('.eq-contract-tab-nav li').length);
+                        $('.eq-contract-tab-nav li').each(function(i) {
+                            console.log('Tab', i, ':', $(this).text(), 'data-tab:', $(this).data('tab'));
+                        });
+                    }, 100);
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
                 }
