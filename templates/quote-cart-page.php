@@ -89,7 +89,7 @@ if (!empty($cart_items) && !(current_user_can('administrator') || current_user_c
         // Obtener la fecha actual del carrito
         $cart_date = null;
         if (!empty($cart_items)) {
-            $cart_date = $cart_items[0]->date;
+            $cart_date = isset($cart_items[0]->date) ? $cart_items[0]->date : null;
         }
         
         // Convertir fecha a timestamp
@@ -179,28 +179,28 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     
                     <!-- Imagen del Item -->
                     <div class="eq-item-image">
-                        <?php if ($item->image): ?>
-                            <img src="<?php echo esc_url($item->image); ?>" alt="<?php echo esc_attr($item->title); ?>">
+                        <?php if (isset($item->image) && $item->image): ?>
+                            <img src="<?php echo esc_url($item->image); ?>" alt="<?php echo esc_attr(isset($item->title) ? $item->title : ''); ?>">
                         <?php endif; ?>
                     </div>
 
                     <!-- Detalles del Item -->
                     <div class="eq-item-details">
-                        <h3 class="eq-item-title"><?php echo esc_html($item->title); ?></h3>
+                        <h3 class="eq-item-title"><?php echo esc_html(isset($item->title) ? $item->title : ''); ?></h3>
                         <div class="eq-item-meta">
                             <span class="eq-item-date">
                                 <?php esc_html_e('Event Date:', 'event-quote-cart'); ?> 
                                 <?php 
                                 if (isset($item->is_date_range) && $item->is_date_range) {
-                                    echo esc_html($item->start_date) . ' to ' . esc_html($item->end_date);
+                                    echo esc_html(isset($item->start_date) ? $item->start_date : '') . ' to ' . esc_html(isset($item->end_date) ? $item->end_date : '');
                                 } else {
-                                    echo esc_html($item->date);
+                                    echo esc_html(isset($item->date) ? $item->date : '');
                                 }
                                 ?>
                             </span>
                             <span class="eq-item-quantity">
                                 <?php esc_html_e('Quantity:', 'event-quote-cart'); ?> 
-                                <?php echo esc_html($item->quantity); ?>
+                                <?php echo esc_html(isset($item->quantity) ? $item->quantity : 1); ?>
                             </span>
                         </div>
 
@@ -229,7 +229,7 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
 
                     <!-- Precio -->
                     <div class="eq-item-price">
-                        <div class="eq-original-price"><?php echo esc_html($item->price_formatted); ?></div>
+                        <div class="eq-original-price"><?php echo esc_html(isset($item->price_formatted) ? $item->price_formatted : '$0.00'); ?></div>
                         <div class="eq-discounted-price" style="display: none;"></div>
                     </div>
 
