@@ -31,24 +31,27 @@
     text-align: center;
 }
 
-.eq-contract-tab-nav li {
-    cursor: pointer;
-}
-
-.eq-contract-tab-nav li.active {
-    background: #fff;
-    border-bottom: 2px solid #007cba;
-}
-
-.eq-contract-tab-nav li:hover:not(.active) {
-    background: #e9ecef;
-}
-
-.eq-contract-tab-nav li {
+#eq-contract-modal .eq-contract-tabs .eq-contract-tab-nav li {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+    position: relative !important;
+    z-index: 10 !important;
     padding: 15px 10px;
     font-weight: 500;
     color: #666;
     transition: all 0.3s ease;
+}
+
+#eq-contract-modal .eq-contract-tabs .eq-contract-tab-nav li.active {
+    background: #fff !important;
+    border-bottom: 2px solid #007cba !important;
+    cursor: pointer !important;
+}
+
+#eq-contract-modal .eq-contract-tabs .eq-contract-tab-nav li:hover:not(.active) {
+    background: #e9ecef !important;
+    cursor: pointer !important;
 }
 
 .eq-contract-tab-nav li.active {
