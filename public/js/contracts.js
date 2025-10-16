@@ -53,8 +53,11 @@
         console.log('Tab elements found:', $('.eq-contract-tab-nav li').length);
         
         // DEBUGGING: Agregar listeners a TODOS los eventos de click en el modal
-        $(document).on('click', '#eq-contract-modal *', function(e) {
+        $('#eq-contract-modal').on('click', '*', function(e) {
             console.log('CLICK DETECTED ON:', e.target, 'TAG:', e.target.tagName, 'CLASSES:', e.target.className);
+            if (e.target.tagName === 'LI') {
+                console.log('LI CLICKED - Data-tab:', $(e.target).data('tab'));
+            }
         });
         
         // DEBUGGING: Listener específico en el ul
@@ -62,16 +65,18 @@
             console.log('CLICK ON UL:', e.target, 'Is LI?', e.target.tagName === 'LI');
         });
         
-        // Tab navigation
-        $(document).on('click', '.eq-contract-tab-nav li', function(e) {
-            console.log('=== TAB LI CLICKED ===');
+        // Tab navigation - USAR MÉTODO DIRECTO EN LUGAR DE DELEGATION
+        $('#eq-contract-modal .eq-contract-tab-nav li').off('click').on('click', function(e) {
+            console.log('=== DIRECT TAB LI CLICKED ===');
             console.log('Element:', this);
             console.log('Data-tab:', $(this).data('tab'));
             console.log('Event target:', e.target);
             console.log('Current target:', e.currentTarget);
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             switchContractTab($(this).data('tab'));
+            return false;
         });
 
         // Form navigation buttons
