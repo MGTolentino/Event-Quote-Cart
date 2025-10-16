@@ -107,11 +107,11 @@
         showLoading('Loading contract data...');
         
         $.ajax({
-            url: eq_cart_ajax.ajax_url,
+            url: eqCartData.ajaxurl,
             type: 'POST',
             data: {
                 action: 'eq_get_contract_data',
-                nonce: eq_cart_ajax.nonce
+                nonce: eqCartData.nonce
             },
             success: function(response) {
                 hideLoading();
@@ -480,11 +480,11 @@
         if (!eventDate || paymentSchedule.length === 0) return;
 
         $.ajax({
-            url: eq_cart_ajax.ajax_url,
+            url: eqCartData.ajaxurl,
             type: 'POST',
             data: {
                 action: 'eq_validate_payment_schedule',
-                nonce: eq_cart_ajax.nonce,
+                nonce: eqCartData.nonce,
                 event_date: eventDate,
                 payment_schedule: JSON.stringify(paymentSchedule)
             },
@@ -595,7 +595,7 @@
         // Prepare form data
         const formData = {
             action: 'eq_generate_contract_pdf',
-            nonce: eq_cart_ajax.nonce,
+            nonce: eqCartData.nonce,
             
             // Company data
             company_name: $('#eq-company-name').val(),
@@ -628,7 +628,7 @@
         };
 
         $.ajax({
-            url: eq_cart_ajax.ajax_url,
+            url: eqCartData.ajaxurl,
             type: 'POST',
             data: formData,
             success: function(response) {
