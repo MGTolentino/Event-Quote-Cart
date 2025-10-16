@@ -11,8 +11,10 @@
 
     // Initialize contracts functionality
     $(document).ready(function() {
+        console.log('Contracts JS initializing...');
         initContractModal();
         bindContractEvents();
+        console.log('Contracts JS initialized');
     });
 
     /**
@@ -42,8 +44,12 @@
      * Bind contract events
      */
     function bindContractEvents() {
+        console.log('Binding contract events...');
+        
         // Tab navigation
-        $(document).on('click', '.eq-contract-tab-nav li', function() {
+        $(document).on('click', '.eq-contract-tab-nav li', function(e) {
+            e.preventDefault();
+            console.log('Tab clicked:', $(this).data('tab'));
             switchContractTab($(this).data('tab'));
         });
 
@@ -104,6 +110,7 @@
      * Open contract modal and load data
      */
     function openContractModal() {
+        console.log('Opening contract modal...');
         showLoading('Loading contract data...');
         
         $.ajax({
@@ -120,6 +127,7 @@
                     contractData = response.data;
                     populateContractForm();
                     $('#eq-contract-modal').show();
+                    console.log('Modal opened successfully');
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
                 }
@@ -545,6 +553,8 @@
      * Switch contract tab
      */
     function switchContractTab(tabName) {
+        console.log('Switching to tab:', tabName);
+        
         // Update nav
         $('.eq-contract-tab-nav li').removeClass('active');
         $(`.eq-contract-tab-nav li[data-tab="${tabName}"]`).addClass('active');
@@ -552,6 +562,8 @@
         // Update content
         $('.eq-contract-tab-content').removeClass('active');
         $(`.eq-contract-tab-content[data-tab="${tabName}"]`).addClass('active');
+        
+        console.log('Tab switched. Active tab content:', $(`.eq-contract-tab-content[data-tab="${tabName}"]`).length);
     }
 
     /**
