@@ -46,6 +46,9 @@
     function bindContractEvents() {
         console.log('Binding contract events...');
         
+        // Remove existing listeners to prevent duplicates
+        $(document).off('click', '.eq-contract-tab-nav li');
+        
         // Tab navigation
         $(document).on('click', '.eq-contract-tab-nav li', function(e) {
             e.preventDefault();
