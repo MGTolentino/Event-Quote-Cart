@@ -665,6 +665,7 @@
      * Validate contract form
      */
     function validateContractForm() {
+        console.log('=== VALIDATING CONTRACT FORM ===');
         let isValid = true;
         const requiredFields = [
             '#eq-company-name',
@@ -677,16 +678,24 @@
             '#eq-event-location'
         ];
 
+        console.log('Required fields to check:', requiredFields.length);
+
         requiredFields.forEach(function(field) {
             const $field = $(field);
             const $formGroup = $field.closest('.eq-form-group');
-            if (!$field.val().trim()) {
+            const fieldValue = $field.val().trim();
+            
+            console.log(`Checking field ${field}:`, fieldValue ? 'HAS VALUE' : 'EMPTY');
+            
+            if (!fieldValue) {
                 $field.addClass('error');
                 $formGroup.addClass('error');
+                console.log(`${field} is INVALID - added error class`);
                 isValid = false;
             } else {
                 $field.removeClass('error');
                 $formGroup.removeClass('error');
+                console.log(`${field} is VALID`);
             }
         });
 
@@ -709,9 +718,13 @@
         }
 
         if (!isValid) {
+            console.log('FORM IS INVALID - showing error notification');
             showNotification('error', 'Please fill in all required fields');
+        } else {
+            console.log('FORM IS VALID');
         }
 
+        console.log('=== VALIDATION COMPLETE ===', 'Valid:', isValid);
         return isValid;
     }
 
@@ -764,10 +777,14 @@
      * Preview contract
      */
     function previewContract() {
+        console.log('=== PREVIEW CONTRACT CLICKED ===');
         // Validate form first
         if (!validateContractForm()) {
+            console.log('Preview cancelled - form invalid');
             return;
         }
+        
+        console.log('Opening preview window...');
         
         // Collect form data
         const formData = collectFormData();
