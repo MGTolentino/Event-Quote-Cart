@@ -342,8 +342,16 @@ function eq_calculate_cart_totals($items) {
         )
     );
     
-    // Si no se encuentra, usar 16 como fallback (no 0)
-    $tax_rate = floatval($tax_rate_db) ?: 16;
+    // Si no se encuentra, intentar obtener de configuración WooCommerce o usar 0
+    if (!$tax_rate_db) {
+        // Intentar obtener la tasa estándar de WooCommerce
+        $standard_rate = $wpdb->get_var(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_class = '' ORDER BY tax_rate_priority ASC LIMIT 1"
+        );
+        $tax_rate = floatval($standard_rate) ?: 0;
+    } else {
+        $tax_rate = floatval($tax_rate_db);
+    }
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
     

@@ -720,27 +720,30 @@
                 const firstMissingField = missingFields[0];
                 switchContractTab(firstMissingField.tab);
                 
-                // Show error in modal
-                let errorHtml = '<div class="eq-validation-errors">';
-                errorHtml += '<p style="color: #e74c3c; font-weight: bold;">Please fill in the following required fields:</p>';
-                errorHtml += '<ul style="color: #e74c3c;">';
-                missingFields.forEach(function(field) {
-                    errorHtml += '<li>' + field.label + '</li>';
-                });
-                errorHtml += '</ul></div>';
-                
-                // Remove any existing error message
-                $('.eq-validation-errors').remove();
-                
-                // Add error message to the active tab
-                $('.eq-contract-tab-content.active').prepend(errorHtml);
-                
-                // Auto-hide after 5 seconds
+                // Wait for tab switch to complete before adding error message
                 setTimeout(function() {
-                    $('.eq-validation-errors').fadeOut(function() {
-                        $(this).remove();
+                    // Show error in modal
+                    let errorHtml = '<div class="eq-validation-errors">';
+                    errorHtml += '<p style="color: #e74c3c; font-weight: bold;">Please fill in the following required fields:</p>';
+                    errorHtml += '<ul style="color: #e74c3c;">';
+                    missingFields.forEach(function(field) {
+                        errorHtml += '<li>' + field.label + '</li>';
                     });
-                }, 5000);
+                    errorHtml += '</ul></div>';
+                    
+                    // Remove any existing error message
+                    $('.eq-validation-errors').remove();
+                    
+                    // Add error message to the active tab
+                    $('.eq-contract-tab-content.active').prepend(errorHtml);
+                    
+                    // Auto-hide after 5 seconds
+                    setTimeout(function() {
+                        $('.eq-validation-errors').fadeOut(function() {
+                            $(this).remove();
+                        });
+                    }, 5000);
+                }, 100); // Small delay to ensure tab switch completes
             }
             
             showNotification('error', 'Please fill in all required fields');
@@ -783,6 +786,27 @@
             $('#eq-contract-download').attr('href', data.pdf_url);
         }
         
+        // Add "Generate Another Contract" button if it doesn't exist
+        if (!$('#eq-generate-another-contract').length) {
+            const generateAnotherBtn = $('<button>', {
+                id: 'eq-generate-another-contract',
+                type: 'button',
+                class: 'button button-secondary',
+                text: 'Generate Another Contract',
+                style: 'margin-left: 10px;'
+            });
+            
+            generateAnotherBtn.on('click', function() {
+                showContractForm();
+                // Clear previous form data but keep company data for same vendor
+                if (typeof saveContractMemory === 'function') {
+                    saveContractMemory();
+                }
+            });
+            
+            $('#eq-contract-success .eq-contract-actions').append(generateAnotherBtn);
+        }
+        
         $('#eq-contract-success').show();
     }
 
@@ -798,13 +822,21 @@
      * Preview contract
      */
     function previewContract() {
-        // Don't validate for preview - show with whatever data is available
-        // Collect form data
-        const formData = collectFormData();
-        
-        // Open preview in new window
-        const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
-        previewWindow.document.write(`
+        try {
+            // Don't validate for preview - show with whatever data is available
+            // Collect form data
+            const formData = collectFormData();
+            
+            // Check for popup blockers
+            const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            
+            if (!previewWindow || previewWindow.closed || typeof previewWindow.closed == 'undefined') {
+                // Popup was blocked
+                showNotification('error', 'Popup blocked. Please allow popups for this site and try again.');
+                return;
+            }
+            
+            previewWindow.document.write(`
             <html>
             <head><title>Contract Preview</title></head>
             <body style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
@@ -835,6 +867,15 @@
             </body>
             </html>
         `);
+        previewWindow.document.close();
+        
+        // Focus the new window
+        previewWindow.focus();
+        
+        } catch (error) {
+            console.error('Error opening preview:', error);
+            showNotification('error', 'Error opening preview. Please try again.');
+        }
     }
     
     function collectFormData() {
@@ -946,5 +987,94 @@
         const diffTime = Math.abs(date2.getTime() - date1.getTime());
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
+
+    /**
+     * Save contract memory for this vendor/lead/event combination
+     */
+    function saveContractMemory() {
+        if (typeof contractData === 'undefined' || !contractData) return;
+        
+        const memoryData = {
+            company_data: {
+                name: $('#eq-company-name').val(),
+                address: $('#eq-company-address').val(),
+                phone: $('#eq-company-phone').val(),
+                email: $('#eq-company-email').val()
+            },
+            bank_data: {
+                bank_name: $('#eq-bank-name').val(),
+                account_number: $('#eq-account-number').val(),
+                routing_number: $('#eq-routing-number').val(),
+                account_type: $('#eq-account-type').val()
+            },
+            contract_terms: $('#eq-contract-terms').val(),
+            timestamp: Date.now()
+        };
+        
+        // Save to server via AJAX
+        $.ajax({
+            url: contractData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_save_contract_memory',
+                nonce: contractData.nonce,
+                memory_data: JSON.stringify(memoryData)
+            },
+            success: function(response) {
+                if (response.success) {
+                    console.log('Contract memory saved');
+                }
+            }
+        });
+    }
+    
+    /**
+     * Load contract memory for this vendor/lead/event combination
+     */
+    function loadContractMemory() {
+        if (typeof contractData === 'undefined' || !contractData) return;
+        
+        $.ajax({
+            url: contractData.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'eq_load_contract_memory',
+                nonce: contractData.nonce
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    const data = response.data;
+                    
+                    // Fill company data
+                    if (data.company_data) {
+                        $('#eq-company-name').val(data.company_data.name || '');
+                        $('#eq-company-address').val(data.company_data.address || '');
+                        $('#eq-company-phone').val(data.company_data.phone || '');
+                        $('#eq-company-email').val(data.company_data.email || '');
+                    }
+                    
+                    // Fill bank data
+                    if (data.bank_data) {
+                        $('#eq-bank-name').val(data.bank_data.bank_name || '');
+                        $('#eq-account-number').val(data.bank_data.account_number || '');
+                        $('#eq-routing-number').val(data.bank_data.routing_number || '');
+                        $('#eq-account-type').val(data.bank_data.account_type || '');
+                    }
+                    
+                    // Fill contract terms
+                    if (data.contract_terms) {
+                        $('#eq-contract-terms').val(data.contract_terms);
+                    }
+                    
+                    console.log('Contract memory loaded');
+                }
+            }
+        });
+    }
+    
+    // Load memory when modal opens
+    $(document).on('click', '[data-target="#eq-contract-modal"]', function() {
+        setTimeout(loadContractMemory, 500); // Small delay to ensure modal is fully loaded
+    });
 
 })(jQuery);

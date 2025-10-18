@@ -125,7 +125,24 @@ if (!isset($totals['total_raw'])) {
         $total += isset($item->total_price) ? floatval($item->total_price) : 0;
     }
     
-    $tax_rate = floatval(get_option('eq_tax_rate', 16));
+    // Usar la misma lógica que helpers.php para obtener la tasa de impuestos
+    global $wpdb;
+    $tax_rate_db = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+            1
+        )
+    );
+    
+    if (!$tax_rate_db) {
+        // Intentar obtener la tasa estándar de WooCommerce
+        $standard_rate = $wpdb->get_var(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_class = '' ORDER BY tax_rate_priority ASC LIMIT 1"
+        );
+        $tax_rate = floatval($standard_rate) ?: 0;
+    } else {
+        $tax_rate = floatval($tax_rate_db);
+    }
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
     
@@ -1079,7 +1096,24 @@ private function markdown_to_html($text) {
                 $total += isset($item->total_price) ? floatval($item->total_price) : 0;
             }
             
-            $tax_rate = floatval(get_option('eq_tax_rate', 16));
+            // Usar la misma lógica que helpers.php para obtener la tasa de impuestos
+            global $wpdb;
+            $tax_rate_db = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+                    1
+                )
+            );
+            
+            if (!$tax_rate_db) {
+                // Intentar obtener la tasa estándar de WooCommerce
+                $standard_rate = $wpdb->get_var(
+                    "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_class = '' ORDER BY tax_rate_priority ASC LIMIT 1"
+                );
+                $tax_rate = floatval($standard_rate) ?: 0;
+            } else {
+                $tax_rate = floatval($tax_rate_db);
+            }
             $subtotal = $total / (1 + ($tax_rate / 100));
             $tax = $total - $subtotal;
             

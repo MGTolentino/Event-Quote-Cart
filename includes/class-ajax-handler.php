@@ -61,6 +61,8 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		add_action('wp_ajax_eq_generate_contract_pdf', array($this, 'generate_contract_pdf'));
 		add_action('wp_ajax_eq_get_contract_data', array($this, 'get_contract_data'));
 		add_action('wp_ajax_eq_validate_payment_schedule', array($this, 'validate_payment_schedule'));
+		add_action('wp_ajax_eq_save_contract_memory', array($this, 'save_contract_memory'));
+		add_action('wp_ajax_eq_load_contract_memory', array($this, 'load_contract_memory'));
 }
 
     public function get_listing_data() {
@@ -3602,6 +3604,79 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             wp_send_json_error('Error validating payment schedule: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Save contract memory data
+     */
+    public function save_contract_memory() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            $memory_data = sanitize_text_field($_POST['memory_data'] ?? '');
+            $data = json_decode(stripslashes($memory_data), true);
+            
+            if (!$data) {
+                wp_send_json_error('Invalid memory data');
+            }
+            
+            // Get current context
+            $context = eq_get_active_context();
+            $user_id = get_current_user_id();
+            
+            // Create memory key based on user, lead, and event
+            $memory_key = 'eq_contract_memory_' . $user_id;
+            if ($context && isset($context['lead']) && isset($context['event'])) {
+                $memory_key .= '_' . $context['lead']->_ID . '_' . $context['event']->_ID;
+            }
+            
+            // Save to user meta
+            update_user_meta($user_id, $memory_key, $data);
+            
+            wp_send_json_success('Contract memory saved');
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error saving contract memory: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Load contract memory data
+     */
+    public function load_contract_memory() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Get current context
+            $context = eq_get_active_context();
+            $user_id = get_current_user_id();
+            
+            // Create memory key based on user, lead, and event
+            $memory_key = 'eq_contract_memory_' . $user_id;
+            if ($context && isset($context['lead']) && isset($context['event'])) {
+                $memory_key .= '_' . $context['lead']->_ID . '_' . $context['event']->_ID;
+            }
+            
+            // Get from user meta
+            $memory_data = get_user_meta($user_id, $memory_key, true);
+            
+            if ($memory_data) {
+                wp_send_json_success($memory_data);
+            } else {
+                wp_send_json_success(null);
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error loading contract memory: ' . $e->getMessage());
         }
     }
 	
