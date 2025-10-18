@@ -107,15 +107,17 @@ class Event_Quote_Cart_Contract_Handler {
                 'nombre_pdf' => $filename
             );
             
-            $contract_id = $wpdb->insert($wpdb->prefix . 'eq_contracts', $contract_record);
+            $result = $wpdb->insert($wpdb->prefix . 'eq_contracts', $contract_record);
             
-            if ($contract_id === false) {
-                throw new Exception('Error saving contract to database');
+            if ($result === false) {
+                throw new Exception('Error saving contract to database: ' . $wpdb->last_error);
             }
+            
+            $contract_id = $wpdb->insert_id;
             
             wp_send_json_success(array(
                 'message' => 'Contract generated successfully',
-                'contract_id' => $wpdb->insert_id,
+                'contract_id' => $contract_id,
                 'pdf_url' => $file_url,
                 'filename' => $filename
             ));

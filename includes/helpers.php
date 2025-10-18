@@ -59,9 +59,17 @@ if (!$has_active_context) {
             ));
             
             // Procesar items como de costumbre
-            foreach ($items as &$item) {
+            foreach ($items as $key => &$item) {
                 $listing = get_post($item->listing_id);
+                if (!$listing) {
+                    unset($items[$key]);
+                    continue;
+                }
                 $form_data = json_decode($item->form_data, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    unset($items[$key]);
+                    continue;
+                }
                 
                 $item->title = get_the_title($listing);
                 $item->image = get_the_post_thumbnail_url($listing->ID, 'thumbnail');
@@ -102,7 +110,7 @@ if (!$has_active_context) {
                 }
             }
             
-            return $items;
+            return array_values($items);
         }
     }
 }
@@ -257,14 +265,16 @@ if (!$has_active_context) {
         $active_cart_id
     ));
     
-    foreach ($items as &$item) {
+    foreach ($items as $key => &$item) {
         $listing = get_post($item->listing_id);
         if (!$listing) {
+            unset($items[$key]);
             continue;
         }
         
         $form_data = json_decode($item->form_data, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
+            unset($items[$key]);
             continue;
         }
         
@@ -307,7 +317,7 @@ if (!$has_active_context) {
         }
     }
     
-    return $items;
+    return array_values($items);
 }
 
 

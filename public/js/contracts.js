@@ -245,13 +245,13 @@
         $('#eq-payment-schedule-items').empty();
         paymentSchedule = [];
 
-        // Check if template is valid for current event date
+        // Check if template is valid for current event date but don't prevent loading
         const eventDate = $('#eq-event-date').val();
-        if (eventDate && template.min_days_required > 0) {
+        if (eventDate && template.min_days_required && template.min_days_required > 0) {
             const daysUntilEvent = getDaysUntilEvent(eventDate);
-            if (daysUntilEvent < template.min_days_required) {
-                showValidationNotice('warning', `This template requires at least ${template.min_days_required} days before the event. Current: ${daysUntilEvent} days.`);
-                return;
+            if (daysUntilEvent > 0 && daysUntilEvent < template.min_days_required) {
+                showValidationNotice('warning', `This template typically requires ${template.min_days_required} days before the event. You have ${daysUntilEvent} days. Please adjust payment dates as needed.`);
+                // Continue loading the template anyway
             }
         }
 
@@ -460,25 +460,27 @@
                 const templateId = $option.val();
                 const template = contractData.payment_templates.find(t => t.id === templateId);
                 
-                if (template && template.min_days_required > daysUntilEvent) {
-                    $option.prop('disabled', true).text(template.name + ' (Not enough time)');
+                if (template && template.min_days_required && daysUntilEvent > 0 && template.min_days_required > daysUntilEvent) {
+                    // Add warning but don't disable
+                    $option.text(template.name + ' (⚠️ ' + Math.abs(daysUntilEvent) + ' days - may not be enough time)');
                 } else if (template) {
-                    $option.prop('disabled', false).text(template.name);
+                    $option.text(template.name);
                 }
+                
+                // Never disable options - let user decide
+                $option.prop('disabled', false);
             });
         }
 
-        // Show warnings for close events
-        if (daysUntilEvent <= (validationRules.force_full_payment_days || 15)) {
-            if (daysUntilEvent <= (validationRules.force_full_payment_days || 15)) {
-                showValidationNotice('error', `Event is only ${daysUntilEvent} days away. Only full payment is recommended.`);
-                
-                // Force full payment template
-                $('#eq-payment-template').val('full');
-                loadPaymentTemplate('full');
-            }
+        // Show warnings for close or past events
+        if (daysUntilEvent < 0) {
+            showValidationNotice('warning', `Event date is in the past (${Math.abs(daysUntilEvent)} days ago). Please verify the date is correct.`);
+        } else if (daysUntilEvent === 0) {
+            showValidationNotice('warning', 'Event is today. Only immediate payment is recommended.');
+        } else if (daysUntilEvent <= 7) {
+            showValidationNotice('warning', `Event is only ${daysUntilEvent} days away. Full payment is recommended.`);
         } else if (daysUntilEvent <= 30) {
-            showValidationNotice('warning', `Event is ${daysUntilEvent} days away. Maximum 2 payments recommended.`);
+            showValidationNotice('info', `Event is ${daysUntilEvent} days away. Consider using fewer payment installments.`);
         } else {
             hideValidationNotice();
         }
@@ -665,37 +667,32 @@
      * Validate contract form
      */
     function validateContractForm() {
-        console.log('=== VALIDATING CONTRACT FORM ===');
         let isValid = true;
+        let missingFields = [];
         const requiredFields = [
-            '#eq-company-name',
-            '#eq-company-address', 
-            '#eq-company-phone',
-            '#eq-company-email',
-            '#eq-client-name',
-            '#eq-client-address',
-            '#eq-event-date',
-            '#eq-event-location'
+            { selector: '#eq-company-name', label: 'Company Name', tab: 'company' },
+            { selector: '#eq-company-address', label: 'Company Address', tab: 'company' },
+            { selector: '#eq-company-phone', label: 'Company Phone', tab: 'company' },
+            { selector: '#eq-company-email', label: 'Company Email', tab: 'company' },
+            { selector: '#eq-client-name', label: 'Client Name', tab: 'client' },
+            { selector: '#eq-client-address', label: 'Client Address', tab: 'client' },
+            { selector: '#eq-event-date', label: 'Event Date', tab: 'event' },
+            { selector: '#eq-event-location', label: 'Event Location', tab: 'event' }
         ];
 
-        console.log('Required fields to check:', requiredFields.length);
-
         requiredFields.forEach(function(field) {
-            const $field = $(field);
+            const $field = $(field.selector);
             const $formGroup = $field.closest('.eq-form-group');
             const fieldValue = $field.val().trim();
-            
-            console.log(`Checking field ${field}:`, fieldValue ? 'HAS VALUE' : 'EMPTY');
             
             if (!fieldValue) {
                 $field.addClass('error');
                 $formGroup.addClass('error');
-                console.log(`${field} is INVALID - added error class`);
+                missingFields.push(field);
                 isValid = false;
             } else {
                 $field.removeClass('error');
                 $formGroup.removeClass('error');
-                console.log(`${field} is VALID`);
             }
         });
 
@@ -718,13 +715,37 @@
         }
 
         if (!isValid) {
-            console.log('FORM IS INVALID - showing error notification');
+            // Show specific error message with missing fields
+            if (missingFields.length > 0) {
+                const firstMissingField = missingFields[0];
+                switchContractTab(firstMissingField.tab);
+                
+                // Show error in modal
+                let errorHtml = '<div class="eq-validation-errors">';
+                errorHtml += '<p style="color: #e74c3c; font-weight: bold;">Please fill in the following required fields:</p>';
+                errorHtml += '<ul style="color: #e74c3c;">';
+                missingFields.forEach(function(field) {
+                    errorHtml += '<li>' + field.label + '</li>';
+                });
+                errorHtml += '</ul></div>';
+                
+                // Remove any existing error message
+                $('.eq-validation-errors').remove();
+                
+                // Add error message to the active tab
+                $('.eq-contract-tab-content.active').prepend(errorHtml);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(function() {
+                    $('.eq-validation-errors').fadeOut(function() {
+                        $(this).remove();
+                    });
+                }, 5000);
+            }
+            
             showNotification('error', 'Please fill in all required fields');
-        } else {
-            console.log('FORM IS VALID');
         }
 
-        console.log('=== VALIDATION COMPLETE ===', 'Valid:', isValid);
         return isValid;
     }
 
@@ -777,15 +798,7 @@
      * Preview contract
      */
     function previewContract() {
-        console.log('=== PREVIEW CONTRACT CLICKED ===');
-        // Validate form first
-        if (!validateContractForm()) {
-            console.log('Preview cancelled - form invalid');
-            return;
-        }
-        
-        console.log('Opening preview window...');
-        
+        // Don't validate for preview - show with whatever data is available
         // Collect form data
         const formData = collectFormData();
         
