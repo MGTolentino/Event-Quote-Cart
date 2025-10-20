@@ -48,6 +48,7 @@ add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
     add_action('wp_ajax_eq_verify_context_session', array($this, 'verify_context_session'));
 		add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
 		add_action('wp_ajax_eq_check_item_in_cart', array($this, 'check_item_in_cart'));
+		add_action('wp_ajax_eq_get_cart_master_date', array($this, 'get_cart_master_date'));
 		
 		// Hooks para historial de carrito
 		add_action('wp_ajax_eq_save_cart_history', array($this, 'save_cart_history'));
@@ -1911,7 +1912,7 @@ public function clear_context_meta() {
     
     // Verificar si session_start ya fue llamado
     if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+        @session_start();
     }
     
     try {

@@ -291,7 +291,7 @@ if (isset($_COOKIE['eq_session_ended']) && $_COOKIE['eq_session_ended'] === 'tru
     $user_id = get_current_user_id();
     
     if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+        @session_start();
     }
     
     if (isset($_SESSION['eq_context_no_restore']) && $_SESSION['eq_context_no_restore'] === true) {

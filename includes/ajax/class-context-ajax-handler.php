@@ -94,7 +94,7 @@ class Event_Quote_Cart_Context_Ajax_Handler {
             
             // Actualizar sesión PHP
             if (session_status() !== PHP_SESSION_ACTIVE) {
-                session_start();
+                @session_start();
             }
             
             $_SESSION['eq_quote_context'] = array(
@@ -231,7 +231,7 @@ class Event_Quote_Cart_Context_Ajax_Handler {
             
             // Limpiar sesión PHP
             if (session_status() !== PHP_SESSION_ACTIVE) {
-                session_start();
+                @session_start();
             }
             
             if (isset($_SESSION['eq_quote_context'])) {

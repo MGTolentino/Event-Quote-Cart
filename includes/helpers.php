@@ -332,26 +332,11 @@ function eq_calculate_cart_totals($items) {
         $total += isset($item->total_price) ? floatval($item->total_price) : 0;
     }
     
-    // Calcular el subtotal y los impuestos basados en el total
-    // Usar exactamente la misma fuente de tax rate que el tema Kava-Child
-    global $wpdb;
-    $tax_rate_db = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
-            1
-        )
-    );
+    // Obtener la tasa de impuestos usando la función centralizada
+    $tax_rate = eq_get_woocommerce_tax_rate();
     
-    // Si no se encuentra, intentar obtener de configuración WooCommerce o usar 0
-    if (!$tax_rate_db) {
-        // Intentar obtener la tasa estándar de WooCommerce
-        $standard_rate = $wpdb->get_var(
-            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_class = '' ORDER BY tax_rate_priority ASC LIMIT 1"
-        );
-        $tax_rate = floatval($standard_rate) ?: 0;
-    } else {
-        $tax_rate = floatval($tax_rate_db);
-    }
+    // Calcular el subtotal y los impuestos basados en el total
+    // Los precios en el carrito YA incluyen impuestos
     $subtotal = $total / (1 + ($tax_rate / 100));
     $tax = $total - $subtotal;
     
@@ -362,7 +347,8 @@ function eq_calculate_cart_totals($items) {
         'total' => hivepress()->woocommerce->format_price($total),
         'subtotal_raw' => $subtotal,
         'tax_raw' => $tax,
-        'total_raw' => $total
+        'total_raw' => $total,
+        'tax_rate' => $tax_rate
     );
 }
 

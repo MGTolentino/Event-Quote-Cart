@@ -402,4 +402,87 @@ class Event_Quote_Cart_Cart_Ajax_Handler {
             'image' => get_the_post_thumbnail_url($item->listing_id, 'thumbnail')
         );
     }
+    
+    /**
+     * Verificar si un item está en el carrito
+     */
+    public function check_item_in_cart() {
+        global $wpdb;
+        
+        // Verificar seguridad
+        $security_check = Event_Quote_Cart_Security_Helper::verify_ajax_request('view_quotes');
+        if (is_wp_error($security_check)) {
+            wp_send_json_error($security_check->get_error_message());
+            return;
+        }
+        
+        $listing_id = intval($_POST['listing_id'] ?? 0);
+        
+        if (!$listing_id) {
+            wp_send_json_error('Invalid listing ID');
+            return;
+        }
+        
+        try {
+            // Obtener carrito activo del usuario
+            $cart_id = $this->get_active_cart_id();
+            
+            if (!$cart_id) {
+                wp_send_json_success(array('in_cart' => false));
+                return;
+            }
+            
+            // Verificar si el item está en el carrito
+            $exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}eq_cart_items 
+                WHERE cart_id = %d AND listing_id = %d",
+                $cart_id, $listing_id
+            ));
+            
+            wp_send_json_success(array('in_cart' => $exists > 0));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+    
+    /**
+     * Obtener la fecha maestra del carrito
+     */
+    public function get_cart_master_date() {
+        global $wpdb;
+        
+        // Verificar seguridad
+        $security_check = Event_Quote_Cart_Security_Helper::verify_ajax_request('view_quotes');
+        if (is_wp_error($security_check)) {
+            wp_send_json_error($security_check->get_error_message());
+            return;
+        }
+        
+        $cart_id = intval($_POST['cart_id'] ?? 0);
+        
+        if (!$cart_id) {
+            $cart_id = $this->get_active_cart_id();
+        }
+        
+        if (!$cart_id) {
+            wp_send_json_error('No active cart found');
+            return;
+        }
+        
+        try {
+            $master_date = $wpdb->get_var($wpdb->prepare(
+                "SELECT master_date FROM {$wpdb->prefix}eq_carts WHERE id = %d",
+                $cart_id
+            ));
+            
+            wp_send_json_success(array(
+                'master_date' => $master_date,
+                'cart_id' => $cart_id
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
 }

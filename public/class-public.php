@@ -10,6 +10,24 @@ class Event_Quote_Cart_Public {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
         $this->date_handler = new Event_Quote_Cart_Date_Handler();
+        
+        // Iniciar sesión con manejo de errores
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            // Configurar directorio de sesiones si es posible
+            $upload_dir = wp_upload_dir();
+            $session_dir = $upload_dir['basedir'] . '/eq-sessions';
+            
+            if (!file_exists($session_dir)) {
+                wp_mkdir_p($session_dir);
+            }
+            
+            if (is_writable($session_dir)) {
+                @ini_set('session.save_path', $session_dir);
+            }
+            
+            // Suprimir warnings de session_start
+            @session_start();
+        }
     }
 
     public function enqueue_styles() {
@@ -292,7 +310,7 @@ add_action('wp_ajax_nopriv_search_services', array($this, 'search_services'));
     add_filter('wp_nav_menu_objects', array($this, 'dynamic_menu_classes'), 10, 2);
     
     if (!session_id() && !headers_sent()) {
-        session_start();
+        @session_start();
     }
 }
 

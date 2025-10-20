@@ -669,6 +669,8 @@
     function validateContractForm() {
         let isValid = true;
         let missingFields = [];
+        let tabsWithErrors = new Set();
+        
         const requiredFields = [
             { selector: '#eq-company-name', label: 'Company Name', tab: 'company' },
             { selector: '#eq-company-address', label: 'Company Address', tab: 'company' },
@@ -679,27 +681,44 @@
             { selector: '#eq-event-date', label: 'Event Date', tab: 'event' },
             { selector: '#eq-event-location', label: 'Event Location', tab: 'event' }
         ];
+        
+        // Clear previous tab errors
+        $('.eq-contract-tab-nav li').removeClass('has-error');
 
         requiredFields.forEach(function(field) {
             const $field = $(field.selector);
             const $formGroup = $field.closest('.eq-form-group');
-            const fieldValue = $field.val().trim();
+            const fieldValue = $field.val() ? $field.val().trim() : '';
             
             if (!fieldValue) {
                 $field.addClass('error');
                 $formGroup.addClass('error');
+                
+                // Add error message below field if not present
+                if (!$formGroup.find('.field-error-message').length) {
+                    $formGroup.append('<span class="field-error-message">This field is required</span>');
+                }
+                
                 missingFields.push(field);
+                tabsWithErrors.add(field.tab);
                 isValid = false;
             } else {
                 $field.removeClass('error');
                 $formGroup.removeClass('error');
+                $formGroup.find('.field-error-message').remove();
             }
+        });
+        
+        // Mark tabs with errors
+        tabsWithErrors.forEach(function(tab) {
+            $(`.eq-contract-tab-nav li[data-tab="${tab}"]`).addClass('has-error');
         });
 
         // Validate payment schedule
         if (paymentSchedule.length === 0) {
             showValidationNotice('error', 'At least one payment is required');
-            switchContractTab('payment');
+            $(`.eq-contract-tab-nav li[data-tab="payment"]`).addClass('has-error');
+            tabsWithErrors.add('payment');
             isValid = false;
         }
 
@@ -710,11 +729,15 @@
         
         if (difference > 0.01) {
             showValidationNotice('error', 'Payment schedule must equal contract total');
-            switchContractTab('payment');
+            $(`.eq-contract-tab-nav li[data-tab="payment"]`).addClass('has-error');
+            tabsWithErrors.add('payment');
             isValid = false;
         }
 
         if (!isValid) {
+            // Get the current active tab
+            const currentTab = $('.eq-contract-tab-content.active').data('tab');
+            
             // Show specific error message with missing fields
             if (missingFields.length > 0) {
                 const firstMissingField = missingFields[0];
@@ -827,12 +850,57 @@
             // Collect form data
             const formData = collectFormData();
             
-            // Check for popup blockers
+            // Show loading state on button
+            const $previewBtn = $('.eq-contract-preview');
+            const originalText = $previewBtn.html();
+            $previewBtn.html('<i class="fas fa-spinner fa-spin"></i> Generating preview...').prop('disabled', true);
+            
+            // Generate preview via AJAX without requiring validation
+            $.ajax({
+                url: eqCartData.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'eq_preview_contract_pdf',
+                    nonce: eqCartData.nonce,
+                    ...formData,
+                    payment_schedule: JSON.stringify(paymentSchedule),
+                    is_preview: true
+                },
+                success: function(response) {
+                    $previewBtn.html(originalText).prop('disabled', false);
+                    
+                    if (response.success && response.data.pdf_url) {
+                        // Open in new window/tab
+                        window.open(response.data.pdf_url, '_blank');
+                    } else {
+                        // Fallback to inline preview
+                        showInlinePreview(formData);
+                    }
+                },
+                error: function() {
+                    $previewBtn.html(originalText).prop('disabled', false);
+                    // Fallback to inline preview
+                    showInlinePreview(formData);
+                }
+            });
+            
+        } catch (error) {
+            console.error('Preview error:', error);
+            showNotification('error', 'Error generating preview');
+        }
+    }
+    
+    /**
+     * Show inline preview as fallback
+     */
+    function showInlinePreview(formData) {
+        try {
+            // Use an alternative method - try popup first
             const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
             
             if (!previewWindow || previewWindow.closed || typeof previewWindow.closed == 'undefined') {
-                // Popup was blocked
-                showNotification('error', 'Popup blocked. Please allow popups for this site and try again.');
+                // If popup blocked, show in modal
+                showModalPreview(formData);
                 return;
             }
             
@@ -876,6 +944,94 @@
             console.error('Error opening preview:', error);
             showNotification('error', 'Error opening preview. Please try again.');
         }
+    }
+    
+    /**
+     * Show modal preview when popups are blocked
+     */
+    function showModalPreview(formData) {
+        // Create preview modal if it doesn't exist
+        if ($('#eq-preview-modal').length === 0) {
+            $('body').append(`
+                <div id="eq-preview-modal" class="eq-modal">
+                    <div class="eq-modal-content eq-preview-modal-content">
+                        <span class="eq-modal-close">&times;</span>
+                        <h2>Contract Preview</h2>
+                        <div id="eq-preview-content"></div>
+                        <div class="eq-preview-actions">
+                            <button class="eq-btn eq-btn-primary" onclick="window.print()">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                            <button class="eq-btn eq-btn-secondary eq-close-preview">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Bind close events
+            $('#eq-preview-modal .eq-modal-close, #eq-preview-modal .eq-close-preview').on('click', function() {
+                $('#eq-preview-modal').hide();
+            });
+        }
+        
+        // Generate preview content
+        const previewContent = `
+            <div class="eq-contract-preview-content">
+                <h3>Company Information</h3>
+                <p><strong>Name:</strong> ${formData.company_name || 'Not provided'}</p>
+                <p><strong>Address:</strong> ${formData.company_address || 'Not provided'}</p>
+                <p><strong>Phone:</strong> ${formData.company_phone || 'Not provided'}</p>
+                <p><strong>Email:</strong> ${formData.company_email || 'Not provided'}</p>
+                
+                <h3>Client Information</h3>
+                <p><strong>Name:</strong> ${formData.client_name || 'Not provided'}</p>
+                <p><strong>Address:</strong> ${formData.client_address || 'Not provided'}</p>
+                <p><strong>Phone:</strong> ${formData.client_phone || 'Not provided'}</p>
+                <p><strong>Email:</strong> ${formData.client_email || 'Not provided'}</p>
+                
+                <h3>Event Details</h3>
+                <p><strong>Date:</strong> ${formData.event_date || 'Not provided'}</p>
+                <p><strong>Time:</strong> ${formData.event_start_time || ''} - ${formData.event_end_time || ''}</p>
+                <p><strong>Location:</strong> ${formData.event_location || 'Not provided'}</p>
+                <p><strong>Guests:</strong> ${formData.event_guests || 'Not provided'}</p>
+                
+                <h3>Payment Schedule</h3>
+                ${generatePaymentSchedulePreview()}
+                
+                <h3>Contract Terms</h3>
+                <p>${(formData.contract_terms || '').replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+        
+        $('#eq-preview-content').html(previewContent);
+        $('#eq-preview-modal').show();
+    }
+    
+    /**
+     * Generate payment schedule preview HTML
+     */
+    function generatePaymentSchedulePreview() {
+        if (paymentSchedule.length === 0) {
+            return '<p>No payment schedule defined</p>';
+        }
+        
+        let html = '<table class="eq-payment-schedule-preview"><thead><tr>';
+        html += '<th>Payment</th><th>Amount</th><th>Date</th><th>Description</th>';
+        html += '</tr></thead><tbody>';
+        
+        paymentSchedule.forEach((payment, index) => {
+            html += `<tr>
+                <td>Payment ${index + 1}</td>
+                <td>${formatCurrency(payment.amount)}</td>
+                <td>${payment.date || 'Not set'}</td>
+                <td>${payment.description || ''}</td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        return html;
     }
     
     function collectFormData() {

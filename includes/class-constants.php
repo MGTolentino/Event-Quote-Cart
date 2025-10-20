@@ -131,7 +131,32 @@ class Event_Quote_Cart_Constants {
      * @return float
      */
     public static function get_tax_rate() {
-        // Intentar obtener de WooCommerce primero
+        global $wpdb;
+        
+        // Primero intentar obtener de la base de datos de WooCommerce (más confiable)
+        $tax_rate_db = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_id = %d",
+                1
+            )
+        );
+        
+        if ($tax_rate_db !== null && $tax_rate_db !== false) {
+            return floatval($tax_rate_db);
+        }
+        
+        // Si no se encuentra, intentar obtener la tasa estándar de WooCommerce
+        $standard_rate = $wpdb->get_var(
+            "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates 
+            WHERE tax_rate_class = '' 
+            ORDER BY tax_rate_priority ASC LIMIT 1"
+        );
+        
+        if ($standard_rate !== null && $standard_rate !== false) {
+            return floatval($standard_rate);
+        }
+        
+        // Intentar con la API de WooCommerce
         if (class_exists('WC_Tax')) {
             $rates = WC_Tax::get_rates();
             if (!empty($rates)) {
