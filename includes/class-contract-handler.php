@@ -315,20 +315,28 @@ class Event_Quote_Cart_Contract_Handler {
                     line-height: 1.3;
                     text-align: justify;
                 }
+                @page {
+                    margin-bottom: 120px;
+                }
+                
                 .signatures {
-                    margin-top: 50px;
+                    position: fixed;
+                    bottom: 20px;
+                    left: 0;
+                    right: 0;
                     display: table;
                     width: 100%;
+                    font-size: 10px;
                 }
                 .signature-block {
                     display: table-cell;
                     width: 50%;
                     text-align: center;
-                    padding: 20px;
+                    padding: 10px;
                 }
                 .signature-line {
                     border-top: 1px solid #333;
-                    margin-top: 60px;
+                    margin-top: 40px;
                     padding-top: 5px;
                     font-weight: bold;
                 }
@@ -538,17 +546,19 @@ class Event_Quote_Cart_Contract_Handler {
                 </div>
             <?php endif; ?>
             
-            <!-- Firmas -->
-            <div class="signatures">
-                <div class="signature-block">
-                    <div><?php echo esc_html($client['name']); ?></div>
-                    <div class="signature-line">FIRMA DEL CONTRATANTE</div>
-                </div>
-                <div class="signature-block">
-                    <div class="signature-line">FIRMA DE LA EMPRESA</div>
-                </div>
-            </div>
         </body>
+        
+        <!-- Firmas en footer de cada página -->
+        <div class="signatures">
+            <div class="signature-block">
+                <div><?php echo esc_html($client['name']); ?></div>
+                <div class="signature-line">FIRMA DEL CONTRATANTE</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line">FIRMA DE LA EMPRESA</div>
+            </div>
+        </div>
+        
         </html>
         <?php
         

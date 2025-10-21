@@ -257,7 +257,7 @@
 
         // Contract total
         if (contractData.cart_total) {
-            $('.eq-contract-total').text(contractData.cart_total);
+            $('.eq-contract-total').text(decodeHtmlEntities(contractData.cart_total));
         }
 
         // Load payment templates
@@ -401,6 +401,11 @@
         const paymentIndex = $container.find('.eq-payment-item').length;
         const paymentId = 'payment_' + Date.now() + '_' + paymentIndex;
 
+        // Default to total amount if this is the first payment and no existing payments
+        const contractTotal = contractData.cart_total_raw || 0;
+        const defaultAmount = (paymentIndex === 0 && contractTotal > 0) ? contractTotal.toFixed(2) : '';
+        const defaultPercentage = (paymentIndex === 0 && contractTotal > 0) ? '100.00' : '';
+
         const html = `
             <div class="eq-payment-item" data-payment-id="${paymentId}">
                 <div class="eq-payment-item-header">
@@ -412,11 +417,11 @@
                 <div class="eq-payment-item-fields">
                     <div class="eq-field-group">
                         <label>Amount ($)</label>
-                        <input type="number" class="eq-payment-amount" value="" step="0.01" min="0" placeholder="0.00">
+                        <input type="number" class="eq-payment-amount" value="${defaultAmount}" step="0.01" min="0" placeholder="0.00">
                     </div>
                     <div class="eq-field-group">
                         <label>Percentage (%)</label>
-                        <input type="number" class="eq-payment-percentage" value="" step="0.01" min="0" max="100" placeholder="0.00">
+                        <input type="number" class="eq-payment-percentage" value="${defaultPercentage}" step="0.01" min="0" max="100" placeholder="0.00">
                     </div>
                     <div class="eq-field-group">
                         <label>Payment Date</label>
@@ -437,6 +442,7 @@
 
         $container.append(html);
         updatePaymentNumbers();
+        updatePaymentSchedule(); // Update schedule to reflect the default values
     }
 
     /**
@@ -769,8 +775,13 @@
             { selector: '#eq-company-email', label: 'Company Email', tab: 'company' },
             { selector: '#eq-client-name', label: 'Client Name', tab: 'client' },
             { selector: '#eq-client-address', label: 'Client Address', tab: 'client' },
+            { selector: '#eq-client-phone', label: 'Client Phone', tab: 'client' },
+            { selector: '#eq-client-email', label: 'Client Email', tab: 'client' },
             { selector: '#eq-event-date', label: 'Event Date', tab: 'event' },
-            { selector: '#eq-event-location', label: 'Event Location', tab: 'event' }
+            { selector: '#eq-event-start-time', label: 'Event Start Time', tab: 'event' },
+            { selector: '#eq-event-end-time', label: 'Event End Time', tab: 'event' },
+            { selector: '#eq-event-location', label: 'Event Location', tab: 'event' },
+            { selector: '#eq-event-guests', label: 'Event Guests', tab: 'event' }
         ];
         
         // Clear previous tab errors
@@ -781,7 +792,10 @@
             const $formGroup = $field.closest('.eq-form-group');
             const fieldValue = $field.val() ? $field.val().trim() : '';
             
+            console.log(`Checking field ${field.selector}: value="${fieldValue}", exists=${$field.length > 0}`);
+            
             if (!fieldValue) {
+                console.log(`Field ${field.selector} is missing, adding to tab ${field.tab}`);
                 $field.addClass('error');
                 $formGroup.addClass('error');
                 
@@ -799,6 +813,9 @@
                 $formGroup.find('.field-error-message').remove();
             }
         });
+        
+        console.log('Missing fields:', missingFields.map(f => f.selector));
+        console.log('Tabs with errors after validation:', Array.from(tabsWithErrors));
         
         // Mark tabs with errors - FORZAR que se marquen siempre
         console.log('Tabs with errors:', Array.from(tabsWithErrors));
@@ -1319,7 +1336,7 @@
     }
     
     /**
-     * Generate services preview for contract
+     * Generate services preview for contract using same logic as generate quote
      */
     function generateServicesPreview() {
         if (!contractData || !contractData.cart_items) {
@@ -1328,31 +1345,74 @@
         
         let html = '<table style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
         html += '<thead><tr style="background-color: #f8f9fa;">';
-        html += '<th style="border: 1px solid #ddd; padding: 8px;">Servicio</th>';
-        html += '<th style="border: 1px solid #ddd; padding: 8px;">Descripción</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Título</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Descripción de Servicios Contratados</th>';
         html += '<th style="border: 1px solid #ddd; padding: 8px;">Cantidad</th>';
         html += '<th style="border: 1px solid #ddd; padding: 8px;">Precio</th>';
-        html += '<th style="border: 1px solid #ddd; padding: 8px;">Total</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Sub Total</th>';
         html += '</tr></thead><tbody>';
         
         contractData.cart_items.forEach(item => {
+            // Calcular precio base sin impuestos (como en PDF handler)
+            const tax_rate = contractData.tax_rate || 16; // Default 16%
+            const item_unit_price_with_tax = parseFloat(item.base_price) || 0;
+            const item_unit_price_without_tax = item_unit_price_with_tax / (1 + (tax_rate / 100));
+            const item_subtotal = item_unit_price_without_tax * (item.quantity || 1);
+            
+            // Handle date display like PDF handler
+            let date_display = '';
+            if (item.is_date_range && item.start_date && item.end_date) {
+                date_display = `<br><strong>Fecha del evento:</strong> ${item.start_date} a ${item.end_date}`;
+            } else if (item.date) {
+                date_display = `<br><strong>Fecha del evento:</strong> ${item.date}`;
+            }
+            
+            // Handle quantity display like PDF handler
+            let quantity_display = '';
+            if (item.is_date_range && item.days_count) {
+                quantity_display = item.days_count;
+            } else {
+                quantity_display = item.quantity || 1;
+            }
+            
             html += `<tr>
                 <td style="border: 1px solid #ddd; padding: 8px;"><strong>${item.title || 'Servicio'}</strong></td>
-                <td style="border: 1px solid #ddd; padding: 8px;">Fecha: ${item.date || 'Por definir'}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity || 1}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${item.price_formatted || '$0.00'}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${item.total_formatted || '$0.00'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">
+                    ${item.description || ''}
+                    ${date_display}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${quantity_display}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(item_unit_price_without_tax)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(item_subtotal)}</td>
             </tr>`;
             
-            // Add extras if any
+            // Add extras if any (separate rows like in PDF)
             if (item.extras && item.extras.length > 0) {
                 item.extras.forEach(extra => {
+                    let extra_price = 0;
+                    let display_quantity = item.quantity;
+                    
+                    // Same logic as PDF handler for extra pricing
+                    switch(extra.type) {
+                        case 'per_quantity':
+                            extra_price = extra.price * item.quantity;
+                            break;
+                        case 'per_order':
+                        case 'per_booking':
+                        case 'per_item':
+                            extra_price = extra.price;
+                            display_quantity = 1;
+                            break;
+                        default:
+                            extra_price = extra.price * item.quantity;
+                    }
+                    
                     html += `<tr>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.name || 'Extra'} (por ${item.title})</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.name || 'Extra'} by ${item.title}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${extra.description || ''}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.quantity || 1}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${display_quantity}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(extra.price)}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(extra.price * (extra.quantity || 1))}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(extra_price)}</td>
                     </tr>`;
                 });
             }
@@ -1362,9 +1422,9 @@
         
         if (contractData.cart_totals) {
             html += '<div style="text-align: right; margin-top: 15px;">';
-            html += `<p><strong>Subtotal: ${contractData.cart_totals.subtotal || '$0.00'}</strong></p>`;
-            html += `<p><strong>IVA: ${contractData.cart_totals.tax || '$0.00'}</strong></p>`;
-            html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${contractData.cart_totals.total || '$0.00'}</strong></p>`;
+            html += `<p><strong>Subtotal: ${decodeHtmlEntities(contractData.cart_totals.subtotal) || '$0.00'}</strong></p>`;
+            html += `<p><strong>IVA (${contractData.tax_rate || 16}%): ${decodeHtmlEntities(contractData.cart_totals.tax) || '$0.00'}</strong></p>`;
+            html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${decodeHtmlEntities(contractData.cart_totals.total) || '$0.00'}</strong></p>`;
             html += '</div>';
         }
         
@@ -1404,6 +1464,13 @@
     function formatCurrency(amount) {
         if (!amount || isNaN(amount)) return '$0.00';
         return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    
+    function decodeHtmlEntities(text) {
+        if (typeof text !== 'string') return text;
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return textarea.value;
     }
     
     function collectFormData() {
