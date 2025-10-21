@@ -21,9 +21,15 @@
         
         // Add global click handler to debug button clicks
         $(document).on('click', '*', function(e) {
-            if ($(this).is('#eq-edit-contract, #eq-generate-new-contract, .eq-contract-preview')) {
-                console.log('Button clicked:', $(this).attr('id') || $(this).attr('class'));
-                console.log('Event propagation stopped?', e.isPropagationStopped());
+            const element = $(this);
+            if (element.is('#eq-edit-contract') || element.is('#eq-generate-new-contract') || element.hasClass('eq-contract-preview')) {
+                console.log('GLOBAL CLICK DETECTED:');
+                console.log('- Element ID:', element.attr('id'));
+                console.log('- Element classes:', element.attr('class'));
+                console.log('- Element visible:', element.is(':visible'));
+                console.log('- Element parent visible:', element.parent().is(':visible'));
+                console.log('- Event propagation stopped?', e.isPropagationStopped());
+                console.log('- Event default prevented?', e.isDefaultPrevented());
             }
         });
     });
@@ -109,11 +115,19 @@
             generateContract();
         });
 
-        // Preview button
-        $(document).on('click', '.eq-contract-preview', function(e) {
+        // Preview button - use more specific selector
+        $('#eq-contract-modal').on('click', '.eq-contract-preview', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Preview button clicked');
+            console.log('Preview button clicked via modal selector');
+            previewContract();
+        });
+        
+        // Backup selector for preview button
+        $(document).on('click', 'button.eq-contract-preview', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Preview button clicked via backup selector');
             previewContract();
         });
 
@@ -123,18 +137,33 @@
         });
         
         // Edit contract - go back to form with current data
-        $(document).on('click', '#eq-edit-contract', function(e) {
+        $('#eq-contract-modal').on('click', '#eq-edit-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Edit contract button clicked');
+            console.log('Edit contract button clicked via modal selector');
             editContract();
         });
         
         // Generate new contract - clear form and start fresh
+        $('#eq-contract-modal').on('click', '#eq-generate-new-contract', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Generate new contract button clicked via modal selector');
+            generateNewContract();
+        });
+        
+        // Backup selectors
+        $(document).on('click', '#eq-edit-contract', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Edit contract button clicked via document selector');
+            editContract();
+        });
+        
         $(document).on('click', '#eq-generate-new-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Generate new contract button clicked');
+            console.log('Generate new contract button clicked via document selector');
             generateNewContract();
         });
     }
@@ -745,7 +774,7 @@
         ];
         
         // Clear previous tab errors
-        $('.eq-contract-tab-nav li').removeClass('has-error').css('color', '').find('.error-indicator').remove();
+        $('#eq-contract-modal .eq-contract-tab-nav li').removeClass('has-error').css('color', '').find('.error-indicator').remove();
 
         requiredFields.forEach(function(field) {
             const $field = $(field.selector);
@@ -773,25 +802,29 @@
         
         // Mark tabs with errors - FORZAR que se marquen siempre
         tabsWithErrors.forEach(function(tab) {
-            const $tab = $(`.eq-contract-tab-nav li[data-tab="${tab}"]`);
+            const $tab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="${tab}"]`);
             console.log(`Marking tab ${tab} with error. Tab found:`, $tab.length > 0);
+            console.log(`Tab element:`, $tab[0]);
             $tab.addClass('has-error');
-            // Forzar el estilo visualmente
-            $tab.css({
-                'color': '#dc3545 !important',
-                'position': 'relative'
-            });
+            
+            // Forzar el estilo visualmente con !important
+            $tab.attr('style', 'color: #dc3545 !important; position: relative !important;');
             
             // Agregar indicador visual si no existe
             if (!$tab.find('.error-indicator').length) {
-                $tab.append('<span class="error-indicator" style="position: absolute; top: 5px; right: 10px; background: #dc3545; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">!</span>');
+                $tab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
+                console.log(`Added error indicator to tab ${tab}`);
             }
         });
 
         // Validate payment schedule
         if (paymentSchedule.length === 0) {
             showValidationNotice('error', 'At least one payment is required');
-            $(`.eq-contract-tab-nav li[data-tab="payment"]`).addClass('has-error');
+            const $paymentTab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="payment"]`);
+            $paymentTab.addClass('has-error').attr('style', 'color: #dc3545 !important; position: relative !important;');
+            if (!$paymentTab.find('.error-indicator').length) {
+                $paymentTab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
+            }
             tabsWithErrors.add('payment');
             isValid = false;
         }
@@ -803,7 +836,11 @@
         
         if (difference > 0.01) {
             showValidationNotice('error', 'Payment schedule must equal contract total');
-            $(`.eq-contract-tab-nav li[data-tab="payment"]`).addClass('has-error');
+            const $paymentTab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="payment"]`);
+            $paymentTab.addClass('has-error').attr('style', 'color: #dc3545 !important; position: relative !important;');
+            if (!$paymentTab.find('.error-indicator').length) {
+                $paymentTab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
+            }
             tabsWithErrors.add('payment');
             isValid = false;
         }
@@ -1133,6 +1170,8 @@
             $('#eq-preview-modal .eq-modal-close, #eq-preview-modal .eq-close-preview').on('click', function() {
                 $('#eq-preview-modal').hide();
             });
+            
+            console.log('Preview modal created and added to body');
         }
         
         // Generate preview content
@@ -1165,7 +1204,9 @@
         `;
         
         $('#eq-preview-content').html(previewContent);
+        console.log('Setting modal content and showing...');
         $('#eq-preview-modal').show();
+        console.log('Modal should be visible now. Display style:', $('#eq-preview-modal').css('display'));
     }
     
     /**
