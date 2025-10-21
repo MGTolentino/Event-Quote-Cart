@@ -801,30 +801,53 @@
         });
         
         // Mark tabs with errors - FORZAR que se marquen siempre
-        tabsWithErrors.forEach(function(tab) {
-            const $tab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="${tab}"]`);
-            console.log(`Marking tab ${tab} with error. Tab found:`, $tab.length > 0);
-            console.log(`Tab element:`, $tab[0]);
-            $tab.addClass('has-error');
-            
-            // Forzar el estilo visualmente con !important
-            $tab.attr('style', 'color: #dc3545 !important; position: relative !important;');
-            
-            // Agregar indicador visual si no existe
-            if (!$tab.find('.error-indicator').length) {
-                $tab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
-                console.log(`Added error indicator to tab ${tab}`);
-            }
-        });
+        console.log('Tabs with errors:', Array.from(tabsWithErrors));
+        
+        // Wait a bit for modal to be fully rendered
+        setTimeout(() => {
+            tabsWithErrors.forEach(function(tab) {
+                const $tab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="${tab}"]`);
+                console.log(`Marking tab ${tab} with error. Tab found:`, $tab.length > 0);
+                console.log(`Tab element text:`, $tab.text());
+                console.log(`Tab current style:`, $tab.attr('style'));
+                
+                $tab.addClass('has-error');
+                
+                // FORZAR el estilo directamente en el DOM
+                $tab[0].style.setProperty('color', '#dc3545', 'important');
+                $tab[0].style.setProperty('background-color', '#ffebee', 'important');
+                $tab[0].style.setProperty('border', '2px solid #dc3545', 'important');
+                $tab[0].style.setProperty('position', 'relative', 'important');
+                
+                console.log(`Tab style after forcing:`, $tab.attr('style'));
+                
+                // Agregar indicador visual si no existe
+                if (!$tab.find('.error-indicator').length) {
+                    const indicator = $('<span class="error-indicator">!</span>');
+                    indicator[0].style.setProperty('position', 'absolute', 'important');
+                    indicator[0].style.setProperty('top', '5px', 'important');
+                    indicator[0].style.setProperty('right', '10px', 'important');
+                    indicator[0].style.setProperty('background', '#dc3545', 'important');
+                    indicator[0].style.setProperty('color', 'white', 'important');
+                    indicator[0].style.setProperty('width', '20px', 'important');
+                    indicator[0].style.setProperty('height', '20px', 'important');
+                    indicator[0].style.setProperty('border-radius', '50%', 'important');
+                    indicator[0].style.setProperty('display', 'flex', 'important');
+                    indicator[0].style.setProperty('align-items', 'center', 'important');
+                    indicator[0].style.setProperty('justify-content', 'center', 'important');
+                    indicator[0].style.setProperty('font-size', '12px', 'important');
+                    indicator[0].style.setProperty('font-weight', 'bold', 'important');
+                    indicator[0].style.setProperty('z-index', '1000', 'important');
+                    
+                    $tab.append(indicator);
+                    console.log(`Added error indicator to tab ${tab}`);
+                }
+            });
+        }, 100);
 
         // Validate payment schedule
         if (paymentSchedule.length === 0) {
             showValidationNotice('error', 'At least one payment is required');
-            const $paymentTab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="payment"]`);
-            $paymentTab.addClass('has-error').attr('style', 'color: #dc3545 !important; position: relative !important;');
-            if (!$paymentTab.find('.error-indicator').length) {
-                $paymentTab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
-            }
             tabsWithErrors.add('payment');
             isValid = false;
         }
@@ -836,11 +859,6 @@
         
         if (difference > 0.01) {
             showValidationNotice('error', 'Payment schedule must equal contract total');
-            const $paymentTab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="payment"]`);
-            $paymentTab.addClass('has-error').attr('style', 'color: #dc3545 !important; position: relative !important;');
-            if (!$paymentTab.find('.error-indicator').length) {
-                $paymentTab.append('<span class="error-indicator" style="position: absolute !important; top: 5px !important; right: 10px !important; background: #dc3545 !important; color: white !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; font-weight: bold !important; z-index: 1000 !important;">!</span>');
-            }
             tabsWithErrors.add('payment');
             isValid = false;
         }
@@ -1034,16 +1052,34 @@
     }
     
     /**
-     * Generate new contract - clear form and start fresh
+     * Generate new contract - clear form and start fresh but keep cart data
      */
     function generateNewContract() {
         console.log('generateNewContract function called');
         try {
-            console.log('Clearing form data...');
+            console.log('Clearing form data but keeping cart information...');
+            
+            // Save cart data before clearing
+            const savedCartData = contractData.cart_items ? {
+                cart_items: contractData.cart_items,
+                cart_totals: contractData.cart_totals,
+                context: contractData.context
+            } : {};
+            
             // Clear form data
             $('#eq-contract-form')[0].reset();
-            contractData = {};
+            
+            // Clear payment schedule but keep cart data
             paymentSchedule = [];
+            
+            // Restore cart data but clear contract-specific data
+            contractData = {
+                ...savedCartData,
+                // Keep the base information that should persist
+                cart_items: savedCartData.cart_items,
+                cart_totals: savedCartData.cart_totals,
+                context: savedCartData.context
+            };
             
             console.log('Clearing validation errors...');
             // Clear validation errors
@@ -1057,11 +1093,22 @@
             showContractForm();
             switchContractTab('company');
             
+            // Re-populate the form with fresh cart data
+            setTimeout(() => {
+                console.log('Re-populating form with base cart data...');
+                // If we don't have cart data, reload it
+                if (!contractData.cart_items) {
+                    openContractModal();
+                } else {
+                    populateContractForm();
+                }
+            }, 100);
+            
             console.log('Generate new contract completed');
-            showNotification('success', 'Contract form cleared. You can start a new contract');
+            showNotification('success', 'New contract form ready with current cart data');
         } catch (error) {
             console.error('Error in generateNewContract:', error);
-            showNotification('error', 'Error clearing contract form');
+            showNotification('error', 'Error preparing new contract form');
         }
     }
 
@@ -1174,32 +1221,69 @@
             console.log('Preview modal created and added to body');
         }
         
-        // Generate preview content
+        // Generate preview content in contract format
         const previewContent = `
-            <div class="eq-contract-preview-content">
-                <h3>Company Information</h3>
-                <p><strong>Name:</strong> ${formData.company_name || 'Not provided'}</p>
-                <p><strong>Address:</strong> ${formData.company_address || 'Not provided'}</p>
-                <p><strong>Phone:</strong> ${formData.company_phone || 'Not provided'}</p>
-                <p><strong>Email:</strong> ${formData.company_email || 'Not provided'}</p>
+            <div class="eq-contract-preview-content" style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2c3e50; margin-bottom: 10px;">CONTRATO DE PRESTACIÓN DE SERVICIOS</h1>
+                    <p style="margin: 0;">No. ${Date.now()}</p>
+                </div>
                 
-                <h3>Client Information</h3>
-                <p><strong>Name:</strong> ${formData.client_name || 'Not provided'}</p>
-                <p><strong>Address:</strong> ${formData.client_address || 'Not provided'}</p>
-                <p><strong>Phone:</strong> ${formData.client_phone || 'Not provided'}</p>
-                <p><strong>Email:</strong> ${formData.client_email || 'Not provided'}</p>
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">DATOS DE LA EMPRESA</h3>
+                    <p><strong>Nombre:</strong> ${formData.company_name || '[NOMBRE DE LA EMPRESA]'}</p>
+                    <p><strong>Dirección:</strong> ${formData.company_address || '[DIRECCIÓN DE LA EMPRESA]'}</p>
+                    <p><strong>Teléfono:</strong> ${formData.company_phone || '[TELÉFONO]'}</p>
+                    <p><strong>Email:</strong> ${formData.company_email || '[EMAIL]'}</p>
+                </div>
                 
-                <h3>Event Details</h3>
-                <p><strong>Date:</strong> ${formData.event_date || 'Not provided'}</p>
-                <p><strong>Time:</strong> ${formData.event_start_time || ''} - ${formData.event_end_time || ''}</p>
-                <p><strong>Location:</strong> ${formData.event_location || 'Not provided'}</p>
-                <p><strong>Guests:</strong> ${formData.event_guests || 'Not provided'}</p>
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">DATOS DEL CLIENTE</h3>
+                    <p><strong>Nombre:</strong> ${formData.client_name || '[NOMBRE DEL CLIENTE]'}</p>
+                    <p><strong>Dirección:</strong> ${formData.client_address || '[DIRECCIÓN DEL CLIENTE]'}</p>
+                    <p><strong>Teléfono:</strong> ${formData.client_phone || '[TELÉFONO DEL CLIENTE]'}</p>
+                    <p><strong>Email:</strong> ${formData.client_email || '[EMAIL DEL CLIENTE]'}</p>
+                </div>
                 
-                <h3>Payment Schedule</h3>
-                ${generatePaymentSchedulePreview()}
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">DETALLES DEL EVENTO</h3>
+                    <p><strong>Fecha:</strong> ${formData.event_date || '[FECHA DEL EVENTO]'}</p>
+                    <p><strong>Hora:</strong> ${formData.event_start_time || '[HORA INICIO]'} - ${formData.event_end_time || '[HORA FIN]'}</p>
+                    <p><strong>Lugar:</strong> ${formData.event_location || '[LUGAR DEL EVENTO]'}</p>
+                    <p><strong>Número de Invitados:</strong> ${formData.event_guests || '[NÚMERO DE INVITADOS]'}</p>
+                </div>
                 
-                <h3>Contract Terms</h3>
-                <p>${(formData.contract_terms || '').replace(/\n/g, '<br>')}</p>
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">SERVICIOS CONTRATADOS</h3>
+                    ${generateServicesPreview()}
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">PROGRAMACIÓN DE PAGOS</h3>
+                    ${generatePaymentSchedulePreviewForContract()}
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">TÉRMINOS Y CONDICIONES</h3>
+                    <div style="text-align: justify;">
+                        ${(formData.contract_terms || 'Se aplicarán los términos y condiciones estándar.').replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+                
+                <div style="margin-top: 50px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div style="text-align: center; width: 45%;">
+                            <div style="border-bottom: 1px solid #000; margin-bottom: 10px; height: 50px;"></div>
+                            <p><strong>FIRMA DEL CONTRATANTE</strong></p>
+                            <p>${formData.client_name || '[NOMBRE DEL CLIENTE]'}</p>
+                        </div>
+                        <div style="text-align: center; width: 45%;">
+                            <div style="border-bottom: 1px solid #000; margin-bottom: 10px; height: 50px;"></div>
+                            <p><strong>FIRMA DE LA EMPRESA</strong></p>
+                            <p>${formData.company_name || '[NOMBRE DE LA EMPRESA]'}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -1227,6 +1311,86 @@
                 <td>${formatCurrency(payment.amount)}</td>
                 <td>${payment.date || 'Not set'}</td>
                 <td>${payment.description || ''}</td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        return html;
+    }
+    
+    /**
+     * Generate services preview for contract
+     */
+    function generateServicesPreview() {
+        if (!contractData || !contractData.cart_items) {
+            return '<p>Los servicios contratados aparecerán aquí basados en el carrito actual.</p>';
+        }
+        
+        let html = '<table style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
+        html += '<thead><tr style="background-color: #f8f9fa;">';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Servicio</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Descripción</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Cantidad</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Precio</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Total</th>';
+        html += '</tr></thead><tbody>';
+        
+        contractData.cart_items.forEach(item => {
+            html += `<tr>
+                <td style="border: 1px solid #ddd; padding: 8px;"><strong>${item.title || 'Servicio'}</strong></td>
+                <td style="border: 1px solid #ddd; padding: 8px;">Fecha: ${item.date || 'Por definir'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity || 1}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.price_formatted || '$0.00'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.total_formatted || '$0.00'}</td>
+            </tr>`;
+            
+            // Add extras if any
+            if (item.extras && item.extras.length > 0) {
+                item.extras.forEach(extra => {
+                    html += `<tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.name || 'Extra'} (por ${item.title})</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.description || ''}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${extra.quantity || 1}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(extra.price)}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(extra.price * (extra.quantity || 1))}</td>
+                    </tr>`;
+                });
+            }
+        });
+        
+        html += '</tbody></table>';
+        
+        if (contractData.cart_totals) {
+            html += '<div style="text-align: right; margin-top: 15px;">';
+            html += `<p><strong>Subtotal: ${contractData.cart_totals.subtotal || '$0.00'}</strong></p>`;
+            html += `<p><strong>IVA: ${contractData.cart_totals.tax || '$0.00'}</strong></p>`;
+            html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${contractData.cart_totals.total || '$0.00'}</strong></p>`;
+            html += '</div>';
+        }
+        
+        return html;
+    }
+    
+    /**
+     * Generate payment schedule preview for contract format
+     */
+    function generatePaymentSchedulePreviewForContract() {
+        if (paymentSchedule.length === 0) {
+            return '<p>La programación de pagos se definirá según lo acordado.</p>';
+        }
+        
+        let html = '<table style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
+        html += '<thead><tr style="background-color: #f8f9fa;">';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Fecha</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Cantidad</th>';
+        html += '<th style="border: 1px solid #ddd; padding: 8px;">Descripción</th>';
+        html += '</tr></thead><tbody>';
+        
+        paymentSchedule.forEach((payment, index) => {
+            html += `<tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${payment.date || 'Por definir'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${formatCurrency(payment.amount)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${payment.description || `Pago ${index + 1}`}</td>
             </tr>`;
         });
         
