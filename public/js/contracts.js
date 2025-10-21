@@ -105,6 +105,16 @@
         $(document).on('click', '#eq-contract-send', function() {
             sendContract();
         });
+        
+        // Edit contract - go back to form with current data
+        $(document).on('click', '#eq-edit-contract', function() {
+            editContract();
+        });
+        
+        // Generate new contract - clear form and start fresh
+        $(document).on('click', '#eq-generate-new-contract', function() {
+            generateNewContract();
+        });
     }
 
     /**
@@ -603,8 +613,17 @@
             return;
         }
 
-        // Show loading
+        // Show loading with progress
         showContractLoading();
+        
+        // Show progress indicator
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 5;
+            if (progress <= 90) {
+                updateContractProgress(progress);
+            }
+        }, 200);
 
         // Prepare form data
         const formData = {
@@ -645,19 +664,26 @@
             url: eqCartData.ajaxurl,
             type: 'POST',
             data: formData,
+            timeout: 60000, // 60 seconds timeout
             success: function(response) {
-                hideContractLoading();
+                clearInterval(progressInterval);
+                updateContractProgress(100);
                 
-                if (response.success) {
-                    showContractSuccess(response.data);
-                } else {
-                    showNotification('error', response.data || 'Error generating contract');
-                    showContractForm();
-                }
+                setTimeout(() => {
+                    hideContractLoading();
+                    
+                    if (response.success) {
+                        showContractSuccess(response.data);
+                    } else {
+                        showNotification('error', response.data || 'Error generating contract');
+                        showContractForm();
+                    }
+                }, 500);
             },
             error: function() {
+                clearInterval(progressInterval);
                 hideContractLoading();
-                showNotification('error', 'Network error. Please try again.');
+                showNotification('error', 'Network error or timeout. Please try again.');
                 showContractForm();
             }
         });
@@ -738,38 +764,65 @@
             // Get the current active tab
             const currentTab = $('.eq-contract-tab-content.active').data('tab');
             
-            // Show specific error message with missing fields
-            if (missingFields.length > 0) {
-                const firstMissingField = missingFields[0];
-                switchContractTab(firstMissingField.tab);
-                
-                // Wait for tab switch to complete before adding error message
-                setTimeout(function() {
-                    // Show error in modal
-                    let errorHtml = '<div class="eq-validation-errors">';
-                    errorHtml += '<p style="color: #e74c3c; font-weight: bold;">Please fill in the following required fields:</p>';
-                    errorHtml += '<ul style="color: #e74c3c;">';
-                    missingFields.forEach(function(field) {
-                        errorHtml += '<li>' + field.label + '</li>';
-                    });
-                    errorHtml += '</ul></div>';
-                    
-                    // Remove any existing error message
-                    $('.eq-validation-errors').remove();
-                    
-                    // Add error message to the active tab
-                    $('.eq-contract-tab-content.active').prepend(errorHtml);
-                    
-                    // Auto-hide after 5 seconds
-                    setTimeout(function() {
-                        $('.eq-validation-errors').fadeOut(function() {
-                            $(this).remove();
-                        });
-                    }, 5000);
-                }, 100); // Small delay to ensure tab switch completes
+            // Build error message by tab
+            let errorsByTab = {};
+            missingFields.forEach(function(field) {
+                if (!errorsByTab[field.tab]) {
+                    errorsByTab[field.tab] = [];
+                }
+                errorsByTab[field.tab].push(field.label);
+            });
+            
+            // Create detailed error message
+            let errorMessage = '<div class="eq-contract-error-notification">';
+            errorMessage += '<i class="fas fa-exclamation-triangle"></i>';
+            errorMessage += '<div>';
+            errorMessage += '<strong>Please complete the following required fields:</strong>';
+            
+            // Show errors grouped by tab
+            for (let tab in errorsByTab) {
+                let tabLabel = $('.eq-contract-tab-nav li[data-tab="' + tab + '"]').text();
+                errorMessage += '<div style="margin-top: 10px;"><strong>' + tabLabel + ':</strong>';
+                errorMessage += '<ul style="margin: 5px 0 0 20px;">';
+                errorsByTab[tab].forEach(function(field) {
+                    errorMessage += '<li>' + field + '</li>';
+                });
+                errorMessage += '</ul></div>';
             }
             
-            showNotification('error', 'Please fill in all required fields');
+            if (paymentSchedule.length === 0 || tabsWithErrors.has('payment')) {
+                errorMessage += '<div style="margin-top: 10px;"><strong>Payment Schedule:</strong>';
+                errorMessage += '<ul style="margin: 5px 0 0 20px;">';
+                if (paymentSchedule.length === 0) {
+                    errorMessage += '<li>At least one payment is required</li>';
+                }
+                const totalScheduled = paymentSchedule.reduce((sum, payment) => sum + payment.amount, 0);
+                const contractTotal = contractData.cart_total_raw || 0;
+                const difference = Math.abs(contractTotal - totalScheduled);
+                if (difference > 0.01) {
+                    errorMessage += '<li>Payment schedule must equal contract total</li>';
+                }
+                errorMessage += '</ul></div>';
+            }
+            
+            errorMessage += '</div></div>';
+            
+            // Remove any existing error message
+            $('.eq-contract-error-notification').remove();
+            
+            // If not on tab with errors, switch to first tab with errors
+            if (!tabsWithErrors.has(currentTab) && missingFields.length > 0) {
+                const firstErrorTab = missingFields[0].tab;
+                switchContractTab(firstErrorTab);
+            }
+            
+            // Add error message at the top of modal content
+            $('#eq-contract-form').prepend(errorMessage);
+            
+            // Scroll to top of modal to show error
+            $('.eq-contract-modal-content').animate({ scrollTop: 0 }, 300);
+            
+            showNotification('error', 'Please fill in all required fields marked with (!)');
         }
 
         return isValid;
@@ -781,6 +834,33 @@
     function showContractLoading() {
         $('#eq-contract-form').hide();
         $('#eq-contract-loading').show();
+        
+        // Add progress bar if it doesn't exist
+        if (!$('#eq-contract-progress').length) {
+            $('#eq-contract-loading').append(`
+                <div id="eq-contract-progress" style="margin-top: 20px;">
+                    <div style="background: #f0f0f0; border-radius: 10px; overflow: hidden; height: 20px;">
+                        <div id="eq-progress-bar" style="background: #007cba; height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p id="eq-progress-text" style="text-align: center; margin-top: 10px; color: #666;">Preparing contract...</p>
+                </div>
+            `);
+        }
+    }
+
+    /**
+     * Update contract progress
+     */
+    function updateContractProgress(percentage) {
+        $('#eq-progress-bar').css('width', percentage + '%');
+        
+        let message = 'Preparing contract...';
+        if (percentage > 20) message = 'Processing cart data...';
+        if (percentage > 40) message = 'Generating PDF...';
+        if (percentage > 70) message = 'Saving contract...';
+        if (percentage >= 100) message = 'Complete!';
+        
+        $('#eq-progress-text').text(message);
     }
 
     /**
@@ -840,6 +920,36 @@
         // Implementation for sending contract via email/WhatsApp
         showNotification('info', 'Send contract functionality to be implemented');
     }
+    
+    /**
+     * Edit current contract - go back to form with existing data
+     */
+    function editContract() {
+        showContractForm();
+        showNotification('info', 'You can now edit the contract details and regenerate');
+    }
+    
+    /**
+     * Generate new contract - clear form and start fresh
+     */
+    function generateNewContract() {
+        // Clear form data
+        $('#eq-contract-form')[0].reset();
+        contractData = {};
+        paymentSchedule = [];
+        
+        // Clear validation errors
+        $('.eq-form-group').removeClass('error');
+        $('.field-error-message').remove();
+        $('.eq-contract-error-notification').remove();
+        $('.eq-contract-tab-nav li').removeClass('has-error');
+        
+        // Show form and go to first tab
+        showContractForm();
+        switchContractTab('company');
+        
+        showNotification('success', 'Contract form cleared. You can start a new contract');
+    }
 
     /**
      * Preview contract
@@ -850,39 +960,8 @@
             // Collect form data
             const formData = collectFormData();
             
-            // Show loading state on button
-            const $previewBtn = $('.eq-contract-preview');
-            const originalText = $previewBtn.html();
-            $previewBtn.html('<i class="fas fa-spinner fa-spin"></i> Generating preview...').prop('disabled', true);
-            
-            // Generate preview via AJAX without requiring validation
-            $.ajax({
-                url: eqCartData.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'eq_preview_contract_pdf',
-                    nonce: eqCartData.nonce,
-                    ...formData,
-                    payment_schedule: JSON.stringify(paymentSchedule),
-                    is_preview: true
-                },
-                success: function(response) {
-                    $previewBtn.html(originalText).prop('disabled', false);
-                    
-                    if (response.success && response.data.pdf_url) {
-                        // Open in new window/tab
-                        window.open(response.data.pdf_url, '_blank');
-                    } else {
-                        // Fallback to inline preview
-                        showInlinePreview(formData);
-                    }
-                },
-                error: function() {
-                    $previewBtn.html(originalText).prop('disabled', false);
-                    // Fallback to inline preview
-                    showInlinePreview(formData);
-                }
-            });
+            // Directly show inline preview (simpler approach)
+            showInlinePreview(formData);
             
         } catch (error) {
             console.error('Preview error:', error);
@@ -1032,6 +1111,14 @@
         
         html += '</tbody></table>';
         return html;
+    }
+    
+    /**
+     * Format currency
+     */
+    function formatCurrency(amount) {
+        if (!amount || isNaN(amount)) return '$0.00';
+        return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
     
     function collectFormData() {

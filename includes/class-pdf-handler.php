@@ -158,12 +158,20 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $it
             
             // Usar DOMPDF para convertir HTML a PDF
         if (class_exists('Dompdf\Dompdf')) {
-            // Configurar opciones para permitir carga de imágenes
+            // Configurar opciones para optimizar rendimiento
             $options = new \Dompdf\Options();
 			$options->set('isRemoteEnabled', true);
-			// Configurar márgenes más pequeños para aprovechar mejor el espacio
 			$options->set('defaultPaperSize', 'A4');
 			$options->set('defaultPaperOrientation', 'portrait');
+			// Optimizaciones de rendimiento
+			$options->set('isHtml5ParserEnabled', true);
+			$options->set('isPhpEnabled', false); // Deshabilitar PHP en PDFs por seguridad y rendimiento
+			$options->set('debugCss', false);
+			$options->set('debugKeepTemp', false);
+			$options->set('debugPng', false);
+			$options->set('defaultMediaType', 'print');
+			// Configurar memoria para documentos más grandes
+			$options->set('chroot', ABSPATH);
 			$dompdf = new \Dompdf\Dompdf($options);
             
             $dompdf->loadHtml($html);
@@ -185,8 +193,9 @@ $html = $this->generate_pdf_html($cart_items, $totals, $context, $discounts, $it
                 wp_mkdir_p($user_dir);
             }
 			
-            // Nombre del archivo
-            $filename = 'quote_' . date('Y-m-d_H-i-s') . '.pdf';
+            // Nombre del archivo con hash para evitar colisiones
+            $content_hash = md5(serialize($cart_items) . serialize($totals) . serialize($context));
+            $filename = 'quote_' . $content_hash . '_' . date('Y-m-d_H-i-s') . '.pdf';
             $pdf_path = $user_dir . '/' . $filename;
             $pdf_url = $upload_dir['baseurl'] . '/event-quote-cart/' . $user_id . '/' . $filename;
                 

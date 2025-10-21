@@ -497,6 +497,37 @@
     margin-top: 30px;
 }
 
+.eq-contract-additional-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.eq-btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+    border: 1px solid #ffc107;
+}
+
+.eq-btn-warning:hover {
+    background-color: #ffcd39;
+    border-color: #ffcd39;
+}
+
+.eq-btn-info {
+    background-color: #17a2b8;
+    color: white;
+    border: 1px solid #17a2b8;
+}
+
+.eq-btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
 /* Notifications */
 .eq-notification {
     position: fixed;

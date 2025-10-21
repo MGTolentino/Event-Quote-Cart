@@ -70,8 +70,21 @@ class Event_Quote_Cart_Contract_Handler {
                 wp_mkdir_p($plugin_upload_dir);
             }
             
-            // Generar PDF
-            $dompdf = new Dompdf\Dompdf();
+            // Generar PDF con optimizaciones
+            $options = new \Dompdf\Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('defaultPaperSize', 'A4');
+            $options->set('defaultPaperOrientation', 'portrait');
+            // Optimizaciones de rendimiento
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isPhpEnabled', false);
+            $options->set('debugCss', false);
+            $options->set('debugKeepTemp', false);
+            $options->set('debugPng', false);
+            $options->set('defaultMediaType', 'print');
+            $options->set('chroot', ABSPATH);
+            
+            $dompdf = new Dompdf\Dompdf($options);
             $dompdf->loadHtml($html);
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
@@ -406,29 +419,50 @@ class Event_Quote_Cart_Contract_Handler {
                     </thead>
                     <tbody>
                         <?php foreach ($cart_items as $item): ?>
+                            <!-- Main service row -->
                             <tr>
                                 <td><strong><?php echo esc_html($item->title); ?></strong></td>
                                 <td>
-                                    <?php if (!empty($item->extras)): ?>
-                                        <?php esc_html_e('Incluye:', 'event-quote-cart'); ?><br>
-                                        <?php foreach ($item->extras as $extra): ?>
-                                            - <?php echo esc_html($extra['name']); ?>
-                                            <?php if ($extra['quantity'] > 1): ?>
-                                                × <?php echo esc_html($extra['quantity']); ?>
-                                            <?php endif; ?><br>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                    
                                     <?php if (isset($item->is_date_range) && $item->is_date_range): ?>
-                                        <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                                        <strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
                                     <?php else: ?>
-                                        <br><strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+                                        <strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
                                     <?php endif; ?>
                                 </td>
                                 <td class="number"><?php echo esc_html($item->quantity); ?></td>
                                 <td class="number"><?php echo esc_html($item->price_formatted); ?></td>
                                 <td class="number"><?php echo esc_html($item->price_formatted); ?></td>
                             </tr>
+                            
+                            <!-- Extra service rows -->
+                            <?php if (!empty($item->extras)): ?>
+                                <?php foreach ($item->extras as $extra): ?>
+                                    <tr class="extra-service-row">
+                                        <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
+                                        <td class="description">
+                                            <?php if (!empty($extra['description'])): ?>
+                                                <?php echo nl2br(esc_html($extra['description'])); ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="number">
+                                            <?php 
+                                            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                                                echo esc_html($extra['display_quantity']);
+                                            } else {
+                                                echo esc_html($extra['quantity'] ?? 1);
+                                            }
+                                            ?>
+                                        </td>
+                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
+                                        <td class="number">
+                                            <?php 
+                                            $extra_total = $extra['price'] * ($extra['quantity'] ?? 1);
+                                            echo hivepress()->woocommerce->format_price($extra_total);
+                                            ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     </tbody>
                 </table>

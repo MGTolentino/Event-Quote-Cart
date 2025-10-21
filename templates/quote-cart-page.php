@@ -663,6 +663,14 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     <i class="fas fa-envelope"></i> <?php esc_html_e('Send to Client', 'event-quote-cart'); ?>
                 </button>
             </div>
+            <div class="eq-contract-additional-actions">
+                <button type="button" id="eq-edit-contract" class="eq-btn eq-btn-warning">
+                    <i class="fas fa-edit"></i> <?php esc_html_e('Edit Contract', 'event-quote-cart'); ?>
+                </button>
+                <button type="button" id="eq-generate-new-contract" class="eq-btn eq-btn-info">
+                    <i class="fas fa-plus"></i> <?php esc_html_e('Generate New Contract', 'event-quote-cart'); ?>
+                </button>
+            </div>
         </div>
     </div>
 </div>
