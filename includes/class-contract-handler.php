@@ -225,21 +225,6 @@ class Event_Quote_Cart_Contract_Handler {
         <head>
             <meta charset="UTF-8">
             <title>Contrato de Servicios</title>
-            <script type="text/php">
-            if (isset($pdf)) {
-                $fontMetrics = $pdf->getFontMetrics();
-                $font = $fontMetrics->getFont("helvetica", "normal");
-                $size = 10;
-                $color = array(0, 0, 0);
-                
-                // Add footer to every page
-                $pdf->page_text(50, $pdf->get_height() - 60, "FIRMA DEL CONTRATANTE", $font, $size, $color);
-                $pdf->page_line(50, $pdf->get_height() - 45, 200, $pdf->get_height() - 45, $color, 1);
-                
-                $pdf->page_text(350, $pdf->get_height() - 60, "FIRMA DE LA EMPRESA", $font, $size, $color);
-                $pdf->page_line(350, $pdf->get_height() - 45, 500, $pdf->get_height() - 45, $color, 1);
-            }
-            </script>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -354,11 +339,43 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px 20px 60px 20px; /* Reduced bottom margin for footer */
+                    margin: 20px 20px 70px 20px; /* Bottom margin for CSS footer */
+                }
+                
+                .contract-footer {
+                    position: fixed;
+                    bottom: -60px;
+                    left: 0;
+                    right: 0;
+                    width: 100%;
+                    height: 50px;
+                    font-size: 10px;
+                    border-top: 1px solid #333;
+                    padding-top: 10px;
+                    background-color: white;
+                    z-index: 1000;
+                }
+                
+                .footer-signature {
+                    float: left;
+                    width: 45%;
+                    text-align: center;
+                    padding: 5px;
+                }
+                
+                .footer-signature:last-child {
+                    float: right;
+                }
+                
+                .signature-line {
+                    display: inline-block;
+                    width: 150px;
+                    border-bottom: 1px solid #333;
+                    margin-top: 15px;
                 }
                 
                 .signatures {
-                    display: none; /* Hide as we use script-based footer */
+                    display: none; /* Hide old signatures div */
                 }
                 .signature-block {
                     width: 45%;
@@ -658,19 +675,19 @@ class Event_Quote_Cart_Contract_Handler {
                 </div>
             <?php endif; ?>
             
+            <!-- Footer CSS Fixed para todas las páginas -->
+            <div class="contract-footer">
+                <div class="footer-signature">
+                    FIRMA DEL CONTRATANTE<br>
+                    <div class="signature-line"></div>
+                </div>
+                <div class="footer-signature">
+                    FIRMA DE LA EMPRESA<br>
+                    <div class="signature-line"></div>
+                </div>
+            </div>
+            
         </body>
-        
-        <!-- Firmas en footer de cada página -->
-        <div class="signatures">
-            <div class="signature-block">
-                <div><?php echo esc_html($client['name']); ?></div>
-                <div class="signature-line">FIRMA DEL CONTRATANTE</div>
-            </div>
-            <div class="signature-block">
-                <div class="signature-line">FIRMA DE LA EMPRESA</div>
-            </div>
-        </div>
-        
         </html>
         <?php
         
@@ -720,8 +737,9 @@ class Event_Quote_Cart_Contract_Handler {
      * Clean HTML for DOMPDF to avoid rendering errors
      */
     private function clean_html_for_dompdf($html) {
-        // Remove problematic CSS properties
-        $html = preg_replace('/position\s*:\s*fixed\s*;?/i', '', $html);
+        // Remove problematic CSS properties but keep position fixed for footer
+        // Skip position fixed removal to allow footer CSS to work
+        // $html = preg_replace('/position\s*:\s*fixed\s*;?/i', '', $html); // Disabled for footer
         $html = preg_replace('/position\s*:\s*absolute\s*;?/i', '', $html);
         
         // Ensure all tables are properly closed
