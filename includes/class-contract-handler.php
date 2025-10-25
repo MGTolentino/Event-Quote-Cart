@@ -77,14 +77,14 @@ class Event_Quote_Cart_Contract_Handler {
             $options->set('defaultPaperOrientation', 'portrait');
             // Optimizaciones de rendimiento
             $options->set('isHtml5ParserEnabled', true);
-            $options->set('isPhpEnabled', false);
+            $options->set('isPhpEnabled', true);  // Habilitar PHP para footer
             $options->set('debugCss', false);
             $options->set('debugKeepTemp', false);
             $options->set('debugPng', false);
             $options->set('defaultMediaType', 'print');
             $options->set('chroot', ABSPATH);
-            // Importante: desactivar las funciones problemáticas
-            $options->set('enable_php', false);
+            // Habilitar PHP para script de footer
+            $options->set('enable_php', true);
             $options->set('enable_javascript', false);
             
             $dompdf = new Dompdf\Dompdf($options);
@@ -227,19 +227,17 @@ class Event_Quote_Cart_Contract_Handler {
             <title>Contrato de Servicios</title>
             <script type="text/php">
             if (isset($pdf)) {
-                $font = Font_Metrics::get_font("helvetica", "normal");
+                $fontMetrics = $pdf->getFontMetrics();
+                $font = $fontMetrics->getFont("helvetica", "normal");
                 $size = 10;
                 $color = array(0, 0, 0);
-                $page_count = $pdf->get_page_count();
                 
                 // Add footer to every page
-                for ($i = 1; $i <= $page_count; $i++) {
-                    $pdf->page_text(50, $pdf->get_height() - 60, "FIRMA DEL CONTRATANTE", $font, $size, $color);
-                    $pdf->line(50, $pdf->get_height() - 45, 200, $pdf->get_height() - 45, $color, 1);
-                    
-                    $pdf->page_text(350, $pdf->get_height() - 60, "FIRMA DE LA EMPRESA", $font, $size, $color);
-                    $pdf->line(350, $pdf->get_height() - 45, 500, $pdf->get_height() - 45, $color, 1);
-                }
+                $pdf->page_text(50, $pdf->get_height() - 60, "FIRMA DEL CONTRATANTE", $font, $size, $color);
+                $pdf->page_line(50, $pdf->get_height() - 45, 200, $pdf->get_height() - 45, $color, 1);
+                
+                $pdf->page_text(350, $pdf->get_height() - 60, "FIRMA DE LA EMPRESA", $font, $size, $color);
+                $pdf->page_line(350, $pdf->get_height() - 45, 500, $pdf->get_height() - 45, $color, 1);
             }
             </script>
             <style>
@@ -269,7 +267,10 @@ class Event_Quote_Cart_Contract_Handler {
                     font-weight: bold;
                 }
                 .section {
-                    margin-bottom: 35px;
+                    margin-bottom: 20px;
+                    page-break-inside: auto;
+                }
+                .critical-section {
                     page-break-inside: avoid;
                 }
                 .section-title {
@@ -301,7 +302,8 @@ class Event_Quote_Cart_Contract_Handler {
                 .services-table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin: 20px 0;
+                    margin: 15px 0;
+                    page-break-inside: avoid;
                 }
                 .services-table th,
                 .services-table td {
@@ -352,7 +354,7 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px 20px 80px 20px; /* Extra bottom margin for footer */
+                    margin: 20px 20px 60px 20px; /* Reduced bottom margin for footer */
                 }
                 
                 .signatures {
@@ -430,9 +432,9 @@ class Event_Quote_Cart_Contract_Handler {
             </div>
             
             <!-- Información del Evento -->
-            <div class="section event-info">
+            <div class="section">
                 <div class="section-title">Información del evento</div>
-                <div style="padding: 15px; border: 1px solid #bdc3c7; background-color: #f8f9fa;">
+                <div style="padding: 10px; border: 1px solid #bdc3c7; background-color: #f8f9fa; margin-bottom: 10px;">
                     <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
                     <strong>Lugar:</strong> <?php echo esc_html($event['location']); ?>
                     <?php if ($event_time_formatted): ?>
