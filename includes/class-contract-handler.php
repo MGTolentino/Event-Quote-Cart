@@ -672,12 +672,11 @@ class Event_Quote_Cart_Contract_Handler {
             <!-- Footer CSS Fixed para todas las páginas -->
             <div class="contract-footer">
                 <div class="footer-signature">
-                    FIRMA DEL CONTRATANTE<br>
-                    <div class="signature-line"></div>
+                    <?php echo esc_html($client['name']); ?><br>
+                    <div class="signature-line">FIRMA DEL CONTRATANTE</div>
                 </div>
                 <div class="footer-signature">
-                    FIRMA DE LA EMPRESA<br>
-                    <div class="signature-line"></div>
+                    <div class="signature-line">FIRMA DE LA EMPRESA</div>
                 </div>
             </div>
             
