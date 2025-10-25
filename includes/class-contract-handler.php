@@ -252,7 +252,8 @@ class Event_Quote_Cart_Contract_Handler {
                     font-weight: bold;
                 }
                 .section {
-                    margin-bottom: 25px;
+                    margin-bottom: 35px;
+                    page-break-inside: avoid;
                 }
                 .section-title {
                     font-size: 16px;
@@ -263,29 +264,27 @@ class Event_Quote_Cart_Contract_Handler {
                     margin-bottom: 15px;
                 }
                 .info-grid {
+                    display: table;
                     width: 100%;
+                    border-collapse: collapse;
                     margin-bottom: 20px;
                 }
                 .info-row {
-                    width: 100%;
-                    clear: both;
+                    display: table-row;
                 }
                 .info-cell {
-                    width: 48%;
-                    float: left;
-                    padding: 10px;
+                    display: table-cell;
+                    width: 50%;
+                    padding: 15px;
                     border: 1px solid #bdc3c7;
-                    margin-bottom: -1px;
-                }
-                .info-cell:first-child {
-                    margin-right: 2%;
+                    vertical-align: top;
+                    height: auto;
+                    min-height: 120px;
                 }
                 .info-cell.header {
                     background-color: #ecf0f1;
                     font-weight: bold;
-                }
-                .clearfix {
-                    clear: both;
+                    text-align: center;
                 }
                 .services-table {
                     width: 100%;
@@ -341,23 +340,28 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px;
+                    margin: 20px 20px 100px 20px;
                 }
                 
                 .signatures {
-                    margin-top: 50px;
-                    width: 100%;
+                    position: fixed;
+                    bottom: 20px;
+                    left: 20px;
+                    right: 20px;
+                    width: calc(100% - 40px);
                     font-size: 10px;
-                    page-break-inside: avoid;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    padding: 15px 0;
+                    border-top: 1px solid #333;
+                    background-color: white;
                 }
                 .signature-block {
                     width: 45%;
-                    float: left;
                     text-align: center;
                     padding: 10px;
-                }
-                .signature-block:last-child {
-                    float: right;
+                    box-sizing: border-box;
                 }
                 .signature-line {
                     border-top: 1px solid #333;
@@ -395,7 +399,6 @@ class Event_Quote_Cart_Contract_Handler {
                         <div class="info-cell header">Datos de la Empresa</div>
                         <div class="info-cell header">Datos del Contratante</div>
                     </div>
-                    <div class="clearfix"></div>
                     <div class="info-row">
                         <div class="info-cell">
                             <strong><?php echo esc_html($company['name']); ?></strong><br>
@@ -417,26 +420,21 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php endif; ?>
                         </div>
                     </div>
-                    <div class="clearfix"></div>
                 </div>
             </div>
             
             <!-- Información del Evento -->
-            <div class="section">
+            <div class="section event-info">
                 <div class="section-title">Información del evento</div>
-                <div class="info-grid">
-                    <div class="info-row">
-                        <div class="info-cell">
-                            <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
-                            <strong>Lugar:</strong> <?php echo esc_html($event['location']); ?>
-                            <?php if ($event_time_formatted): ?>
-                                <br><strong>Hora de inicio:</strong> <?php echo esc_html($event_time_formatted); ?>
-                            <?php endif; ?>
-                            <?php if ($event['guests']): ?>
-                                <br><strong>Cantidad de Invitados:</strong> <?php echo intval($event['guests']); ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                <div style="padding: 15px; border: 1px solid #bdc3c7; background-color: #f8f9fa;">
+                    <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
+                    <strong>Lugar:</strong> <?php echo esc_html($event['location']); ?>
+                    <?php if ($event_time_formatted): ?>
+                        <br><strong>Hora de inicio:</strong> <?php echo esc_html($event_time_formatted); ?>
+                    <?php endif; ?>
+                    <?php if ($event['guests']): ?>
+                        <br><strong>Cantidad de Invitados:</strong> <?php echo intval($event['guests']); ?>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -454,6 +452,13 @@ class Event_Quote_Cart_Contract_Handler {
                     </thead>
                     <tbody>
                         <?php foreach ($cart_items as $item): ?>
+                            <?php 
+                            // Calculate correct prices like in quote handler
+                            $tax_rate = eq_get_woocommerce_tax_rate() ?: 16;
+                            $item_unit_price_with_tax = floatval($item->base_price ?? $item->price ?? 0);
+                            $item_unit_price_without_tax = $item_unit_price_with_tax / (1 + ($tax_rate / 100));
+                            $item_subtotal = $item_unit_price_without_tax * ($item->quantity ?? 1);
+                            ?>
                             <!-- Main service row -->
                             <tr>
                                 <td><strong><?php echo esc_html($item->title); ?></strong></td>
@@ -464,14 +469,37 @@ class Event_Quote_Cart_Contract_Handler {
                                         <strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
                                     <?php endif; ?>
                                 </td>
-                                <td class="number"><?php echo esc_html($item->quantity); ?></td>
-                                <td class="number"><?php echo esc_html($item->price_formatted); ?></td>
-                                <td class="number"><?php echo esc_html($item->price_formatted); ?></td>
+                                <td class="number"><?php echo esc_html($item->quantity ?? 1); ?></td>
+                                <td class="number"><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
+                                <td class="number"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></td>
                             </tr>
                             
                             <!-- Extra service rows -->
                             <?php if (!empty($item->extras)): ?>
                                 <?php foreach ($item->extras as $extra): ?>
+                                    <?php
+                                    // Calculate extra pricing like in quote handler
+                                    $extra_price = 0;
+                                    $display_quantity = $item->quantity ?? 1;
+                                    
+                                    switch($extra['type'] ?? 'per_quantity') {
+                                        case 'per_quantity':
+                                            $extra_price = floatval($extra['price']) * ($item->quantity ?? 1);
+                                            break;
+                                        case 'per_order':
+                                        case 'per_booking':
+                                        case 'per_item':
+                                            $extra_price = floatval($extra['price']);
+                                            $display_quantity = 1;
+                                            break;
+                                        default:
+                                            $extra_price = floatval($extra['price']) * ($item->quantity ?? 1);
+                                    }
+                                    
+                                    // Remove tax from extra price for display
+                                    $extra_unit_price = floatval($extra['price']) / (1 + ($tax_rate / 100));
+                                    $extra_total_without_tax = $extra_price / (1 + ($tax_rate / 100));
+                                    ?>
                                     <tr class="extra-service-row">
                                         <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
                                         <td class="description">
@@ -479,22 +507,9 @@ class Event_Quote_Cart_Contract_Handler {
                                                 <?php echo nl2br(esc_html($extra['description'])); ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="number">
-                                            <?php 
-                                            if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
-                                                echo esc_html($extra['display_quantity']);
-                                            } else {
-                                                echo esc_html($extra['quantity'] ?? 1);
-                                            }
-                                            ?>
-                                        </td>
-                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra['price']); ?></td>
-                                        <td class="number">
-                                            <?php 
-                                            $extra_total = $extra['price'] * ($extra['quantity'] ?? 1);
-                                            echo hivepress()->woocommerce->format_price($extra_total);
-                                            ?>
-                                        </td>
+                                        <td class="number"><?php echo esc_html($display_quantity); ?></td>
+                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_unit_price); ?></td>
+                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_total_without_tax); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
