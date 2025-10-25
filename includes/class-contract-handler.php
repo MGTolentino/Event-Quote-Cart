@@ -225,6 +225,23 @@ class Event_Quote_Cart_Contract_Handler {
         <head>
             <meta charset="UTF-8">
             <title>Contrato de Servicios</title>
+            <script type="text/php">
+            if (isset($pdf)) {
+                $font = Font_Metrics::get_font("helvetica", "normal");
+                $size = 10;
+                $color = array(0, 0, 0);
+                $page_count = $pdf->get_page_count();
+                
+                // Add footer to every page
+                for ($i = 1; $i <= $page_count; $i++) {
+                    $pdf->page_text(50, $pdf->get_height() - 60, "FIRMA DEL CONTRATANTE", $font, $size, $color);
+                    $pdf->line(50, $pdf->get_height() - 45, 200, $pdf->get_height() - 45, $color, 1);
+                    
+                    $pdf->page_text(350, $pdf->get_height() - 60, "FIRMA DE LA EMPRESA", $font, $size, $color);
+                    $pdf->line(350, $pdf->get_height() - 45, 500, $pdf->get_height() - 45, $color, 1);
+                }
+            }
+            </script>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -263,28 +280,19 @@ class Event_Quote_Cart_Contract_Handler {
                     padding-bottom: 5px;
                     margin-bottom: 15px;
                 }
-                .info-grid {
+                .info-table {
                     width: 100%;
+                    border-collapse: collapse;
                     margin-bottom: 20px;
-                    overflow: hidden; /* Clear floats */
                 }
-                .info-row {
-                    width: 100%;
-                    overflow: hidden; /* Clear floats */
-                    margin-bottom: 10px;
-                }
-                .info-cell {
-                    width: 48%;
-                    float: left;
+                .info-table td {
+                    width: 50%;
                     padding: 15px;
                     border: 1px solid #bdc3c7;
-                    box-sizing: border-box;
+                    vertical-align: top;
                     min-height: 120px;
                 }
-                .info-cell:first-child {
-                    margin-right: 4%;
-                }
-                .info-cell.header {
+                .info-table .header {
                     background-color: #ecf0f1;
                     font-weight: bold;
                     text-align: center;
@@ -344,17 +352,11 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px;
+                    margin: 20px 20px 80px 20px; /* Extra bottom margin for footer */
                 }
                 
                 .signatures {
-                    position: absolute;
-                    bottom: 50px;
-                    left: 0;
-                    right: 0;
-                    width: 100%;
-                    font-size: 10px;
-                    page-break-inside: avoid;
+                    display: none; /* Hide as we use script-based footer */
                 }
                 .signature-block {
                     width: 45%;
@@ -381,6 +383,7 @@ class Event_Quote_Cart_Contract_Handler {
                     padding: 15px;
                     border-radius: 5px;
                     margin: 20px 0;
+                    text-align: center;
                 }
             </style>
         </head>
@@ -397,13 +400,13 @@ class Event_Quote_Cart_Contract_Handler {
             
             <!-- Datos de la Empresa y Contratante -->
             <div class="section">
-                <div class="info-grid">
-                    <div class="info-row">
-                        <div class="info-cell header">Datos de la Empresa</div>
-                        <div class="info-cell header">Datos del Contratante</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-cell">
+                <table class="info-table">
+                    <tr>
+                        <td class="header">Datos de la Empresa</td>
+                        <td class="header">Datos del Contratante</td>
+                    </tr>
+                    <tr>
+                        <td>
                             <strong><?php echo esc_html($company['name']); ?></strong><br>
                             <?php echo nl2br(esc_html($company['address'])); ?><br>
                             Teléfonos: <?php echo esc_html($company['phone']); ?><br>
@@ -411,8 +414,8 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php if ($company['rfc']): ?>
                                 <br>RFC: <?php echo esc_html($company['rfc']); ?>
                             <?php endif; ?>
-                        </div>
-                        <div class="info-cell">
+                        </td>
+                        <td>
                             <strong><?php echo esc_html($client['name']); ?></strong><br>
                             <?php echo nl2br(esc_html($client['address'])); ?>
                             <?php if ($client['email']): ?>
@@ -421,9 +424,9 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php if ($client['phone']): ?>
                                 <br>Cel. <?php echo esc_html($client['phone']); ?>
                             <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
             
             <!-- Información del Evento -->
@@ -515,23 +518,67 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php if (!empty($item->extras)): ?>
                                 <?php foreach ($item->extras as $extra): ?>
                                     <?php
-                                    // Calculate extra pricing exactly like in quote handler
-                                    $extra_unit_price = floatval($extra['price']) / (1 + $tax_rate_decimal);
-                                    $extra_quantity = isset($extra['display_quantity']) ? $extra['display_quantity'] : 
-                                                     (isset($extra['quantity']) ? $extra['quantity'] : 1);
-                                    $extra_total = $extra_unit_price * $extra_quantity;
+                                    // Calculate extra pricing EXACTLY like in quote handler
+                                    $extra_price = 0;
+                                    $display_quantity = $item->quantity; // Por defecto, mostrar la cantidad del ítem principal
+                                    
+                                    // LÓGICA COMPLETA DEL QUOTE HANDLER
+                                    switch($extra['type']) {
+                                        case 'per_quantity':
+                                            // Para extras tipo per_quantity, precio unitario × cantidad del ítem
+                                            $extra_price = $extra['price'] * $item->quantity;
+                                            break;
+                                            
+                                        case 'per_order':
+                                        case 'per_booking':
+                                        case 'per_item': // Tratar per_item igual que per_order/per_booking
+                                            // Para extras tipo per_order/per_item, mostrar solo el precio sin multiplicar
+                                            $extra_price = $extra['price'];
+                                            // Para estos tipos, mostramos "1" como cantidad para claridad
+                                            $display_quantity = 1;
+                                            break;
+                                            
+                                        default:
+                                            // Si no hay tipo especificado, tratarlo como per_quantity
+                                            $extra_price = $extra['price'] * $item->quantity;
+                                    }
+                                    
+                                    // Cantidad final a mostrar
+                                    if (isset($extra['display_quantity']) && $extra['display_quantity'] > 1) {
+                                        $final_display_quantity = $extra['display_quantity'];
+                                    } else {
+                                        $final_display_quantity = $display_quantity;
+                                    }
+                                    
+                                    // Dividir la descripción del extra si es muy larga
+                                    $extra_description_chunks = !empty($extra['description']) ? 
+                                        $this->split_long_text($extra['description'], 4) : array('');
+                                    $extra_chunks_count = count($extra_description_chunks);
+                                    $is_first_extra_row = true;
                                     ?>
-                                    <tr class="extra-service-row">
-                                        <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
-                                        <td class="description">
-                                            <?php if (!empty($extra['description'])): ?>
-                                                <?php echo nl2br(esc_html($extra['description'])); ?>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="number"><?php echo esc_html($extra_quantity); ?></td>
-                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_unit_price); ?></td>
-                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_total); ?></td>
-                                    </tr>
+                                    
+                                    <?php foreach ($extra_description_chunks as $extra_chunk_index => $extra_chunk): ?>
+                                        <?php
+                                        $extra_row_classes = array('extra-service-row');
+                                        if (!$is_first_extra_row) {
+                                            $extra_row_classes[] = 'item-continuation';
+                                        }
+                                        if ($is_first_extra_row && $extra_chunks_count > 1) {
+                                            $extra_row_classes[] = 'has-continuation';
+                                        }
+                                        if ($extra_chunk_index === $extra_chunks_count - 1 && $extra_chunks_count > 1) {
+                                            $extra_row_classes[] = 'last-of-group';
+                                        }
+                                        ?>
+                                        <tr class="<?php echo esc_attr(implode(' ', $extra_row_classes)); ?>">
+                                            <td><?php echo $is_first_extra_row ? esc_html($extra['name']) . ' by ' . esc_html($item->title) : ''; ?></td>
+                                            <td class="description"><?php echo nl2br(esc_html($extra_chunk)); ?></td>
+                                            <td class="number"><?php echo $is_first_extra_row ? esc_html($final_display_quantity) : ''; ?></td>
+                                            <td class="number"><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra['price']) : ''; ?></td>
+                                            <td class="number"><?php echo $is_first_extra_row ? hivepress()->woocommerce->format_price($extra_price) : ''; ?></td>
+                                        </tr>
+                                        <?php $is_first_extra_row = false; ?>
+                                    <?php endforeach; ?>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         <?php endforeach; ?>
