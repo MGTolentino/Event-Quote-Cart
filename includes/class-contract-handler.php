@@ -26,8 +26,8 @@ class Event_Quote_Cart_Contract_Handler {
             // Obtener datos del formulario
             $contract_data = $this->sanitize_contract_data($_POST);
             
-            // Obtener items del carrito
-            $cart_items = eq_get_cart_items();
+            // Obtener items del carrito con detalles completos
+            $cart_items = $this->get_detailed_cart_items();
             if (empty($cart_items)) {
                 throw new Exception('No items in cart');
             }
@@ -264,27 +264,31 @@ class Event_Quote_Cart_Contract_Handler {
                     margin-bottom: 15px;
                 }
                 .info-grid {
-                    display: table;
                     width: 100%;
-                    border-collapse: collapse;
                     margin-bottom: 20px;
+                    overflow: hidden; /* Clear floats */
                 }
                 .info-row {
-                    display: table-row;
+                    width: 100%;
+                    overflow: hidden; /* Clear floats */
+                    margin-bottom: 10px;
                 }
                 .info-cell {
-                    display: table-cell;
-                    width: 50%;
+                    width: 48%;
+                    float: left;
                     padding: 15px;
                     border: 1px solid #bdc3c7;
-                    vertical-align: top;
-                    height: auto;
+                    box-sizing: border-box;
                     min-height: 120px;
+                }
+                .info-cell:first-child {
+                    margin-right: 4%;
                 }
                 .info-cell.header {
                     background-color: #ecf0f1;
                     font-weight: bold;
                     text-align: center;
+                    min-height: 40px;
                 }
                 .services-table {
                     width: 100%;
@@ -340,28 +344,27 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px 20px 100px 20px;
+                    margin: 20px;
                 }
                 
                 .signatures {
-                    position: fixed;
-                    bottom: 20px;
-                    left: 20px;
-                    right: 20px;
-                    width: calc(100% - 40px);
+                    position: absolute;
+                    bottom: 50px;
+                    left: 0;
+                    right: 0;
+                    width: 100%;
                     font-size: 10px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    padding: 15px 0;
-                    border-top: 1px solid #333;
-                    background-color: white;
+                    page-break-inside: avoid;
                 }
                 .signature-block {
                     width: 45%;
+                    float: left;
                     text-align: center;
                     padding: 10px;
                     box-sizing: border-box;
+                }
+                .signature-block:last-child {
+                    float: right;
                 }
                 .signature-line {
                     border-top: 1px solid #333;
@@ -455,50 +458,68 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php 
                             // Calculate correct prices like in quote handler
                             $tax_rate = eq_get_woocommerce_tax_rate() ?: 16;
-                            $item_unit_price_with_tax = floatval($item->base_price ?? $item->price ?? 0);
-                            $item_unit_price_without_tax = $item_unit_price_with_tax / (1 + ($tax_rate / 100));
-                            $item_subtotal = $item_unit_price_without_tax * ($item->quantity ?? 1);
+                            $tax_rate_decimal = $tax_rate / 100;
+                            
+                            // Si el item tiene precio base 0, usar ese precio base para el cálculo
+                            if ($item->base_price == 0) {
+                                $item_unit_price_without_tax = 0;
+                                $item_subtotal = 0;
+                            } else {
+                                // Usar directamente el precio base del servicio principal (sin extras)
+                                $item_unit_price_without_tax = $item->base_price;
+                                $item_subtotal = $item->base_price * $item->quantity;
+                            }
+                            
+                            // Dividir la descripción en chunks si es muy larga
+                            $description_chunks = $this->split_long_text($item->description, 5);
+                            $chunks_count = count($description_chunks);
+                            $is_first_row = true;
                             ?>
-                            <!-- Main service row -->
-                            <tr>
-                                <td><strong><?php echo esc_html($item->title); ?></strong></td>
-                                <td>
-                                    <?php if (isset($item->is_date_range) && $item->is_date_range): ?>
-                                        <strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
-                                    <?php else: ?>
-                                        <strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="number"><?php echo esc_html($item->quantity ?? 1); ?></td>
-                                <td class="number"><?php echo hivepress()->woocommerce->format_price($item_unit_price_without_tax); ?></td>
-                                <td class="number"><?php echo hivepress()->woocommerce->format_price($item_subtotal); ?></td>
-                            </tr>
+                            
+                            <?php foreach ($description_chunks as $chunk_index => $description_chunk): ?>
+                                <?php
+                                $row_classes = array();
+                                if (!$is_first_row) {
+                                    $row_classes[] = 'item-continuation';
+                                }
+                                if ($is_first_row && $chunks_count > 1) {
+                                    $row_classes[] = 'has-continuation';
+                                }
+                                if ($chunk_index === $chunks_count - 1 && $chunks_count > 1) {
+                                    $row_classes[] = 'last-of-group';
+                                }
+                                ?>
+                                <!-- Main service row -->
+                                <tr class="<?php echo esc_attr(implode(' ', $row_classes)); ?>">
+                                    <td><strong><?php echo esc_html($item->title); ?></strong></td>
+                                    <td>
+                                        <?php echo nl2br(esc_html($description_chunk)); ?>
+                                        
+                                        <?php if ($is_first_row): ?>
+                                            <br><br>
+                                            <?php if (isset($item->is_date_range) && $item->is_date_range): ?>
+                                                <strong>Fecha del evento:</strong> <?php echo esc_html($item->start_date); ?> a <?php echo esc_html($item->end_date); ?>
+                                            <?php else: ?>
+                                                <strong>Fecha del evento:</strong> <?php echo esc_html($item->date); ?>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="number"><?php echo $is_first_row ? esc_html($item->quantity) : ''; ?></td>
+                                    <td class="number"><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_unit_price_without_tax) : ''; ?></td>
+                                    <td class="number"><?php echo $is_first_row ? hivepress()->woocommerce->format_price($item_subtotal) : ''; ?></td>
+                                </tr>
+                                <?php $is_first_row = false; ?>
+                            <?php endforeach; ?>
                             
                             <!-- Extra service rows -->
                             <?php if (!empty($item->extras)): ?>
                                 <?php foreach ($item->extras as $extra): ?>
                                     <?php
-                                    // Calculate extra pricing like in quote handler
-                                    $extra_price = 0;
-                                    $display_quantity = $item->quantity ?? 1;
-                                    
-                                    switch($extra['type'] ?? 'per_quantity') {
-                                        case 'per_quantity':
-                                            $extra_price = floatval($extra['price']) * ($item->quantity ?? 1);
-                                            break;
-                                        case 'per_order':
-                                        case 'per_booking':
-                                        case 'per_item':
-                                            $extra_price = floatval($extra['price']);
-                                            $display_quantity = 1;
-                                            break;
-                                        default:
-                                            $extra_price = floatval($extra['price']) * ($item->quantity ?? 1);
-                                    }
-                                    
-                                    // Remove tax from extra price for display
-                                    $extra_unit_price = floatval($extra['price']) / (1 + ($tax_rate / 100));
-                                    $extra_total_without_tax = $extra_price / (1 + ($tax_rate / 100));
+                                    // Calculate extra pricing exactly like in quote handler
+                                    $extra_unit_price = floatval($extra['price']) / (1 + $tax_rate_decimal);
+                                    $extra_quantity = isset($extra['display_quantity']) ? $extra['display_quantity'] : 
+                                                     (isset($extra['quantity']) ? $extra['quantity'] : 1);
+                                    $extra_total = $extra_unit_price * $extra_quantity;
                                     ?>
                                     <tr class="extra-service-row">
                                         <td><?php echo esc_html($extra['name']); ?> by <?php echo esc_html($item->title); ?></td>
@@ -507,9 +528,9 @@ class Event_Quote_Cart_Contract_Handler {
                                                 <?php echo nl2br(esc_html($extra['description'])); ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="number"><?php echo esc_html($display_quantity); ?></td>
+                                        <td class="number"><?php echo esc_html($extra_quantity); ?></td>
                                         <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_unit_price); ?></td>
-                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_total_without_tax); ?></td>
+                                        <td class="number"><?php echo hivepress()->woocommerce->format_price($extra_total); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -764,6 +785,152 @@ class Event_Quote_Cart_Contract_Handler {
              ORDER BY c.created_at DESC",
             $lead_id
         ));
+    }
+    
+    /**
+     * Get detailed cart items with enriched data (same as quote handler)
+     */
+    private function get_detailed_cart_items($item_order = null) {
+        // Obtener items básicos del carrito
+        $cart_items = eq_get_cart_items();
+        
+        // Si hay un orden especificado, reordenar los items
+        if (!empty($item_order) && is_array($item_order)) {
+            $ordered_items = array();
+            $item_map = array();
+            
+            // Crear mapa de items por ID
+            foreach ($cart_items as $item) {
+                $item_map[$item->id] = $item;
+            }
+            
+            // Reordenar según el orden especificado
+            foreach ($item_order as $order_info) {
+                if (isset($item_map[$order_info['id']])) {
+                    $ordered_items[] = $item_map[$order_info['id']];
+                    unset($item_map[$order_info['id']]);
+                }
+            }
+            
+            // Agregar cualquier item que no esté en el orden al final
+            foreach ($item_map as $item) {
+                $ordered_items[] = $item;
+            }
+            
+            $cart_items = $ordered_items;
+        }
+        
+        $detailed_items = array();
+        
+        foreach ($cart_items as $item) {
+            // Obtener datos completos del listing
+            $listing_id = $item->listing_id;
+            $listing = get_post($listing_id);
+            
+            $form_data = json_decode($item->form_data, true);
+            
+            $detailed_item = (object) array(
+                'id' => $item->id,
+                'listing_id' => $listing_id,
+                'title' => $item->title,
+                'description' => wp_strip_all_tags(get_post_field('post_content', $listing_id)),
+                'image' => $item->image,
+                'date' => $item->date,
+                'quantity' => $item->quantity,
+                'price_formatted' => $item->price_formatted,
+                'total_price' => isset($item->total_price) ? floatval($item->total_price) : 0,
+                // Usar el precio base almacenado en form_data en lugar de obtenerlo nuevamente
+                'base_price' => isset($form_data['base_price']) ? floatval($form_data['base_price']) : 
+                               floatval(get_post_meta($listing_id, 'hp_price', true)),
+                'extras' => array(),
+                // Información de rango de fechas
+                'is_date_range' => isset($item->is_date_range) ? $item->is_date_range : false,
+                'start_date' => isset($item->start_date) ? $item->start_date : $item->date,
+                'end_date' => isset($item->end_date) ? $item->end_date : '',
+                'days_count' => isset($item->days_count) ? $item->days_count : 1
+            );
+            
+            // Procesar extras con detalles adicionales
+            if (!empty($item->extras)) {
+                // Obtener metadatos completos de los extras
+                $listing_extras = get_post_meta($listing_id, 'hp_price_extras', true);
+                
+                foreach ($item->extras as $extra) {
+                    $extra_id = isset($extra['id']) ? $extra['id'] : '';
+                    $extra_detail = null;
+                    
+                    // Buscar datos completos del extra en los metadatos
+                    if (is_array($listing_extras) && isset($listing_extras[$extra_id])) {
+                        $extra_detail = $listing_extras[$extra_id];
+                    }
+                    
+                    // Añadir datos completos del extra
+                    $extra_data = array(
+                        'id' => $extra_id,
+                        'name' => isset($extra['name']) ? $extra['name'] : '',
+                        'price' => isset($extra['price']) ? $extra['price'] : 0,
+                        'quantity' => isset($extra['quantity']) ? $extra['quantity'] : 1,
+                        'type' => isset($extra['type']) ? $extra['type'] : '',
+                        'description' => isset($extra_detail['description']) ? $extra_detail['description'] : '',
+                        'has_description' => isset($extra_detail['description']) && !empty($extra_detail['description']),
+                        'is_variable' => (isset($extra['type']) && $extra['type'] === 'variable_quantity'),
+                        // Información para extras que se multiplicaron por días
+                        'display_quantity' => isset($extra['display_quantity']) ? $extra['display_quantity'] : (isset($extra['quantity']) ? $extra['quantity'] : 1),
+                        'was_multiplied_by_days' => isset($extra['was_multiplied_by_days']) ? $extra['was_multiplied_by_days'] : false
+                    );
+                    
+                    $detailed_item->extras[] = $extra_data;
+                }
+            }
+            
+            $detailed_items[] = $detailed_item;
+        }
+        
+        return $detailed_items;
+    }
+    
+    /**
+     * Divide texto largo en chunks para evitar problemas de saltos de página
+     */
+    private function split_long_text($text, $max_lines = 5) {
+        // Si el texto es corto o mediano, no dividir
+        if (strlen($text) < 800) { // Aproximadamente 10-12 líneas
+            return array($text);
+        }
+        
+        // Primero, dividir por saltos de línea existentes
+        $lines = explode("\n", $text);
+        $chunks = array();
+        $current_chunk = array();
+        $current_line_count = 0;
+        
+        foreach ($lines as $line) {
+            // Contar cuántas "líneas visuales" ocupa este texto
+            // Ajustado para el ancho real de la columna de descripción (aproximadamente 70 caracteres)
+            $visual_lines = max(1, ceil(strlen($line) / 70));
+            
+            // Si agregar esta línea excede el límite, crear un nuevo chunk
+            if ($current_line_count + $visual_lines > $max_lines && !empty($current_chunk)) {
+                $chunks[] = implode("\n", $current_chunk);
+                $current_chunk = array();
+                $current_line_count = 0;
+            }
+            
+            $current_chunk[] = $line;
+            $current_line_count += $visual_lines;
+        }
+        
+        // Agregar el último chunk si existe
+        if (!empty($current_chunk)) {
+            $chunks[] = implode("\n", $current_chunk);
+        }
+        
+        // Si no hay chunks (texto vacío), devolver array con string vacío
+        if (empty($chunks)) {
+            $chunks[] = '';
+        }
+        
+        return $chunks;
     }
     
     /**
