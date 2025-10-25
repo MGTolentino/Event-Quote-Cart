@@ -70,7 +70,7 @@ class Event_Quote_Cart_Contract_Handler {
                 wp_mkdir_p($plugin_upload_dir);
             }
             
-            // Generar PDF con optimizaciones
+            // Generar PDF con optimizaciones y manejo de errores
             $options = new \Dompdf\Options();
             $options->set('isRemoteEnabled', true);
             $options->set('defaultPaperSize', 'A4');
@@ -83,11 +83,29 @@ class Event_Quote_Cart_Contract_Handler {
             $options->set('debugPng', false);
             $options->set('defaultMediaType', 'print');
             $options->set('chroot', ABSPATH);
+            // Importante: desactivar las funciones problemáticas
+            $options->set('enable_php', false);
+            $options->set('enable_javascript', false);
             
             $dompdf = new Dompdf\Dompdf($options);
+            
+            // Limpiar HTML antes de procesarlo
+            $html = $this->clean_html_for_dompdf($html);
+            
             $dompdf->loadHtml($html);
             $dompdf->setPaper('A4', 'portrait');
-            $dompdf->render();
+            
+            try {
+                $dompdf->render();
+            } catch (Exception $e) {
+                error_log('DOMPDF Render Error: ' . $e->getMessage());
+                // Si falla, intentar con HTML simplificado
+                $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context);
+                $dompdf = new Dompdf\Dompdf($options);
+                $dompdf->loadHtml($html);
+                $dompdf->setPaper('A4', 'portrait');
+                $dompdf->render();
+            }
             
             // Generar nombre único para el archivo
             $filename = 'Contract_' . date('Y-m-d_H-i-s') . '_' . uniqid() . '.pdf';
@@ -245,22 +263,29 @@ class Event_Quote_Cart_Contract_Handler {
                     margin-bottom: 15px;
                 }
                 .info-grid {
-                    display: table;
                     width: 100%;
-                    border-collapse: collapse;
+                    margin-bottom: 20px;
                 }
                 .info-row {
-                    display: table-row;
+                    width: 100%;
+                    clear: both;
                 }
                 .info-cell {
-                    display: table-cell;
+                    width: 48%;
+                    float: left;
                     padding: 10px;
                     border: 1px solid #bdc3c7;
-                    vertical-align: top;
+                    margin-bottom: -1px;
+                }
+                .info-cell:first-child {
+                    margin-right: 2%;
                 }
                 .info-cell.header {
                     background-color: #ecf0f1;
                     font-weight: bold;
+                }
+                .clearfix {
+                    clear: both;
                 }
                 .services-table {
                     width: 100%;
@@ -316,23 +341,23 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin-bottom: 120px;
+                    margin: 20px;
                 }
                 
                 .signatures {
-                    position: fixed;
-                    bottom: 20px;
-                    left: 0;
-                    right: 0;
-                    display: table;
+                    margin-top: 50px;
                     width: 100%;
                     font-size: 10px;
+                    page-break-inside: avoid;
                 }
                 .signature-block {
-                    display: table-cell;
-                    width: 50%;
+                    width: 45%;
+                    float: left;
                     text-align: center;
                     padding: 10px;
+                }
+                .signature-block:last-child {
+                    float: right;
                 }
                 .signature-line {
                     border-top: 1px solid #333;
@@ -370,6 +395,7 @@ class Event_Quote_Cart_Contract_Handler {
                         <div class="info-cell header">Datos de la Empresa</div>
                         <div class="info-cell header">Datos del Contratante</div>
                     </div>
+                    <div class="clearfix"></div>
                     <div class="info-row">
                         <div class="info-cell">
                             <strong><?php echo esc_html($company['name']); ?></strong><br>
@@ -391,6 +417,7 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php endif; ?>
                         </div>
                     </div>
+                    <div class="clearfix"></div>
                 </div>
             </div>
             
@@ -602,6 +629,110 @@ class Event_Quote_Cart_Contract_Handler {
         }
         
         return (string) $number;
+    }
+    
+    /**
+     * Clean HTML for DOMPDF to avoid rendering errors
+     */
+    private function clean_html_for_dompdf($html) {
+        // Remove problematic CSS properties
+        $html = preg_replace('/position\s*:\s*fixed\s*;?/i', '', $html);
+        $html = preg_replace('/position\s*:\s*absolute\s*;?/i', '', $html);
+        
+        // Ensure all tables are properly closed
+        $html = preg_replace('/<table([^>]*)>/i', '<table$1>', $html);
+        
+        // Remove empty table cells that might cause issues
+        $html = preg_replace('/<td>\s*<\/td>/i', '<td>&nbsp;</td>', $html);
+        $html = preg_replace('/<th>\s*<\/th>/i', '<th>&nbsp;</th>', $html);
+        
+        // Fix nested tables if any
+        $html = str_replace('display: table-cell', 'display: inline-block', $html);
+        $html = str_replace('display: table-row', 'display: block', $html);
+        
+        return $html;
+    }
+    
+    /**
+     * Generate simplified contract HTML for fallback
+     */
+    private function generate_simplified_contract_html($contract_data, $cart_items, $totals, $context) {
+        $company = $contract_data['company_data'];
+        $client = $contract_data['client_data'];
+        $event = $contract_data['event_data'];
+        $payment_schedule = $contract_data['payment_schedule'] ?? [];
+        $contract_terms = $contract_data['contract_terms'];
+        $bank = $contract_data['bank_data'];
+        
+        // Simple HTML without complex CSS
+        $html = '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Contrato de Servicios</title>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; }
+                h1 { text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+                th { background-color: #f0f0f0; }
+                .section { margin: 20px 0; }
+                .signature { margin-top: 50px; text-align: center; }
+            </style>
+        </head>
+        <body>
+            <h1>CONTRATO DE SERVICIOS</h1>
+            
+            <div class="section">
+                <h2>Datos de la Empresa</h2>
+                <p><strong>' . esc_html($company['name']) . '</strong><br>
+                ' . esc_html($company['address']) . '<br>
+                Tel: ' . esc_html($company['phone']) . '<br>
+                Email: ' . esc_html($company['email']) . '</p>
+            </div>
+            
+            <div class="section">
+                <h2>Datos del Cliente</h2>
+                <p><strong>' . esc_html($client['name']) . '</strong><br>
+                ' . esc_html($client['address']) . '<br>
+                Tel: ' . esc_html($client['phone']) . '<br>
+                Email: ' . esc_html($client['email']) . '</p>
+            </div>
+            
+            <div class="section">
+                <h2>Servicios</h2>
+                <table>
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                    </tr>';
+        
+        foreach ($cart_items as $item) {
+            $html .= '<tr>
+                <td>' . esc_html($item->title) . '</td>
+                <td>' . esc_html($item->quantity) . '</td>
+                <td>' . esc_html($item->price_formatted) . '</td>
+            </tr>';
+        }
+        
+        $html .= '</table>
+                <p><strong>Total: ' . esc_html($totals['total']) . '</strong></p>
+            </div>
+            
+            <div class="section">
+                <h2>Términos y Condiciones</h2>
+                <p>' . nl2br(esc_html($contract_terms)) . '</p>
+            </div>
+            
+            <div class="signature">
+                <p>_____________________<br>Firma del Cliente</p>
+                <p>_____________________<br>Firma de la Empresa</p>
+            </div>
+        </body>
+        </html>';
+        
+        return $html;
     }
     
     /**

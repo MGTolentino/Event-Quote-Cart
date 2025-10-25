@@ -72,6 +72,22 @@
             switchContractTab($(this).data('tab'));
             return false;
         });
+        
+        // Add real-time field validation
+        $(document).on('blur', '#eq-contract-form input[required], #eq-contract-form textarea[required]', function() {
+            validateSingleField($(this));
+            updateTabValidationStatus();
+        });
+        
+        // Clear error on focus
+        $(document).on('focus', '#eq-contract-form input.error, #eq-contract-form textarea.error', function() {
+            const $field = $(this);
+            const $formGroup = $field.closest('.eq-form-group');
+            $field.removeClass('error');
+            $formGroup.removeClass('error');
+            $formGroup.find('.field-error-message').remove();
+            updateTabValidationStatus();
+        });
 
         // Form navigation buttons
         $(document).on('click', '.eq-contract-next', function() {
@@ -216,26 +232,29 @@
     function populateContractForm() {
         // Company data
         if (contractData.company_data) {
-            $('#eq-company-name').val(contractData.company_data.name || '');
-            $('#eq-company-address').val(contractData.company_data.address || '');
-            $('#eq-company-phone').val(contractData.company_data.phone || '');
-            $('#eq-company-email').val(contractData.company_data.email || '');
+            $('#eq-company-name').val(contractData.company_data.name || '').attr('required', true);
+            $('#eq-company-address').val(contractData.company_data.address || '').attr('required', true);
+            $('#eq-company-phone').val(contractData.company_data.phone || '').attr('required', true);
+            $('#eq-company-email').val(contractData.company_data.email || '').attr('required', true);
             $('#eq-company-rfc').val(contractData.company_data.rfc || '');
         }
 
         // Client data
         if (contractData.client_data) {
-            $('#eq-client-name').val(contractData.client_data.name || '');
-            $('#eq-client-address').val(contractData.client_data.address || '');
-            $('#eq-client-phone').val(contractData.client_data.phone || '');
-            $('#eq-client-email').val(contractData.client_data.email || '');
+            $('#eq-client-name').val(contractData.client_data.name || '').attr('required', true);
+            $('#eq-client-address').val(contractData.client_data.address || '').attr('required', true);
+            $('#eq-client-phone').val(contractData.client_data.phone || '').attr('required', true);
+            $('#eq-client-email').val(contractData.client_data.email || '').attr('required', true);
         }
 
         // Event data
         if (contractData.event_data) {
-            $('#eq-event-date').val(contractData.event_data.date || '');
-            $('#eq-event-location').val(contractData.event_data.location || '');
-            $('#eq-event-guests').val(contractData.event_data.guests || '');
+            $('#eq-event-date').val(contractData.event_data.date || '').attr('required', true);
+            $('#eq-event-location').val(contractData.event_data.location || '').attr('required', true);
+            $('#eq-event-guests').val(contractData.event_data.guests || '').attr('required', true);
+            // Add required to time fields
+            $('#eq-event-start-time').attr('required', true);
+            $('#eq-event-end-time').attr('required', true);
         }
 
         // Contract terms
@@ -269,6 +288,11 @@
         if (contractData.event_data && contractData.event_data.date) {
             validateEventDate(contractData.event_data.date);
         }
+        
+        // Run initial validation after populating
+        setTimeout(() => {
+            updateTabValidationStatus();
+        }, 100);
     }
 
     /**
@@ -761,6 +785,99 @@
     }
 
     /**
+     * Validate single field
+     */
+    function validateSingleField($field) {
+        const $formGroup = $field.closest('.eq-form-group');
+        const fieldValue = $field.val() ? $field.val().trim() : '';
+        const isRequired = $field.attr('required') || $field.hasClass('required');
+        
+        if (isRequired && !fieldValue) {
+            $field.addClass('error');
+            $formGroup.addClass('error');
+            if (!$formGroup.find('.field-error-message').length) {
+                $formGroup.append('<span class="field-error-message">This field is required</span>');
+            }
+            return false;
+        }
+        
+        // Email validation
+        if ($field.attr('type') === 'email' && fieldValue) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(fieldValue)) {
+                $field.addClass('error');
+                $formGroup.addClass('error');
+                if (!$formGroup.find('.field-error-message').length) {
+                    $formGroup.append('<span class="field-error-message">Please enter a valid email address</span>');
+                }
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Update tab validation status
+     */
+    function updateTabValidationStatus() {
+        const tabs = ['company', 'client', 'event', 'payment', 'terms'];
+        
+        tabs.forEach(tab => {
+            const $tabNav = $(`.eq-contract-tab-nav li[data-tab="${tab}"]`);
+            const $tabContent = $(`.eq-contract-tab-content[data-tab="${tab}"]`);
+            const hasErrors = $tabContent.find('.eq-form-group.error').length > 0;
+            
+            if (hasErrors) {
+                markTabWithError($tabNav);
+            } else {
+                clearTabError($tabNav);
+            }
+        });
+    }
+    
+    /**
+     * Mark tab with error
+     */
+    function markTabWithError($tab) {
+        if (!$tab.hasClass('has-error')) {
+            $tab.addClass('has-error');
+            $tab[0].style.setProperty('color', '#dc3545', 'important');
+            $tab[0].style.setProperty('background-color', '#ffebee', 'important');
+            
+            if (!$tab.find('.error-indicator').length) {
+                const indicator = $('<span class="error-indicator">!</span>');
+                indicator.css({
+                    'position': 'absolute',
+                    'top': '5px',
+                    'right': '10px',
+                    'background': '#dc3545',
+                    'color': 'white',
+                    'width': '20px',
+                    'height': '20px',
+                    'border-radius': '50%',
+                    'display': 'flex',
+                    'align-items': 'center',
+                    'justify-content': 'center',
+                    'font-size': '12px',
+                    'font-weight': 'bold'
+                });
+                $tab.append(indicator);
+            }
+        }
+    }
+    
+    /**
+     * Clear tab error
+     */
+    function clearTabError($tab) {
+        $tab.removeClass('has-error');
+        $tab[0].style.removeProperty('color');
+        $tab[0].style.removeProperty('background-color');
+        $tab.find('.error-indicator').remove();
+    }
+    
+    /**
      * Validate contract form
      */
     function validateContractForm() {
@@ -789,78 +906,21 @@
 
         requiredFields.forEach(function(field) {
             const $field = $(field.selector);
-            const $formGroup = $field.closest('.eq-form-group');
-            const fieldValue = $field.val() ? $field.val().trim() : '';
+            if ($field.length === 0) {
+                console.warn(`Required field ${field.selector} not found in DOM`);
+                return;
+            }
             
-            console.log(`Checking field ${field.selector}: value="${fieldValue}", exists=${$field.length > 0}`);
-            
-            if (!fieldValue) {
-                console.log(`Field ${field.selector} is missing, adding to tab ${field.tab}`);
-                $field.addClass('error');
-                $formGroup.addClass('error');
-                
-                // Add error message below field if not present
-                if (!$formGroup.find('.field-error-message').length) {
-                    $formGroup.append('<span class="field-error-message">This field is required</span>');
-                }
-                
+            const isFieldValid = validateSingleField($field);
+            if (!isFieldValid) {
                 missingFields.push(field);
                 tabsWithErrors.add(field.tab);
                 isValid = false;
-            } else {
-                $field.removeClass('error');
-                $formGroup.removeClass('error');
-                $formGroup.find('.field-error-message').remove();
             }
         });
         
-        console.log('Missing fields:', missingFields.map(f => f.selector));
-        console.log('Tabs with errors after validation:', Array.from(tabsWithErrors));
-        
-        // Mark tabs with errors - FORZAR que se marquen siempre
-        console.log('Tabs with errors:', Array.from(tabsWithErrors));
-        
-        // Wait a bit for modal to be fully rendered
-        setTimeout(() => {
-            tabsWithErrors.forEach(function(tab) {
-                const $tab = $(`#eq-contract-modal .eq-contract-tab-nav li[data-tab="${tab}"]`);
-                console.log(`Marking tab ${tab} with error. Tab found:`, $tab.length > 0);
-                console.log(`Tab element text:`, $tab.text());
-                console.log(`Tab current style:`, $tab.attr('style'));
-                
-                $tab.addClass('has-error');
-                
-                // FORZAR el estilo directamente en el DOM
-                $tab[0].style.setProperty('color', '#dc3545', 'important');
-                $tab[0].style.setProperty('background-color', '#ffebee', 'important');
-                $tab[0].style.setProperty('border', '2px solid #dc3545', 'important');
-                $tab[0].style.setProperty('position', 'relative', 'important');
-                
-                console.log(`Tab style after forcing:`, $tab.attr('style'));
-                
-                // Agregar indicador visual si no existe
-                if (!$tab.find('.error-indicator').length) {
-                    const indicator = $('<span class="error-indicator">!</span>');
-                    indicator[0].style.setProperty('position', 'absolute', 'important');
-                    indicator[0].style.setProperty('top', '5px', 'important');
-                    indicator[0].style.setProperty('right', '10px', 'important');
-                    indicator[0].style.setProperty('background', '#dc3545', 'important');
-                    indicator[0].style.setProperty('color', 'white', 'important');
-                    indicator[0].style.setProperty('width', '20px', 'important');
-                    indicator[0].style.setProperty('height', '20px', 'important');
-                    indicator[0].style.setProperty('border-radius', '50%', 'important');
-                    indicator[0].style.setProperty('display', 'flex', 'important');
-                    indicator[0].style.setProperty('align-items', 'center', 'important');
-                    indicator[0].style.setProperty('justify-content', 'center', 'important');
-                    indicator[0].style.setProperty('font-size', '12px', 'important');
-                    indicator[0].style.setProperty('font-weight', 'bold', 'important');
-                    indicator[0].style.setProperty('z-index', '1000', 'important');
-                    
-                    $tab.append(indicator);
-                    console.log(`Added error indicator to tab ${tab}`);
-                }
-            });
-        }, 100);
+        // Update tab validation status immediately
+        updateTabValidationStatus();
 
         // Validate payment schedule
         if (paymentSchedule.length === 0) {
