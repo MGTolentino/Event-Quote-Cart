@@ -339,39 +339,33 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: justify;
                 }
                 @page {
-                    margin: 20px 20px 70px 20px; /* Bottom margin for CSS footer */
+                    margin: 20px; /* Normal margins without extra bottom space */
                 }
                 
                 .contract-footer {
-                    position: fixed;
-                    bottom: -60px;
-                    left: 0;
-                    right: 0;
+                    margin-top: 50px;
                     width: 100%;
-                    height: 50px;
                     font-size: 10px;
-                    border-top: 1px solid #333;
-                    padding-top: 10px;
-                    background-color: white;
-                    z-index: 1000;
+                    border-top: 2px solid #333;
+                    padding-top: 20px;
+                    page-break-inside: avoid;
+                    text-align: center;
                 }
                 
                 .footer-signature {
-                    float: left;
+                    display: inline-block;
                     width: 45%;
                     text-align: center;
-                    padding: 5px;
-                }
-                
-                .footer-signature:last-child {
-                    float: right;
+                    vertical-align: top;
+                    margin: 0 2%;
                 }
                 
                 .signature-line {
-                    display: inline-block;
-                    width: 150px;
+                    display: block;
+                    width: 200px;
                     border-bottom: 1px solid #333;
-                    margin-top: 15px;
+                    margin: 20px auto 5px auto;
+                    height: 1px;
                 }
                 
                 .signatures {
