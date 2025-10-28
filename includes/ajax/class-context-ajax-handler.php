@@ -24,7 +24,6 @@ class Event_Quote_Cart_Context_Ajax_Handler {
         add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
         add_action('wp_ajax_eq_clear_context_meta', array($this, 'clear_context_meta'));
         add_action('wp_ajax_eq_check_context_status', array($this, 'check_context_status'));
-        add_action('wp_ajax_eq_update_cart_context', array($this, 'update_cart_context'));
         add_action('wp_logout', array($this, 'clear_context_on_logout'));
     }
     

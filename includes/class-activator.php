@@ -20,6 +20,7 @@ class Event_Quote_Cart_Activator {
     self::update_cart_table_structure();
     self::create_quotes_table();
     self::create_context_sessions_table();
+    self::update_context_sessions_table();
     self::create_cart_history_table(); 
     self::add_capabilities();
     self::set_default_options();
