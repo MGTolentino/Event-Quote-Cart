@@ -29,9 +29,9 @@ class Event_Quote_Cart_Ajax_Handler_Loader {
         require_once EQ_CART_PLUGIN_DIR . 'includes/class-constants.php';
         require_once EQ_CART_PLUGIN_DIR . 'includes/class-security-helper.php';
         
-        // Cargar manejadores AJAX modulares
-        require_once EQ_CART_PLUGIN_DIR . 'includes/ajax/class-cart-ajax-handler.php';
-        require_once EQ_CART_PLUGIN_DIR . 'includes/ajax/class-context-ajax-handler.php';
+        // Cargar manejadores AJAX modulares - DESACTIVADO TEMPORALMENTE POR CONFLICTOS
+        // require_once EQ_CART_PLUGIN_DIR . 'includes/ajax/class-cart-ajax-handler.php';
+        // require_once EQ_CART_PLUGIN_DIR . 'includes/ajax/class-context-ajax-handler.php';
         
         // Mantener el handler original para funciones no migradas aún
         // TODO: Migrar todas las funciones y eliminar este archivo
@@ -42,9 +42,9 @@ class Event_Quote_Cart_Ajax_Handler_Loader {
      * Inicializa todos los manejadores AJAX
      */
     private function init_handlers() {
-        // Inicializar manejadores modulares
-        $this->handlers['cart'] = new Event_Quote_Cart_Cart_Ajax_Handler();
-        $this->handlers['context'] = new Event_Quote_Cart_Context_Ajax_Handler();
+        // Inicializar manejadores modulares - DESACTIVADO TEMPORALMENTE POR CONFLICTOS
+        // $this->handlers['cart'] = new Event_Quote_Cart_Cart_Ajax_Handler();
+        // $this->handlers['context'] = new Event_Quote_Cart_Context_Ajax_Handler();
         
         // Inicializar el handler original para funcionalidad no migrada
         // TODO: Eliminar cuando toda la funcionalidad esté migrada
