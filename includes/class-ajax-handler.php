@@ -13,42 +13,23 @@ class Event_Quote_Cart_Ajax_Handler {
     }
 
     public function init_hooks() {
-        // Hooks para manejo del carrito
+        // Hooks para manejo del carrito (métodos únicos no migrados)
         add_action('wp_ajax_eq_get_listing_data', array($this, 'get_listing_data'));
-        add_action('wp_ajax_eq_add_to_cart', array($this, 'add_to_cart'));
-        add_action('wp_ajax_eq_update_cart_item', array($this, 'update_cart_item'));
-        add_action('wp_ajax_eq_get_cart_items', array($this, 'get_cart_items'));
-		add_action('wp_ajax_eq_get_cart_item', array($this, 'get_cart_item'));
 		add_action('wp_ajax_eq_generate_quote_pdf', array($this, 'generate_quote_pdf'));
 		add_action('wp_ajax_eq_send_quote_email', array($this, 'send_quote_email'));
 		add_action('wp_ajax_eq_generate_whatsapp_link', array($this, 'generate_whatsapp_link'));
-		add_action('wp_ajax_eq_validate_cart_date', array($this, 'validate_cart_date'));
 		add_action('wp_ajax_eq_validate_cart_date_change', array($this, 'validate_cart_date_change'));
-add_action('wp_ajax_eq_update_cart_date', array($this, 'update_cart_date'));
-		add_action('wp_ajax_eq_get_cart_master_date', array($this, 'get_cart_master_date'));
-		add_action('wp_ajax_eq_get_cart_totals', array($this, 'get_cart_totals'));
-		add_action('wp_ajax_eq_clear_context_meta', array($this, 'clear_context_meta'));
-		add_action('wp_ajax_eq_check_context_status', array($this, 'check_context_status'));
 		add_action('wp_ajax_eq_update_cart_context', array($this, 'update_cart_context'));
 		add_action('wp_ajax_eq_update_event_date', array($this, 'update_event_date'));
-add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
+		add_action('wp_ajax_eq_duplicate_event', array($this, 'duplicate_event'));
 		add_action('wp_ajax_eq_check_event_exists', array($this, 'check_event_exists'));
 		add_action('wp_ajax_eq_get_lead_email', array($this, 'get_lead_email'));
 		add_action('wp_ajax_eq_get_email_template', array($this, 'get_email_template'));
 		add_action('wp_ajax_eq_get_whatsapp_template', array($this, 'get_whatsapp_template'));
-		add_action('wp_ajax_eq_validate_all_cart_items', array($this, 'validate_all_cart_items'));
         
         // Hooks para manejo de fechas
         add_action('wp_ajax_eq_validate_date', array($this, 'validate_date'));
         add_action('wp_ajax_eq_validate_cart_items', array($this, 'validate_cart_items'));
-		    add_action('wp_ajax_eq_update_cart_event', array($this, 'update_cart_event'));
-
-     // Nuevos hooks para sincronización de contexto
-    add_action('wp_ajax_eq_create_context_session', array($this, 'create_context_session'));
-    add_action('wp_ajax_eq_verify_context_session', array($this, 'verify_context_session'));
-		add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
-		add_action('wp_ajax_eq_check_item_in_cart', array($this, 'check_item_in_cart'));
-		add_action('wp_ajax_eq_get_cart_master_date', array($this, 'get_cart_master_date'));
 		
 		// Hooks para historial de carrito
 		add_action('wp_ajax_eq_save_cart_history', array($this, 'save_cart_history'));
