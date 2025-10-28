@@ -365,6 +365,7 @@ private static function create_context_sessions_table() {
         session_token varchar(64) NOT NULL,
         lead_id bigint(20) unsigned NULL DEFAULT NULL,
         event_id bigint(20) unsigned NULL DEFAULT NULL,
+        last_activity datetime NULL DEFAULT NULL,
         created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
