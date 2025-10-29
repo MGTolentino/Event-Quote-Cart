@@ -3536,6 +3536,14 @@ public function validate_all_cart_items() {
                 $totals = eq_calculate_cart_totals($cart_items);
                 $data['cart_total'] = $totals['total'];
                 $data['cart_total_raw'] = floatval(str_replace(['$', ','], '', $totals['total']));
+                
+                // Debug: Add raw total calculation details
+                $data['debug_total_calculation'] = array(
+                    'original_total' => $totals['total'],
+                    'cleaned_total' => str_replace(['$', ','], '', $totals['total']),
+                    'float_value' => floatval(str_replace(['$', ','], '', $totals['total'])),
+                    'cart_items_count' => count($cart_items)
+                );
             }
             
             wp_send_json_success($data);

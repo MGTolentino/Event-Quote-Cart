@@ -11,27 +11,8 @@
 
     // Initialize contracts functionality
     $(document).ready(function() {
-        console.log('Contract JS ready, initializing...');
         initContractModal();
         bindContractEvents();
-        
-        // Debug: Check if jQuery is working
-        console.log('jQuery version:', $.fn.jquery);
-        console.log('Contract modal exists:', $('#eq-contract-modal').length > 0);
-        
-        // Add global click handler to debug button clicks
-        $(document).on('click', '*', function(e) {
-            const element = $(this);
-            if (element.is('#eq-edit-contract') || element.is('#eq-generate-new-contract') || element.hasClass('eq-contract-preview')) {
-                console.log('GLOBAL CLICK DETECTED:');
-                console.log('- Element ID:', element.attr('id'));
-                console.log('- Element classes:', element.attr('class'));
-                console.log('- Element visible:', element.is(':visible'));
-                console.log('- Element parent visible:', element.parent().is(':visible'));
-                console.log('- Event propagation stopped?', e.isPropagationStopped());
-                console.log('- Event default prevented?', e.isDefaultPrevented());
-            }
-        });
     });
 
     /**
@@ -144,7 +125,6 @@
         $('#eq-contract-modal').on('click', '.eq-contract-preview', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Preview button clicked via modal selector');
             previewContract();
         });
         
@@ -152,7 +132,6 @@
         $(document).on('click', 'button.eq-contract-preview', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Preview button clicked via backup selector');
             previewContract();
         });
 
@@ -165,7 +144,6 @@
         $('#eq-contract-modal').on('click', '#eq-edit-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Edit contract button clicked via modal selector');
             editContract();
         });
         
@@ -173,7 +151,6 @@
         $('#eq-contract-modal').on('click', '#eq-generate-new-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Generate new contract button clicked via modal selector');
             generateNewContract();
         });
         
@@ -181,14 +158,12 @@
         $(document).on('click', '#eq-edit-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Edit contract button clicked via document selector');
             editContract();
         });
         
         $(document).on('click', '#eq-generate-new-contract', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Generate new contract button clicked via document selector');
             generateNewContract();
         });
     }
@@ -211,18 +186,20 @@
                 
                 if (response.success) {
                     contractData = response.data;
+                    
+                    // Debug: Log contract data to see what's being received
+                    console.log('Contract Data Received:', contractData);
+                    console.log('Cart Total Raw:', contractData.cart_total_raw);
+                    console.log('Debug Calculation:', contractData.debug_total_calculation);
+                    
                     populateContractForm();
                     $('#eq-contract-modal').addClass('show');
                     
                     // Re-bind events after modal is shown
                     setTimeout(() => {
-                        console.log('Re-binding contract events...');
                         bindContractEvents();
                         
                         // Also verify elements exist
-                        console.log('Preview button exists:', $('.eq-contract-preview').length > 0);
-                        console.log('Edit contract button exists:', $('#eq-edit-contract').length > 0);
-                        console.log('Generate new button exists:', $('#eq-generate-new-contract').length > 0);
                     }, 100);
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
@@ -286,6 +263,13 @@
         // Contract total
         if (contractData.cart_total) {
             $('.eq-contract-total').text(decodeHtmlEntities(contractData.cart_total));
+        }
+        
+        // Ensure cart_total_raw is available
+        if (!contractData.cart_total_raw && contractData.cart_total) {
+            // Fallback calculation if cart_total_raw is missing
+            const cleanTotal = contractData.cart_total.replace(/[$,]/g, '');
+            contractData.cart_total_raw = parseFloat(cleanTotal) || 0;
         }
 
         // Load payment templates
@@ -665,21 +649,17 @@
      * Switch contract tab
      */
     function switchContractTab(tabName) {
-        console.log('switchContractTab called with:', tabName);
         
         // Update nav
         $('.eq-contract-tab-nav li').removeClass('active');
         const $tabNav = $(`.eq-contract-tab-nav li[data-tab="${tabName}"]`);
-        console.log('Tab nav element found:', $tabNav.length > 0);
         $tabNav.addClass('active');
         
         // Update content
         $('.eq-contract-tab-content').removeClass('active');
         const $tabContent = $(`.eq-contract-tab-content[data-tab="${tabName}"]`);
-        console.log('Tab content element found:', $tabContent.length > 0);
         $tabContent.addClass('active');
         
-        console.log('Tab switch completed');
     }
 
     /**
@@ -916,7 +896,6 @@
         requiredFields.forEach(function(field) {
             const $field = $(field.selector);
             if ($field.length === 0) {
-                console.warn(`Required field ${field.selector} not found in DOM`);
                 return;
             }
             
@@ -1063,11 +1042,9 @@
      * Show contract form
      */
     function showContractForm() {
-        console.log('showContractForm called');
         $('#eq-contract-success').hide();
         $('#eq-contract-loading').hide();
         $('#eq-contract-form').show();
-        console.log('Contract form should now be visible');
     }
 
     /**
@@ -1117,22 +1094,18 @@
      * Edit current contract - go back to form with existing data
      */
     function editContract() {
-        console.log('editContract function called');
         try {
             // Clear any error notifications
             $('.eq-contract-error-notification').remove();
             $('.eq-contract-tab-nav li').removeClass('has-error').css('color', '').find('.error-indicator').remove();
             
-            console.log('Showing contract form...');
             showContractForm();
             
             // Reset tab to first one for clean editing experience
             switchContractTab('company');
             
-            console.log('Edit contract completed');
             showNotification('info', 'You can now edit the contract details and regenerate');
         } catch (error) {
-            console.error('Error in editContract:', error);
             showNotification('error', 'Error opening contract for editing');
         }
     }
@@ -1141,9 +1114,7 @@
      * Generate new contract - clear form and start fresh but keep cart data
      */
     function generateNewContract() {
-        console.log('generateNewContract function called');
         try {
-            console.log('Clearing form data but keeping cart information...');
             
             // Save cart data before clearing
             const savedCartData = contractData.cart_items ? {
@@ -1167,21 +1138,18 @@
                 context: savedCartData.context
             };
             
-            console.log('Clearing validation errors...');
             // Clear validation errors
             $('.eq-form-group').removeClass('error');
             $('.field-error-message').remove();
             $('.eq-contract-error-notification').remove();
             $('.eq-contract-tab-nav li').removeClass('has-error').css('color', '').find('.error-indicator').remove();
             
-            console.log('Showing form and switching to company tab...');
             // Show form and go to first tab
             showContractForm();
             switchContractTab('company');
             
             // Re-populate the form with fresh cart data
             setTimeout(() => {
-                console.log('Re-populating form with base cart data...');
                 // If we don't have cart data, reload it
                 if (!contractData.cart_items) {
                     openContractModal();
@@ -1190,10 +1158,8 @@
                 }
             }, 100);
             
-            console.log('Generate new contract completed');
             showNotification('success', 'New contract form ready with current cart data');
         } catch (error) {
-            console.error('Error in generateNewContract:', error);
             showNotification('error', 'Error preparing new contract form');
         }
     }
@@ -1202,20 +1168,15 @@
      * Preview contract
      */
     function previewContract() {
-        console.log('previewContract function called');
         try {
             // Don't validate for preview - show with whatever data is available
             // Collect form data
-            console.log('Collecting form data...');
             const formData = collectFormData();
-            console.log('Form data collected:', formData);
             
             // Directly show inline preview (simpler approach)
-            console.log('Showing inline preview...');
             showInlinePreview(formData);
             
         } catch (error) {
-            console.error('Preview error:', error);
             showNotification('error', 'Error generating preview: ' + error.message);
         }
     }
@@ -1224,10 +1185,8 @@
      * Show inline preview as fallback
      */
     function showInlinePreview(formData) {
-        console.log('showInlinePreview called with data:', formData);
         try {
             // Skip popup, go directly to modal preview for reliability
-            console.log('Showing modal preview directly...');
             showModalPreview(formData);
             return;
             
@@ -1268,7 +1227,6 @@
         previewWindow.focus();
         
         } catch (error) {
-            console.error('Error opening preview:', error);
             showNotification('error', 'Error opening preview. Please try again.');
         }
     }
@@ -1277,10 +1235,8 @@
      * Show modal preview when popups are blocked
      */
     function showModalPreview(formData) {
-        console.log('showModalPreview called');
         // Create preview modal if it doesn't exist
         if ($('#eq-preview-modal').length === 0) {
-            console.log('Creating preview modal...');
             $('body').append(`
                 <div id="eq-preview-modal" class="eq-modal">
                     <div class="eq-modal-content eq-preview-modal-content">
@@ -1304,7 +1260,6 @@
                 $('#eq-preview-modal').hide();
             });
             
-            console.log('Preview modal created and added to body');
         }
         
         // Generate preview content in contract format
@@ -1374,9 +1329,7 @@
         `;
         
         $('#eq-preview-content').html(previewContent);
-        console.log('Setting modal content and showing...');
         $('#eq-preview-modal').show();
-        console.log('Modal should be visible now. Display style:', $('#eq-preview-modal').css('display'));
     }
     
     /**
@@ -1686,7 +1639,6 @@
             },
             success: function(response) {
                 if (response.success) {
-                    console.log('Contract memory saved');
                 }
             }
         });
@@ -1730,7 +1682,6 @@
                         $('#eq-contract-terms').val(data.contract_terms);
                     }
                     
-                    console.log('Contract memory loaded');
                 }
             }
         });

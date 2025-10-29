@@ -98,7 +98,6 @@ class Event_Quote_Cart_Contract_Handler {
             try {
                 $dompdf->render();
             } catch (Exception $e) {
-                error_log('DOMPDF Render Error: ' . $e->getMessage());
                 // Si falla, intentar con HTML simplificado
                 $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context);
                 $dompdf = new Dompdf\Dompdf($options);
@@ -154,7 +153,6 @@ class Event_Quote_Cart_Contract_Handler {
             ));
             
         } catch (Exception $e) {
-            error_log('Contract generation error: ' . $e->getMessage());
             wp_send_json_error('Error generating contract: ' . $e->getMessage());
         }
     }
@@ -443,7 +441,7 @@ class Event_Quote_Cart_Contract_Handler {
             </div>
             
             <!-- Información del Evento -->
-            <div class="section">
+            <div class="critical-section">
                 <div class="section-title">Información del evento</div>
                 <div style="padding: 10px; border: 1px solid #bdc3c7; background-color: #f8f9fa; margin-bottom: 10px;">
                     <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
@@ -455,10 +453,9 @@ class Event_Quote_Cart_Contract_Handler {
                         <br><strong>Cantidad de Invitados:</strong> <?php echo intval($event['guests']); ?>
                     <?php endif; ?>
                 </div>
-            </div>
             
-            <!-- Servicios Contratados -->
-            <div class="section">
+                <!-- Servicios Contratados -->
+                <div class="section-title" style="margin-top: 20px;">Servicios Contratados</div>
                 <table class="services-table">
                     <thead>
                         <tr>

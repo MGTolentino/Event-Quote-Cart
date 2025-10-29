@@ -129,7 +129,7 @@ public function create_payment_intent() {
             $message = "Gracias por tu compra. Tu orden #" . $order_id . " ha sido creada.";
             wp_mail($user->user_email, $subject, $message);
         } catch (\Exception $e) {
-            error_log('Error al enviar correo: ' . $e->getMessage());
+            // Email sending failed - continue with success response
         }
         
         wp_send_json_success([
@@ -588,7 +588,6 @@ private function create_bookings_for_order($payment_id) {
                 return $booking->get_id();
                 
             } catch (\Exception $e) {
-                error_log('Error creating booking: ' . $e->getMessage());
                 return false;
             }
          }
