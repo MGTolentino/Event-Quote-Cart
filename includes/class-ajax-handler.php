@@ -3535,13 +3535,17 @@ public function validate_all_cart_items() {
             if (!empty($cart_items)) {
                 $totals = eq_calculate_cart_totals($cart_items);
                 $data['cart_total'] = $totals['total'];
-                $data['cart_total_raw'] = floatval(str_replace(['$', ','], '', $totals['total']));
+                $clean_total = str_replace(['$', ',', ' '], '', $totals['total']);
+                $clean_total = preg_replace('/[^0-9.]/', '', $clean_total); // Remove any non-numeric chars except dots
+                $data['cart_total_raw'] = floatval($clean_total);
                 
                 // Debug: Add raw total calculation details
+                $clean_string = str_replace(['$', ',', ' '], '', $totals['total']);
+                $clean_string = preg_replace('/[^0-9.]/', '', $clean_string); // Remove any non-numeric chars except dots
                 $data['debug_total_calculation'] = array(
                     'original_total' => $totals['total'],
-                    'cleaned_total' => str_replace(['$', ','], '', $totals['total']),
-                    'float_value' => floatval(str_replace(['$', ','], '', $totals['total'])),
+                    'cleaned_total' => $clean_string,
+                    'float_value' => floatval($clean_string),
                     'cart_items_count' => count($cart_items)
                 );
             }

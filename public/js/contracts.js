@@ -922,8 +922,16 @@
         const contractTotal = contractData.cart_total_raw || 0;
         const difference = Math.abs(contractTotal - totalScheduled);
         
+        console.log('Payment Validation Debug:', {
+            totalScheduled: totalScheduled,
+            contractTotal: contractTotal,
+            cart_total_raw: contractData.cart_total_raw,
+            difference: difference,
+            paymentSchedule: paymentSchedule
+        });
+        
         if (difference > 0.01) {
-            showValidationNotice('error', 'Payment schedule must equal contract total');
+            showValidationNotice('error', `Payment schedule must equal contract total. Scheduled: ${totalScheduled.toFixed(2)}, Contract: ${contractTotal.toFixed(2)}, Difference: ${difference.toFixed(2)}`);
             tabsWithErrors.add('payment');
             isValid = false;
         }

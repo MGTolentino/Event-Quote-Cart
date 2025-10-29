@@ -286,6 +286,12 @@ class Event_Quote_Cart_Contract_Handler {
                     width: 100%;
                     border-collapse: collapse;
                     margin: 15px 0;
+                    page-break-inside: auto;
+                }
+                .services-table thead {
+                    page-break-after: avoid;
+                }
+                .services-table tbody tr {
                     page-break-inside: avoid;
                 }
                 .services-table th,
@@ -441,7 +447,7 @@ class Event_Quote_Cart_Contract_Handler {
             </div>
             
             <!-- Información del Evento -->
-            <div class="critical-section">
+            <div class="section">
                 <div class="section-title">Información del evento</div>
                 <div style="padding: 10px; border: 1px solid #bdc3c7; background-color: #f8f9fa; margin-bottom: 10px;">
                     <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
@@ -453,9 +459,11 @@ class Event_Quote_Cart_Contract_Handler {
                         <br><strong>Cantidad de Invitados:</strong> <?php echo intval($event['guests']); ?>
                     <?php endif; ?>
                 </div>
+            </div>
             
-                <!-- Servicios Contratados -->
-                <div class="section-title" style="margin-top: 20px;">Servicios Contratados</div>
+            <!-- Servicios Contratados -->
+            <div class="section">
+                <div class="section-title">Servicios Contratados</div>
                 <table class="services-table">
                     <thead>
                         <tr>
