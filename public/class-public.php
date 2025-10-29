@@ -102,6 +102,28 @@ class Event_Quote_Cart_Public {
             true
         );
 		
+		// Localize script with translations for cart history and other features
+		wp_localize_script(
+			$this->plugin_name,
+			'eqCartData',
+			array(
+				'ajaxurl' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('eq_cart_public_nonce'),
+				'i18n' => array(
+					// Cart History texts
+					'confirmRestore' => __('Are you sure you want to restore this cart version? This will replace your current cart items.', 'event-quote-cart'),
+					'selectVersionRestore' => __('Please select a version to restore', 'event-quote-cart'),
+					'cartRestoredSuccess' => __('Cart restored successfully', 'event-quote-cart'),
+					'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
+					'restoring' => __('Restoring...', 'event-quote-cart'),
+					// General texts
+					'loading' => __('Loading...', 'event-quote-cart'),
+					'error' => __('Error', 'event-quote-cart'),
+					'success' => __('Success', 'event-quote-cart')
+				)
+			)
+		);
+		
 		wp_enqueue_script(
     'eq-cart-validation-js',
     EQ_CART_PLUGIN_URL . 'public/js/quote-cart-validation.js',

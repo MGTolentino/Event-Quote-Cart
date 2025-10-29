@@ -46,13 +46,22 @@
 
         // Bind modal close
         $('.eq-modal-close').on('click', function() {
-            $(this).closest('.eq-modal').hide();
+            const modal = $(this).closest('.eq-modal');
+            if (modal.attr('id') === 'eq-contract-modal') {
+                modal.removeClass('show');
+            } else {
+                modal.hide();
+            }
         });
 
         // Close modal when clicking outside
         $('.eq-modal').on('click', function(e) {
             if (e.target === this) {
-                $(this).hide();
+                if ($(this).attr('id') === 'eq-contract-modal') {
+                    $(this).removeClass('show');
+                } else {
+                    $(this).hide();
+                }
             }
         });
     }
@@ -203,7 +212,7 @@
                 if (response.success) {
                     contractData = response.data;
                     populateContractForm();
-                    $('#eq-contract-modal').show();
+                    $('#eq-contract-modal').addClass('show');
                     
                     // Re-bind events after modal is shown
                     setTimeout(() => {
