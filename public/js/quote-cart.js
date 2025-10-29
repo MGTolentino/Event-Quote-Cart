@@ -1843,29 +1843,39 @@ window.EQCartHistory = {
         const selectedHistoryId = $('.eq-history-list input[type="radio"]:checked').val();
         
         if (!selectedHistoryId) {
-            this.showNotification(eqCartData.i18n.selectVersionRestore, 'error');
+            const message = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.selectVersionRestore) ? 
+                eqCartData.i18n.selectVersionRestore : 'Please select a version to restore';
+            this.showNotification(message, 'error');
             return;
         }
         
-        const confirmRestore = confirm(eqCartData.i18n.confirmRestore);
+        const confirmMessage = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.confirmRestore) ? 
+            eqCartData.i18n.confirmRestore : 'Are you sure you want to restore this cart version? This will replace your current cart items.';
+        const confirmRestore = confirm(confirmMessage);
         
         if (!confirmRestore) {
             return;
         }
         
-        $('#eq-restore-history').prop('disabled', true).text(eqCartData.i18n.restoring);
+        const restoringText = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.restoring) ? 
+            eqCartData.i18n.restoring : 'Restoring...';
+        $('#eq-restore-history').prop('disabled', true).text(restoringText);
         
+        const ajaxUrl = (typeof eqCartData !== 'undefined' && eqCartData.ajaxurl) ? 
+            eqCartData.ajaxurl : '/wp-admin/admin-ajax.php';
         $.ajax({
-            url: eqCartData.ajaxurl,
+            url: ajaxUrl,
             type: 'POST',
             data: {
                 action: 'eq_restore_cart_history',
                 history_id: selectedHistoryId,
-                nonce: eqCartData.nonce
+                nonce: (typeof eqCartData !== 'undefined' && eqCartData.nonce) ? eqCartData.nonce : ''
             },
             success: (response) => {
                 if (response.success) {
-                    this.showNotification(eqCartData.i18n.cartRestoredSuccess, 'success');
+                    const successMessage = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.cartRestoredSuccess) ? 
+                        eqCartData.i18n.cartRestoredSuccess : 'Cart restored successfully';
+                    this.showNotification(successMessage, 'success');
                     this.closeHistoryModal();
                     
                     // Reload the page to show restored cart
@@ -1873,14 +1883,20 @@ window.EQCartHistory = {
                         location.reload();
                     }, 1000);
                 } else {
-                    this.showNotification(response.data || eqCartData.i18n.errorRestoringCart, 'error');
+                    const errorMessage = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.errorRestoringCart) ? 
+                        eqCartData.i18n.errorRestoringCart : 'Error restoring cart';
+                    this.showNotification(response.data || errorMessage, 'error');
                 }
             },
             error: (xhr, status, error) => {
-                this.showNotification(eqCartData.i18n.errorRestoringCart, 'error');
+                const errorMessage = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.errorRestoringCart) ? 
+                    eqCartData.i18n.errorRestoringCart : 'Error restoring cart';
+                this.showNotification(errorMessage, 'error');
             },
             complete: () => {
-                $('#eq-restore-history').prop('disabled', false).text(eqCartData.i18n.restoreSelectedVersion);
+                const restoreText = (typeof eqCartData !== 'undefined' && eqCartData.i18n && eqCartData.i18n.restoreSelectedVersion) ? 
+                    eqCartData.i18n.restoreSelectedVersion : 'Restore Selected Version';
+                $('#eq-restore-history').prop('disabled', false).text(restoreText);
             }
         });
     },
