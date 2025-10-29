@@ -666,7 +666,13 @@ function eq_get_js_translations($context = 'main') {
             'itemAdded' => __('Item added to quote successfully', 'event-quote-cart'),
             'dateConflictItems' => __('This date affects %s item(s) in your cart that are not available on this date: %s. Would you like to remove these items and update the date for the rest?', 'event-quote-cart'),
             'dateConflictUpdate' => __('You already have %s item(s) in your cart with a different date. Would you like to update all to the date %s?', 'event-quote-cart'),
-            'errorUpdatingDate' => __('Error updating cart date', 'event-quote-cart')
+            'errorUpdatingDate' => __('Error updating cart date', 'event-quote-cart'),
+            // Cart History texts
+            'confirmRestore' => __('Are you sure you want to restore this cart version? This will replace your current cart items.', 'event-quote-cart'),
+            'selectVersionRestore' => __('Please select a version to restore', 'event-quote-cart'),
+            'cartRestoredSuccess' => __('Cart restored successfully', 'event-quote-cart'),
+            'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
+            'restoring' => __('Restoring...', 'event-quote-cart')
         ));
     }
 
