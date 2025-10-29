@@ -267,8 +267,9 @@
         
         // Ensure cart_total_raw is available
         if (!contractData.cart_total_raw && contractData.cart_total) {
-            // Fallback calculation if cart_total_raw is missing
-            const cleanTotal = contractData.cart_total.replace(/[$,]/g, '');
+            // Fallback calculation if cart_total_raw is missing - decode HTML entities first
+            const decodedTotal = decodeHtmlEntities(contractData.cart_total);
+            const cleanTotal = decodedTotal.replace(/[$,]/g, '');
             contractData.cart_total_raw = parseFloat(cleanTotal) || 0;
         }
 
@@ -488,12 +489,16 @@
         paymentSchedule = [];
         let totalScheduled = 0;
 
+        console.log('UpdatePaymentSchedule - contractData.cart_total_raw:', contractData.cart_total_raw);
+
         $('#eq-payment-schedule-items .eq-payment-item').each(function() {
             const $item = $(this);
             const amount = parseFloat($item.find('.eq-payment-amount').val()) || 0;
             const percentage = parseFloat($item.find('.eq-payment-percentage').val()) || 0;
             const date = $item.find('.eq-payment-date').val();
             const description = $item.find('.eq-payment-description').val();
+            
+            console.log('Payment item:', { amount, percentage, date, description });
 
             // Sync amount and percentage
             const totalAmount = contractData.cart_total_raw || 0;
@@ -521,6 +526,12 @@
         });
 
         // Update summary
+        console.log('Final totals:', {
+            totalScheduled: totalScheduled,
+            contractTotal: contractData.cart_total_raw,
+            difference: Math.abs((contractData.cart_total_raw || 0) - totalScheduled)
+        });
+        
         $('.eq-scheduled-total').text('$' + totalScheduled.toFixed(2));
         
         const contractTotal = contractData.cart_total_raw || 0;
