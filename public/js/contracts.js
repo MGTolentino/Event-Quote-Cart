@@ -518,7 +518,7 @@
 
             paymentSchedule.push({
                 amount: amount,
-                amount_formatted: '$' + amount.toFixed(2),
+                amount_formatted: '$' + amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}),
                 percentage: percentage,
                 date: date,
                 description: description

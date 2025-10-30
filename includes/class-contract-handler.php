@@ -412,8 +412,6 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="header">
                 <?php if (!empty($vendor_data['logo_url'])): ?>
                     <img src="<?php echo esc_url($vendor_data['logo_url']); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
-                <?php else: ?>
-                    <div class="logo">Reservas Events</div>
                 <?php endif; ?>
             </div>
             
@@ -616,7 +614,7 @@ class Event_Quote_Cart_Contract_Handler {
                     <div class="total-row final">Total: <?php echo esc_html($totals['total']); ?></div>
                     
                     <div class="amount-in-words">
-                        Valor del contrato, Importe Con Letra: (<?php echo esc_html($this->number_to_words($totals['total'])); ?>)
+                        Valor del contrato, Importe Con Letra: (<?php echo esc_html($this->number_to_words($totals['total_raw'])); ?>)
                     </div>
                 </div>
             </div>
@@ -749,9 +747,9 @@ class Event_Quote_Cart_Contract_Handler {
     /**
      * Convert number to words (Spanish)
      */
-    private function number_to_words($amount_string) {
-        // Extract numeric value from formatted string
-        $amount = floatval(str_replace(['$', ','], '', $amount_string));
+    private function number_to_words($amount) {
+        // Now receiving raw number, no need to clean formatting
+        $amount = floatval($amount);
         
         // Split into integer and decimal parts
         $integer_part = floor($amount);
