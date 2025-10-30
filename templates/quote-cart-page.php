@@ -651,12 +651,6 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                             <input type="text" name="company_rfc" id="eq-company-rfc">
                         </div>
                     </div>
-                    <div class="eq-form-row">
-                        <div class="eq-form-group">
-                            <label><?php esc_html_e('Business Name (Razón Social)', 'event-quote-cart'); ?></label>
-                            <input type="text" name="razon_social" id="eq-razon-social">
-                        </div>
-                    </div>
                 </div>
             </div>
             

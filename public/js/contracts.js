@@ -219,7 +219,12 @@
                     setTimeout(() => {
                         bindContractEvents();
                         
+                        // Explicitly bind logo upload events
+                        bindLogoUploadEvents();
+                        
                         // Also verify elements exist
+                        console.log('Logo upload button exists:', $('.eq-logo-upload-btn').length);
+                        console.log('Logo input exists:', $('#eq-company-logo').length);
                     }, 100);
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
@@ -1756,6 +1761,38 @@
     }
 
     
+    /**
+     * Bind logo upload events specifically
+     */
+    function bindLogoUploadEvents() {
+        // Remove existing bindings to prevent duplicates
+        $('.eq-logo-upload-btn').off('click.logoUpload');
+        $('#eq-company-logo').off('change.logoUpload');
+        $('.eq-remove-logo-btn').off('click.logoUpload');
+        
+        // Bind upload button
+        $('.eq-logo-upload-btn').on('click.logoUpload', function(e) {
+            e.preventDefault();
+            console.log('Logo upload button clicked');
+            $('#eq-company-logo').trigger('click');
+        });
+        
+        // Bind file input change
+        $('#eq-company-logo').on('change.logoUpload', function() {
+            const file = this.files[0];
+            console.log('File selected:', file);
+            if (file) {
+                handleLogoUpload(file);
+            }
+        });
+        
+        // Bind remove button
+        $('.eq-remove-logo-btn').on('click.logoUpload', function(e) {
+            e.preventDefault();
+            removeLogo();
+        });
+    }
+
     /**
      * Handle logo upload
      */
