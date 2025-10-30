@@ -240,17 +240,10 @@ class Event_Quote_Cart_Contract_Handler {
                     padding: 20px;
                 }
                 .header {
+                    text-align: left;
                     border-bottom: 2px solid #333;
                     padding-bottom: 20px;
                     margin-bottom: 30px;
-                }
-                .header-content {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .logo-container {
-                    flex: 0 0 auto;
                 }
                 .logo {
                     font-size: 24px;
@@ -259,9 +252,9 @@ class Event_Quote_Cart_Contract_Handler {
                     margin-bottom: 10px;
                 }
                 .contract-date {
-                    flex: 0 0 auto;
+                    text-align: right;
+                    margin-bottom: 20px;
                     font-weight: bold;
-                    margin-bottom: 0;
                 }
                 .section {
                     margin-bottom: 20px;
@@ -421,20 +414,18 @@ class Event_Quote_Cart_Contract_Handler {
         <body>
             <!-- Header -->
             <div class="header">
-                <div class="header-content">
-                    <div class="logo-container">
-                        <?php 
-                        // Use uploaded logo first, then vendor dashboard logo as fallback
-                        $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
-                        if (!empty($logo_url)): 
-                        ?>
-                            <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px;">
-                        <?php endif; ?>
-                    </div>
-                    <div class="contract-date">
-                        <?php echo date_i18n('j \d\e F Y'); ?>
-                    </div>
-                </div>
+                <?php 
+                // Use uploaded logo first, then vendor dashboard logo as fallback
+                $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
+                if (!empty($logo_url)): 
+                ?>
+                    <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px;">
+                <?php endif; ?>
+            </div>
+            
+            <!-- Fecha -->
+            <div class="contract-date">
+                <?php echo date_i18n('j \d\e F Y'); ?>
             </div>
             
             <!-- Datos de la Empresa y Contratante -->
