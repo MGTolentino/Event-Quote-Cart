@@ -58,8 +58,11 @@ class Event_Quote_Cart_Contract_Handler {
                 }
             }
             
+            // Obtener datos del vendor si está disponible
+            $vendor_data = $this->get_vendor_contract_data();
+            
             // Generar HTML del contrato
-            $html = $this->generate_contract_html($contract_data, $cart_items, $totals, $context);
+            $html = $this->generate_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data);
             
             // Crear directorio si no existe
             $user_id = get_current_user_id();
@@ -99,7 +102,7 @@ class Event_Quote_Cart_Contract_Handler {
                 $dompdf->render();
             } catch (Exception $e) {
                 // Si falla, intentar con HTML simplificado
-                $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context);
+                $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data);
                 $dompdf = new Dompdf\Dompdf($options);
                 $dompdf->loadHtml($html);
                 $dompdf->setPaper('A4', 'portrait');
@@ -189,15 +192,14 @@ class Event_Quote_Cart_Contract_Handler {
                 'clabe' => sanitize_text_field($post_data['bank_clabe'] ?? ''),
                 'account_holder' => sanitize_text_field($post_data['company_name'] ?? ''),
                 'razon_social' => sanitize_text_field($post_data['razon_social'] ?? '')
-            ),
-            'logo_url' => esc_url_raw($post_data['logo_url'] ?? '')
+            )
         );
     }
     
     /**
      * Generate contract HTML
      */
-    private function generate_contract_html($contract_data, $cart_items, $totals, $context = null) {
+    private function generate_contract_html($contract_data, $cart_items, $totals, $context = null, $vendor_data = null) {
         $company = $contract_data['company_data'];
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];
@@ -408,8 +410,8 @@ class Event_Quote_Cart_Contract_Handler {
         <body>
             <!-- Header -->
             <div class="header">
-                <?php if (!empty($contract_data['logo_url'])): ?>
-                    <img src="<?php echo esc_url($contract_data['logo_url']); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
+                <?php if (!empty($vendor_data['logo_url'])): ?>
+                    <img src="<?php echo esc_url($vendor_data['logo_url']); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
                 <?php else: ?>
                     <div class="logo">Reservas Events</div>
                 <?php endif; ?>
@@ -671,7 +673,9 @@ class Event_Quote_Cart_Contract_Handler {
                         <?php if ($bank['clabe']): ?>
                             <strong>CLABE:</strong> <?php echo esc_html($bank['clabe']); ?><br>
                         <?php endif; ?>
-                        <?php if (!empty($bank['razon_social'])): ?>
+                        <?php if (!empty($vendor_data['razon_social'])): ?>
+                            <strong>Razón Social:</strong> <?php echo esc_html($vendor_data['razon_social']); ?><br>
+                        <?php elseif (!empty($bank['razon_social'])): ?>
                             <strong>Razón Social:</strong> <?php echo esc_html($bank['razon_social']); ?><br>
                         <?php elseif ($bank['account_holder']): ?>
                             <strong>Razón Social:</strong> <?php echo esc_html($bank['account_holder']); ?><br>
@@ -698,6 +702,50 @@ class Event_Quote_Cart_Contract_Handler {
         return ob_get_clean();
     }
     
+    /**
+     * Get vendor contract data from Vendor Dashboard Pro
+     */
+    private function get_vendor_contract_data() {
+        // Check if Vendor Dashboard Pro is active
+        if (!class_exists('VDP_Contracts')) {
+            return null;
+        }
+        
+        // Get current user
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return null;
+        }
+        
+        // Try to get vendor post for current user
+        $vendor_posts = get_posts(array(
+            'post_type' => 'vendor',
+            'author' => $user_id,
+            'post_status' => 'publish',
+            'numberposts' => 1
+        ));
+        
+        if (empty($vendor_posts)) {
+            return null;
+        }
+        
+        $vendor_id = $vendor_posts[0]->ID;
+        
+        // Get contract settings from Vendor Dashboard Pro
+        $contracts_module = VDP_Contracts::get_instance();
+        $contract_settings = $contracts_module->get_contract_settings($vendor_id);
+        
+        if (empty($contract_settings)) {
+            return null;
+        }
+        
+        // Extract logo and razon social
+        return array(
+            'logo_url' => $contract_settings['company_data']['logo_url'] ?? '',
+            'razon_social' => $contract_settings['company_data']['razon_social'] ?? ''
+        );
+    }
+
     /**
      * Convert number to words (Spanish)
      */
@@ -798,7 +846,7 @@ class Event_Quote_Cart_Contract_Handler {
     /**
      * Generate simplified contract HTML for fallback
      */
-    private function generate_simplified_contract_html($contract_data, $cart_items, $totals, $context) {
+    private function generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data = null) {
         $company = $contract_data['company_data'];
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];

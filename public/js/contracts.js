@@ -121,21 +121,6 @@
             generateContract();
         });
 
-        // Logo upload functionality
-        $(document).on('click', '.eq-logo-btn', function() {
-            $('#eq-contract-logo').click();
-        });
-
-        $(document).on('change', '#eq-contract-logo', function() {
-            const file = this.files[0];
-            if (file) {
-                uploadLogo(file);
-            }
-        });
-
-        $(document).on('click', '.eq-remove-logo', function() {
-            removeLogo();
-        });
 
         // Preview button - use more specific selector
         $('#eq-contract-modal').on('click', '.eq-contract-preview', function(e) {
@@ -767,8 +752,7 @@
             bank_name: $('#eq-bank-name').val(),
             bank_account: $('#eq-bank-account').val(),
             bank_clabe: $('#eq-bank-clabe').val(),
-            razon_social: $('#eq-razon-social').val(),
-            logo_url: $('#eq-logo-url').val()
+            razon_social: $('#eq-razon-social').val()
         };
 
         $.ajax({
@@ -1720,69 +1704,38 @@
             }
         });
     }
-
+    
     /**
-     * Upload logo
+     * Load vendor data from Vendor Dashboard Pro
      */
-    function uploadLogo(file) {
-        showLoading('Uploading logo...');
-        
-        const formData = new FormData();
-        formData.append('action', 'eq_upload_contract_logo');
-        formData.append('nonce', eqCartData.nonce);
-        formData.append('logo_file', file);
-        
+    function loadVendorData() {
         $.ajax({
             url: eqCartData.ajaxurl,
             type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                hideLoading();
-                
-                if (response.success) {
-                    displayLogo(response.data.url);
-                    $('#eq-logo-url').val(response.data.url);
-                    showNotification('success', 'Logo uploaded successfully');
-                } else {
-                    showNotification('error', response.data || 'Error uploading logo');
-                }
+            data: {
+                action: 'eq_get_vendor_contract_data',
+                nonce: eqCartData.nonce
             },
-            error: function() {
-                hideLoading();
-                showNotification('error', 'Network error. Please try again.');
+            success: function(response) {
+                if (response.success && response.data) {
+                    const data = response.data;
+                    
+                    // Pre-populate razon social if available and field is empty
+                    if (data.razon_social && !$('#eq-razon-social').val()) {
+                        $('#eq-razon-social').val(data.razon_social);
+                    }
+                }
             }
         });
     }
 
-    /**
-     * Display logo
-     */
-    function displayLogo(url) {
-        const $placeholder = $('.eq-logo-placeholder');
-        const $container = $('.eq-current-logo');
-        
-        $placeholder.hide();
-        $container.append(`<img src="${url}" alt="Contract Logo" style="max-width: 200px; max-height: 80px; border: 1px solid #ddd; border-radius: 4px;">`);
-        $('.eq-remove-logo').show();
-    }
-
-    /**
-     * Remove logo
-     */
-    function removeLogo() {
-        $('.eq-current-logo img').remove();
-        $('.eq-logo-placeholder').show();
-        $('.eq-remove-logo').hide();
-        $('#eq-logo-url').val('');
-        $('#eq-contract-logo').val('');
-        showNotification('success', 'Logo removed');
-    }
     
     // Load memory when modal opens
     $(document).on('click', '[data-target="#eq-contract-modal"]', function() {
-        setTimeout(loadContractMemory, 500); // Small delay to ensure modal is fully loaded
+        setTimeout(function() {
+            loadContractMemory();
+            loadVendorData();
+        }, 500); // Small delay to ensure modal is fully loaded
     });
 
 })(jQuery);
