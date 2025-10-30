@@ -25,8 +25,17 @@ class Event_Quote_Cart_Contract_Handler {
         try {
             // Handle logo upload if present
             $logo_url = '';
+            error_log('Contract Handler - FILES array: ' . print_r($_FILES, true));
+            error_log('Contract Handler - company_logo exists: ' . (isset($_FILES['company_logo']) ? 'YES' : 'NO'));
+            
             if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
+                error_log('Contract Handler - Processing logo upload: ' . $_FILES['company_logo']['name']);
                 $logo_url = $this->handle_logo_upload($_FILES['company_logo']);
+                error_log('Contract Handler - Logo uploaded successfully: ' . $logo_url);
+            } else {
+                if (isset($_FILES['company_logo'])) {
+                    error_log('Contract Handler - Logo upload error: ' . $_FILES['company_logo']['error']);
+                }
             }
             
             // Obtener datos del formulario
