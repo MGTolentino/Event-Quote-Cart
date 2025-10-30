@@ -23,8 +23,15 @@ class Event_Quote_Cart_Contract_Handler {
         global $wpdb;
         
         try {
+            // Handle logo upload if present
+            $logo_url = '';
+            if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
+                $logo_url = $this->handle_logo_upload($_FILES['company_logo']);
+            }
+            
             // Obtener datos del formulario
             $contract_data = $this->sanitize_contract_data($_POST);
+            $contract_data['logo_url'] = $logo_url;
             
             // Obtener items del carrito con detalles completos
             $cart_items = $this->get_detailed_cart_items();
@@ -410,8 +417,12 @@ class Event_Quote_Cart_Contract_Handler {
         <body>
             <!-- Header -->
             <div class="header">
-                <?php if (!empty($vendor_data['logo_url'])): ?>
-                    <img src="<?php echo esc_url($vendor_data['logo_url']); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
+                <?php 
+                // Use uploaded logo first, then vendor dashboard logo as fallback
+                $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
+                if (!empty($logo_url)): 
+                ?>
+                    <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
                 <?php endif; ?>
             </div>
             
@@ -1124,5 +1135,66 @@ class Event_Quote_Cart_Contract_Handler {
             array('%s', '%s'),
             array('%d')
         );
+    }
+    
+    /**
+     * Handle logo upload
+     */
+    private function handle_logo_upload($file) {
+        // Include WordPress file handling functions
+        if (!function_exists('wp_handle_upload')) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+        }
+        
+        // Validate file type
+        $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif');
+        if (!in_array($file['type'], $allowed_types)) {
+            throw new Exception('Invalid file type. Only JPG, PNG and GIF are allowed.');
+        }
+        
+        // Validate file size (max 2MB)
+        if ($file['size'] > 2 * 1024 * 1024) {
+            throw new Exception('File too large. Maximum size is 2MB.');
+        }
+        
+        // Set upload overrides
+        $upload_overrides = array(
+            'test_form' => false,
+            'unique_filename_callback' => function($dir, $name, $ext) {
+                return 'contract_logo_' . time() . '_' . uniqid() . $ext;
+            }
+        );
+        
+        // Custom upload directory for contract logos
+        add_filter('upload_dir', array($this, 'contract_logo_upload_dir'));
+        
+        // Handle the upload
+        $movefile = wp_handle_upload($file, $upload_overrides);
+        
+        // Remove the upload directory filter
+        remove_filter('upload_dir', array($this, 'contract_logo_upload_dir'));
+        
+        if ($movefile && !isset($movefile['error'])) {
+            return $movefile['url'];
+        } else {
+            throw new Exception('Upload failed: ' . ($movefile['error'] ?? 'Unknown error'));
+        }
+    }
+    
+    /**
+     * Custom upload directory for contract logos
+     */
+    public function contract_logo_upload_dir($upload) {
+        $user_id = get_current_user_id();
+        $upload['subdir'] = '/event-quote-cart/logos';
+        $upload['path'] = $upload['basedir'] . $upload['subdir'];
+        $upload['url'] = $upload['baseurl'] . $upload['subdir'];
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($upload['path'])) {
+            wp_mkdir_p($upload['path']);
+        }
+        
+        return $upload;
     }
 }

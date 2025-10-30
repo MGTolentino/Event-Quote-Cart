@@ -167,6 +167,24 @@
             e.stopPropagation();
             generateNewContract();
         });
+        
+        // Logo upload functionality
+        $(document).on('click', '.eq-logo-upload-btn', function(e) {
+            e.preventDefault();
+            $('#eq-company-logo').click();
+        });
+        
+        $(document).on('change', '#eq-company-logo', function() {
+            const file = this.files[0];
+            if (file) {
+                handleLogoUpload(file);
+            }
+        });
+        
+        $(document).on('click', '.eq-remove-logo-btn', function(e) {
+            e.preventDefault();
+            removeLogo();
+        });
     }
 
     /**
@@ -1729,6 +1747,45 @@
         });
     }
 
+    
+    /**
+     * Handle logo upload
+     */
+    function handleLogoUpload(file) {
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Invalid file type. Only JPG, PNG and GIF are allowed.');
+            return;
+        }
+        
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File too large. Maximum size is 2MB.');
+            return;
+        }
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const $preview = $('.eq-logo-preview');
+            const $img = $preview.find('img');
+            $img.attr('src', e.target.result);
+            $preview.show();
+            $('.eq-logo-upload-btn').text('Change Logo');
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    /**
+     * Remove logo
+     */
+    function removeLogo() {
+        $('#eq-company-logo').val('');
+        $('.eq-logo-preview').hide();
+        $('.eq-logo-preview img').attr('src', '');
+        $('.eq-logo-upload-btn').html('<i class="fas fa-upload"></i> Upload Logo');
+    }
     
     // Load memory when modal opens
     $(document).on('click', '[data-target="#eq-contract-modal"]', function() {
