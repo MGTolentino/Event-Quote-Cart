@@ -476,7 +476,7 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
         <span class="eq-modal-close">&times;</span>
         <h2><?php esc_html_e('Generate Contract', 'event-quote-cart'); ?></h2>
         
-        <form id="eq-contract-form" enctype="multipart/form-data">
+        <form id="eq-contract-form">
             <div class="eq-contract-tabs">
                 <ul class="eq-contract-tab-nav">
                     <li class="active" data-tab="company"><?php esc_html_e('Company Info', 'event-quote-cart'); ?></li>
@@ -505,22 +505,6 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <div class="eq-form-group">
                             <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
                             <input type="email" name="company_email" id="eq-company-email" required>
-                        </div>
-                    </div>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Company Logo', 'event-quote-cart'); ?></label>
-                        <div class="eq-logo-upload-container">
-                            <input type="file" name="company_logo" id="eq-company-logo" accept="image/*" style="display: none;">
-                            <button type="button" class="eq-btn eq-btn-secondary eq-logo-upload-btn">
-                                <i class="fas fa-upload"></i> <?php esc_html_e('Upload Logo', 'event-quote-cart'); ?>
-                            </button>
-                            <div class="eq-logo-preview" style="display: none; margin-top: 10px;">
-                                <img src="" alt="Logo preview" style="max-width: 200px; max-height: 80px; border: 1px solid #ddd; border-radius: 4px;">
-                                <button type="button" class="eq-btn eq-btn-outline eq-remove-logo-btn" style="margin-left: 10px;">
-                                    <i class="fas fa-trash"></i> <?php esc_html_e('Remove', 'event-quote-cart'); ?>
-                                </button>
-                            </div>
-                            <small class="eq-field-note"><?php esc_html_e('Optional. JPG, PNG or GIF. Max 2MB.', 'event-quote-cart'); ?></small>
                         </div>
                     </div>
                     <div class="eq-form-group">

@@ -168,24 +168,6 @@
             generateNewContract();
         });
         
-        // Logo upload functionality
-        $(document).on('click', '.eq-logo-upload-btn', function(e) {
-            e.preventDefault();
-            console.log('Logo upload button clicked');
-            $('#eq-company-logo').click();
-        });
-        
-        $(document).on('change', '#eq-company-logo', function() {
-            const file = this.files[0];
-            if (file) {
-                handleLogoUpload(file);
-            }
-        });
-        
-        $(document).on('click', '.eq-remove-logo-btn', function(e) {
-            e.preventDefault();
-            removeLogo();
-        });
     }
 
     /**
@@ -219,12 +201,6 @@
                     setTimeout(() => {
                         bindContractEvents();
                         
-                        // Explicitly bind logo upload events
-                        bindLogoUploadEvents();
-                        
-                        // Also verify elements exist
-                        console.log('Logo upload button exists:', $('.eq-logo-upload-btn').length);
-                        console.log('Logo input exists:', $('#eq-company-logo').length);
                     }, 100);
                 } else {
                     showNotification('error', response.data || 'Error loading contract data');
@@ -745,53 +721,45 @@
             }
         }, 200);
 
-        // Prepare form data with file support
-        const formData = new FormData();
-        formData.append('action', 'eq_generate_contract_pdf');
-        formData.append('nonce', eqCartData.nonce);
-        
-        // Company data
-        formData.append('company_name', $('#eq-company-name').val());
-        formData.append('company_address', $('#eq-company-address').val());
-        formData.append('company_phone', $('#eq-company-phone').val());
-        formData.append('company_email', $('#eq-company-email').val());
-        formData.append('company_rfc', $('#eq-company-rfc').val());
-        
-        // Add logo file if selected
-        const logoFile = $('#eq-company-logo')[0].files[0];
-        if (logoFile) {
-            formData.append('company_logo', logoFile);
-            console.log('Logo file added to form data:', logoFile.name);
-        }
-        
-        // Client data
-        formData.append('client_name', $('#eq-client-name').val());
-        formData.append('client_phone', $('#eq-client-phone').val());
-        formData.append('client_email', $('#eq-client-email').val());
-        
-        // Event data
-        formData.append('event_date', $('#eq-event-date').val());
-        formData.append('event_start_time', $('#eq-event-start-time').val());
-        formData.append('event_end_time', $('#eq-event-end-time').val());
-        formData.append('event_address', $('#eq-event-address').val());
-        formData.append('event_guests', $('#eq-event-guests').val());
-        
-        // Payment schedule
-        formData.append('payment_schedule', JSON.stringify(paymentSchedule));
-        
-        // Terms and bank
-        formData.append('contract_terms', $('#eq-contract-terms').val());
-        formData.append('bank_name', $('#eq-bank-name').val());
-        formData.append('bank_account', $('#eq-bank-account').val());
-        formData.append('bank_clabe', $('#eq-bank-clabe').val());
-        formData.append('razon_social', $('#eq-razon-social').val());
+        // Prepare form data
+        const formData = {
+            action: 'eq_generate_contract_pdf',
+            nonce: eqCartData.nonce,
+            
+            // Company data
+            company_name: $('#eq-company-name').val(),
+            company_address: $('#eq-company-address').val(),
+            company_phone: $('#eq-company-phone').val(),
+            company_email: $('#eq-company-email').val(),
+            company_rfc: $('#eq-company-rfc').val(),
+            
+            // Client data
+            client_name: $('#eq-client-name').val(),
+            client_phone: $('#eq-client-phone').val(),
+            client_email: $('#eq-client-email').val(),
+            
+            // Event data
+            event_date: $('#eq-event-date').val(),
+            event_start_time: $('#eq-event-start-time').val(),
+            event_end_time: $('#eq-event-end-time').val(),
+            event_address: $('#eq-event-address').val(),
+            event_guests: $('#eq-event-guests').val(),
+            
+            // Payment schedule
+            payment_schedule: JSON.stringify(paymentSchedule),
+            
+            // Terms and bank
+            contract_terms: $('#eq-contract-terms').val(),
+            bank_name: $('#eq-bank-name').val(),
+            bank_account: $('#eq-bank-account').val(),
+            bank_clabe: $('#eq-bank-clabe').val(),
+            razon_social: $('#eq-razon-social').val()
+        };
 
         $.ajax({
             url: eqCartData.ajaxurl,
             type: 'POST',
             data: formData,
-            processData: false,
-            contentType: false,
             timeout: 60000, // 60 seconds timeout
             success: function(response) {
                 clearInterval(progressInterval);
@@ -1770,76 +1738,6 @@
     }
 
     
-    /**
-     * Bind logo upload events specifically
-     */
-    function bindLogoUploadEvents() {
-        // Remove existing bindings to prevent duplicates
-        $('.eq-logo-upload-btn').off('click.logoUpload');
-        $('#eq-company-logo').off('change.logoUpload');
-        $('.eq-remove-logo-btn').off('click.logoUpload');
-        
-        // Bind upload button
-        $('.eq-logo-upload-btn').on('click.logoUpload', function(e) {
-            e.preventDefault();
-            console.log('Logo upload button clicked');
-            $('#eq-company-logo').trigger('click');
-        });
-        
-        // Bind file input change
-        $('#eq-company-logo').on('change.logoUpload', function() {
-            const file = this.files[0];
-            console.log('File selected:', file);
-            if (file) {
-                handleLogoUpload(file);
-            }
-        });
-        
-        // Bind remove button
-        $('.eq-remove-logo-btn').on('click.logoUpload', function(e) {
-            e.preventDefault();
-            removeLogo();
-        });
-    }
-
-    /**
-     * Handle logo upload
-     */
-    function handleLogoUpload(file) {
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        if (!allowedTypes.includes(file.type)) {
-            alert('Invalid file type. Only JPG, PNG and GIF are allowed.');
-            return;
-        }
-        
-        // Validate file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            alert('File too large. Maximum size is 2MB.');
-            return;
-        }
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const $preview = $('.eq-logo-preview');
-            const $img = $preview.find('img');
-            $img.attr('src', e.target.result);
-            $preview.show();
-            $('.eq-logo-upload-btn').text('Change Logo');
-        };
-        reader.readAsDataURL(file);
-    }
-    
-    /**
-     * Remove logo
-     */
-    function removeLogo() {
-        $('#eq-company-logo').val('');
-        $('.eq-logo-preview').hide();
-        $('.eq-logo-preview img').attr('src', '');
-        $('.eq-logo-upload-btn').html('<i class="fas fa-upload"></i> Upload Logo');
-    }
     
     // Load memory when modal opens
     $(document).on('click', '[data-target="#eq-contract-modal"]', function() {
