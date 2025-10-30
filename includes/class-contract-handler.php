@@ -171,7 +171,6 @@ class Event_Quote_Cart_Contract_Handler {
             ),
             'client_data' => array(
                 'name' => sanitize_text_field($post_data['client_name'] ?? ''),
-                'address' => sanitize_textarea_field($post_data['client_address'] ?? ''),
                 'phone' => sanitize_text_field($post_data['client_phone'] ?? ''),
                 'email' => sanitize_email($post_data['client_email'] ?? '')
             ),
@@ -179,7 +178,7 @@ class Event_Quote_Cart_Contract_Handler {
                 'date' => sanitize_text_field($post_data['event_date'] ?? ''),
                 'start_time' => sanitize_text_field($post_data['event_start_time'] ?? ''),
                 'end_time' => sanitize_text_field($post_data['event_end_time'] ?? ''),
-                'location' => sanitize_text_field($post_data['event_location'] ?? ''),
+                'address' => sanitize_textarea_field($post_data['event_address'] ?? ''),
                 'guests' => intval($post_data['event_guests'] ?? 0)
             ),
             'payment_schedule' => json_decode(stripslashes($post_data['payment_schedule'] ?? '[]'), true),
@@ -188,8 +187,10 @@ class Event_Quote_Cart_Contract_Handler {
                 'bank_name' => sanitize_text_field($post_data['bank_name'] ?? ''),
                 'account_number' => sanitize_text_field($post_data['bank_account'] ?? ''),
                 'clabe' => sanitize_text_field($post_data['bank_clabe'] ?? ''),
-                'account_holder' => sanitize_text_field($post_data['company_name'] ?? '')
-            )
+                'account_holder' => sanitize_text_field($post_data['company_name'] ?? ''),
+                'razon_social' => sanitize_text_field($post_data['razon_social'] ?? '')
+            ),
+            'logo_url' => esc_url_raw($post_data['logo_url'] ?? '')
         );
     }
     
@@ -333,8 +334,8 @@ class Event_Quote_Cart_Contract_Handler {
                     text-align: center;
                 }
                 .payment-schedule-table th {
-                    background-color: #f39c12;
-                    color: white;
+                    background-color: white;
+                    color: black;
                     font-weight: bold;
                 }
                 .terms {
@@ -407,12 +408,16 @@ class Event_Quote_Cart_Contract_Handler {
         <body>
             <!-- Header -->
             <div class="header">
-                <div class="logo">Reservas Events</div>
+                <?php if (!empty($contract_data['logo_url'])): ?>
+                    <img src="<?php echo esc_url($contract_data['logo_url']); ?>" alt="Company Logo" style="max-height: 80px; max-width: 300px;">
+                <?php else: ?>
+                    <div class="logo">Reservas Events</div>
+                <?php endif; ?>
             </div>
             
             <!-- Fecha -->
             <div class="contract-date">
-                <?php echo esc_html($company['address'] ? explode(',', $company['address'])[0] : 'Monterrey N.L.'); ?> México <?php echo date_i18n('j \d\e F Y'); ?>
+                <?php echo date_i18n('j \d\e F Y'); ?>
             </div>
             
             <!-- Datos de la Empresa y Contratante -->
@@ -433,8 +438,7 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php endif; ?>
                         </td>
                         <td>
-                            <strong><?php echo esc_html($client['name']); ?></strong><br>
-                            <?php echo nl2br(esc_html($client['address'])); ?>
+                            <strong><?php echo esc_html($client['name']); ?></strong>
                             <?php if ($client['email']): ?>
                                 <br><?php echo esc_html($client['email']); ?>
                             <?php endif; ?>
@@ -451,7 +455,7 @@ class Event_Quote_Cart_Contract_Handler {
                 <div class="section-title">Información del evento</div>
                 <div style="padding: 10px; border: 1px solid #bdc3c7; background-color: #f8f9fa; margin-bottom: 10px;">
                     <strong>Fecha de Evento:</strong> <?php echo esc_html($event_date_formatted); ?><br>
-                    <strong>Lugar:</strong> <?php echo esc_html($event['location']); ?>
+                    <strong>Dirección del Evento:</strong> <?php echo nl2br(esc_html($event['address'])); ?>
                     <?php if ($event_time_formatted): ?>
                         <br><strong>Hora de inicio:</strong> <?php echo esc_html($event_time_formatted); ?>
                     <?php endif; ?>
@@ -467,11 +471,11 @@ class Event_Quote_Cart_Contract_Handler {
                 <table class="services-table">
                     <thead>
                         <tr>
-                            <th>Título</th>
-                            <th>Descripción de Servicios Contratados</th>
-                            <th>Cantidad</th>
-                            <th>Precio</th>
-                            <th>Sub Total</th>
+                            <th style="width: 15%;">Título</th>
+                            <th style="width: 45%;">Descripción</th>
+                            <th style="width: 10%;">Cantidad</th>
+                            <th style="width: 15%;">Precio</th>
+                            <th style="width: 15%;">Sub Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -667,7 +671,9 @@ class Event_Quote_Cart_Contract_Handler {
                         <?php if ($bank['clabe']): ?>
                             <strong>CLABE:</strong> <?php echo esc_html($bank['clabe']); ?><br>
                         <?php endif; ?>
-                        <?php if ($bank['account_holder']): ?>
+                        <?php if (!empty($bank['razon_social'])): ?>
+                            <strong>Razón Social:</strong> <?php echo esc_html($bank['razon_social']); ?><br>
+                        <?php elseif ($bank['account_holder']): ?>
                             <strong>Razón Social:</strong> <?php echo esc_html($bank['account_holder']); ?><br>
                         <?php endif; ?>
                     </div>
@@ -699,36 +705,71 @@ class Event_Quote_Cart_Contract_Handler {
         // Extract numeric value from formatted string
         $amount = floatval(str_replace(['$', ','], '', $amount_string));
         
-        // Basic number to words conversion (simplified)
-        $amount_rounded = round($amount);
+        // Split into integer and decimal parts
+        $integer_part = floor($amount);
+        $decimal_part = round(($amount - $integer_part) * 100);
         
-        if ($amount_rounded < 1000) {
-            return $amount_string . ' pesos 00/100 M.N.';
-        } elseif ($amount_rounded < 1000000) {
-            $thousands = floor($amount_rounded / 1000);
-            $remainder = $amount_rounded % 1000;
-            return $this->get_word_for_number($thousands) . ' mil ' . 
-                   ($remainder > 0 ? $this->get_word_for_number($remainder) : '') . ' pesos 00/100 M.N.';
+        // Convert integer part to words
+        $words = $this->convert_number_to_words($integer_part);
+        
+        // Format final string
+        if ($integer_part == 1) {
+            return ucfirst($words) . ' Peso ' . sprintf('%02d', $decimal_part) . '/100 M.N.';
         } else {
-            return $amount_string . ' pesos 00/100 M.N.';
+            return ucfirst($words) . ' Pesos ' . sprintf('%02d', $decimal_part) . '/100 M.N.';
         }
     }
     
     /**
-     * Get word representation for a number (simplified)
+     * Convert number to words in Spanish
      */
-    private function get_word_for_number($number) {
-        $words = array(
-            1 => 'uno', 2 => 'dos', 3 => 'tres', 4 => 'cuatro', 5 => 'cinco',
-            6 => 'seis', 7 => 'siete', 8 => 'ocho', 9 => 'nueve', 10 => 'diez',
-            // Add more as needed
-        );
+    private function convert_number_to_words($number) {
+        if ($number == 0) return 'cero';
         
-        if ($number <= 10 && isset($words[$number])) {
-            return $words[$number];
+        $units = array('', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve');
+        $teens = array('diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve');
+        $tens = array('', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa');
+        $hundreds = array('', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos');
+        
+        if ($number < 10) {
+            return $units[$number];
+        } elseif ($number < 20) {
+            return $teens[$number - 10];
+        } elseif ($number < 100) {
+            $ten = floor($number / 10);
+            $unit = $number % 10;
+            if ($ten == 2 && $unit > 0) {
+                return 'veinti' . $units[$unit];
+            }
+            return $tens[$ten] . ($unit > 0 ? ' y ' . $units[$unit] : '');
+        } elseif ($number < 1000) {
+            $hundred = floor($number / 100);
+            $remainder = $number % 100;
+            if ($number == 100) return 'cien';
+            return $hundreds[$hundred] . ($remainder > 0 ? ' ' . $this->convert_number_to_words($remainder) : '');
+        } elseif ($number < 1000000) {
+            $thousand = floor($number / 1000);
+            $remainder = $number % 1000;
+            $thousand_words = '';
+            if ($thousand == 1) {
+                $thousand_words = 'mil';
+            } else {
+                $thousand_words = $this->convert_number_to_words($thousand) . ' mil';
+            }
+            return $thousand_words . ($remainder > 0 ? ' ' . $this->convert_number_to_words($remainder) : '');
+        } elseif ($number < 1000000000) {
+            $million = floor($number / 1000000);
+            $remainder = $number % 1000000;
+            $million_words = '';
+            if ($million == 1) {
+                $million_words = 'un millón';
+            } else {
+                $million_words = $this->convert_number_to_words($million) . ' millones';
+            }
+            return $million_words . ($remainder > 0 ? ' ' . $this->convert_number_to_words($remainder) : '');
         }
         
-        return (string) $number;
+        return 'número demasiado grande';
     }
     
     /**

@@ -49,6 +49,9 @@ class Event_Quote_Cart_Ajax_Handler {
 		add_action('wp_ajax_eq_verify_context_cleared', array($this, 'verify_context_cleared'));
 		add_action('wp_ajax_eq_check_item_in_cart', array($this, 'check_item_in_cart'));
 		
+		// Contract related hooks
+		add_action('wp_ajax_eq_upload_contract_logo', array($this, 'upload_contract_logo'));
+		
 		// Hooks para historial de carrito
 		add_action('wp_ajax_eq_save_cart_history', array($this, 'save_cart_history'));
 		add_action('wp_ajax_eq_get_cart_history', array($this, 'get_cart_history'));
@@ -3690,6 +3693,66 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             wp_send_json_error('Error loading contract memory: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Upload contract logo
+     */
+    public function upload_contract_logo() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            // Check if file was uploaded
+            if (!isset($_FILES['logo_file']) || $_FILES['logo_file']['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception('No file uploaded or upload error');
+            }
+            
+            $file = $_FILES['logo_file'];
+            
+            // Validate file type
+            $allowed_types = array('image/jpeg', 'image/jpg', 'image/png', 'image/gif');
+            if (!in_array($file['type'], $allowed_types)) {
+                throw new Exception('Invalid file type. Only JPG, PNG and GIF are allowed.');
+            }
+            
+            // Validate file size (max 2MB)
+            if ($file['size'] > 2 * 1024 * 1024) {
+                throw new Exception('File too large. Maximum size is 2MB.');
+            }
+            
+            // Create upload directory
+            $user_id = get_current_user_id();
+            $upload_dir = wp_upload_dir();
+            $plugin_upload_dir = $upload_dir['basedir'] . '/event-quote-cart/' . $user_id . '/logos/';
+            
+            if (!file_exists($plugin_upload_dir)) {
+                wp_mkdir_p($plugin_upload_dir);
+            }
+            
+            // Generate unique filename
+            $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+            $filename = 'contract_logo_' . time() . '_' . uniqid() . '.' . $file_extension;
+            $file_path = $plugin_upload_dir . $filename;
+            $file_url = $upload_dir['baseurl'] . '/event-quote-cart/' . $user_id . '/logos/' . $filename;
+            
+            // Move uploaded file
+            if (!move_uploaded_file($file['tmp_name'], $file_path)) {
+                throw new Exception('Error saving uploaded file');
+            }
+            
+            wp_send_json_success(array(
+                'url' => $file_url,
+                'path' => $file_path,
+                'filename' => $filename
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error uploading logo: ' . $e->getMessage());
         }
     }
 	

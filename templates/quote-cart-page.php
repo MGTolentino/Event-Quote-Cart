@@ -516,10 +516,6 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <label><?php esc_html_e('Client Name', 'event-quote-cart'); ?></label>
                         <input type="text" name="client_name" id="eq-client-name" required>
                     </div>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Client Address', 'event-quote-cart'); ?></label>
-                        <textarea name="client_address" id="eq-client-address" rows="3" required></textarea>
-                    </div>
                     <div class="eq-form-row">
                         <div class="eq-form-group">
                             <label><?php esc_html_e('Phone', 'event-quote-cart'); ?></label>
@@ -548,8 +544,8 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         </div>
                     </div>
                     <div class="eq-form-group">
-                        <label><?php esc_html_e('Event Location', 'event-quote-cart'); ?></label>
-                        <input type="text" name="event_location" id="eq-event-location" required>
+                        <label><?php esc_html_e('Event Address', 'event-quote-cart'); ?></label>
+                        <textarea name="event_address" id="eq-event-address" rows="3" required></textarea>
                     </div>
                     <div class="eq-form-group">
                         <label><?php esc_html_e('Number of Guests', 'event-quote-cart'); ?></label>
@@ -608,6 +604,29 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     <h3><?php esc_html_e('Terms and Bank Information', 'event-quote-cart'); ?></h3>
                     
                     <div class="eq-form-group">
+                        <label><?php esc_html_e('Contract Logo', 'event-quote-cart'); ?></label>
+                        <div class="eq-logo-uploader">
+                            <div class="eq-current-logo">
+                                <div class="eq-logo-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span><?php esc_html_e('No logo uploaded', 'event-quote-cart'); ?></span>
+                                </div>
+                            </div>
+                            <div class="eq-logo-controls">
+                                <input type="file" id="eq-contract-logo" name="contract_logo" class="eq-file-input" accept="image/*" style="display: none;">
+                                <button type="button" class="eq-btn eq-btn-outline eq-logo-btn">
+                                    <i class="fas fa-upload"></i> <?php esc_html_e('Upload Logo', 'event-quote-cart'); ?>
+                                </button>
+                                <button type="button" class="eq-btn eq-btn-outline eq-remove-logo" style="display: none;">
+                                    <i class="fas fa-trash"></i> <?php esc_html_e('Remove', 'event-quote-cart'); ?>
+                                </button>
+                            </div>
+                            <input type="hidden" id="eq-logo-url" name="logo_url" value="">
+                        </div>
+                        <div class="eq-form-help"><?php esc_html_e('Upload a logo that will appear on your contracts. Recommended size: 200x80px', 'event-quote-cart'); ?></div>
+                    </div>
+                    
+                    <div class="eq-form-group">
                         <label><?php esc_html_e('Contract Terms', 'event-quote-cart'); ?></label>
                         <textarea name="contract_terms" id="eq-contract-terms" rows="8"></textarea>
                     </div>
@@ -631,6 +650,12 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <div class="eq-form-group">
                             <label><?php esc_html_e('Company Tax ID', 'event-quote-cart'); ?></label>
                             <input type="text" name="company_rfc" id="eq-company-rfc">
+                        </div>
+                    </div>
+                    <div class="eq-form-row">
+                        <div class="eq-form-group">
+                            <label><?php esc_html_e('Business Name (Razón Social)', 'event-quote-cart'); ?></label>
+                            <input type="text" name="razon_social" id="eq-razon-social">
                         </div>
                     </div>
                 </div>

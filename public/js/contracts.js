@@ -121,6 +121,22 @@
             generateContract();
         });
 
+        // Logo upload functionality
+        $(document).on('click', '.eq-logo-btn', function() {
+            $('#eq-contract-logo').click();
+        });
+
+        $(document).on('change', '#eq-contract-logo', function() {
+            const file = this.files[0];
+            if (file) {
+                uploadLogo(file);
+            }
+        });
+
+        $(document).on('click', '.eq-remove-logo', function() {
+            removeLogo();
+        });
+
         // Preview button - use more specific selector
         $('#eq-contract-modal').on('click', '.eq-contract-preview', function(e) {
             e.preventDefault();
@@ -228,7 +244,6 @@
         // Client data
         if (contractData.client_data) {
             $('#eq-client-name').val(contractData.client_data.name || '').attr('required', true);
-            $('#eq-client-address').val(contractData.client_data.address || '').attr('required', true);
             $('#eq-client-phone').val(contractData.client_data.phone || '').attr('required', true);
             $('#eq-client-email').val(contractData.client_data.email || '').attr('required', true);
         }
@@ -236,7 +251,7 @@
         // Event data
         if (contractData.event_data) {
             $('#eq-event-date').val(contractData.event_data.date || '').attr('required', true);
-            $('#eq-event-location').val(contractData.event_data.location || '').attr('required', true);
+            $('#eq-event-address').val(contractData.event_data.address || '').attr('required', true);
             $('#eq-event-guests').val(contractData.event_data.guests || '').attr('required', true);
             // Add required to time fields
             $('#eq-event-start-time').attr('required', true);
@@ -734,7 +749,6 @@
             
             // Client data
             client_name: $('#eq-client-name').val(),
-            client_address: $('#eq-client-address').val(),
             client_phone: $('#eq-client-phone').val(),
             client_email: $('#eq-client-email').val(),
             
@@ -742,7 +756,7 @@
             event_date: $('#eq-event-date').val(),
             event_start_time: $('#eq-event-start-time').val(),
             event_end_time: $('#eq-event-end-time').val(),
-            event_location: $('#eq-event-location').val(),
+            event_address: $('#eq-event-address').val(),
             event_guests: $('#eq-event-guests').val(),
             
             // Payment schedule
@@ -752,7 +766,9 @@
             contract_terms: $('#eq-contract-terms').val(),
             bank_name: $('#eq-bank-name').val(),
             bank_account: $('#eq-bank-account').val(),
-            bank_clabe: $('#eq-bank-clabe').val()
+            bank_clabe: $('#eq-bank-clabe').val(),
+            razon_social: $('#eq-razon-social').val(),
+            logo_url: $('#eq-logo-url').val()
         };
 
         $.ajax({
@@ -891,13 +907,12 @@
             { selector: '#eq-company-phone', label: 'Company Phone', tab: 'company' },
             { selector: '#eq-company-email', label: 'Company Email', tab: 'company' },
             { selector: '#eq-client-name', label: 'Client Name', tab: 'client' },
-            { selector: '#eq-client-address', label: 'Client Address', tab: 'client' },
             { selector: '#eq-client-phone', label: 'Client Phone', tab: 'client' },
             { selector: '#eq-client-email', label: 'Client Email', tab: 'client' },
             { selector: '#eq-event-date', label: 'Event Date', tab: 'event' },
             { selector: '#eq-event-start-time', label: 'Event Start Time', tab: 'event' },
             { selector: '#eq-event-end-time', label: 'Event End Time', tab: 'event' },
-            { selector: '#eq-event-location', label: 'Event Location', tab: 'event' },
+            { selector: '#eq-event-address', label: 'Event Address', tab: 'event' },
             { selector: '#eq-event-guests', label: 'Event Guests', tab: 'event' }
         ];
         
@@ -1527,7 +1542,7 @@
             event_date: $('#eq-event-date').val(),
             event_start_time: $('#eq-event-start-time').val(),
             event_end_time: $('#eq-event-end-time').val(),
-            event_location: $('#eq-event-location').val(),
+            event_address: $('#eq-event-address').val(),
             event_guests: $('#eq-event-guests').val(),
             contract_terms: $('#eq-contract-terms').val()
         };
@@ -1704,6 +1719,65 @@
                 }
             }
         });
+    }
+
+    /**
+     * Upload logo
+     */
+    function uploadLogo(file) {
+        showLoading('Uploading logo...');
+        
+        const formData = new FormData();
+        formData.append('action', 'eq_upload_contract_logo');
+        formData.append('nonce', eqCartData.nonce);
+        formData.append('logo_file', file);
+        
+        $.ajax({
+            url: eqCartData.ajaxurl,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                hideLoading();
+                
+                if (response.success) {
+                    displayLogo(response.data.url);
+                    $('#eq-logo-url').val(response.data.url);
+                    showNotification('success', 'Logo uploaded successfully');
+                } else {
+                    showNotification('error', response.data || 'Error uploading logo');
+                }
+            },
+            error: function() {
+                hideLoading();
+                showNotification('error', 'Network error. Please try again.');
+            }
+        });
+    }
+
+    /**
+     * Display logo
+     */
+    function displayLogo(url) {
+        const $placeholder = $('.eq-logo-placeholder');
+        const $container = $('.eq-current-logo');
+        
+        $placeholder.hide();
+        $container.append(`<img src="${url}" alt="Contract Logo" style="max-width: 200px; max-height: 80px; border: 1px solid #ddd; border-radius: 4px;">`);
+        $('.eq-remove-logo').show();
+    }
+
+    /**
+     * Remove logo
+     */
+    function removeLogo() {
+        $('.eq-current-logo img').remove();
+        $('.eq-logo-placeholder').show();
+        $('.eq-remove-logo').hide();
+        $('#eq-logo-url').val('');
+        $('#eq-contract-logo').val('');
+        showNotification('success', 'Logo removed');
     }
     
     // Load memory when modal opens
