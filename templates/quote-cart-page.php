@@ -523,6 +523,11 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                             <small class="eq-field-note"><?php esc_html_e('Optional. JPG, PNG or GIF. Max 2MB.', 'event-quote-cart'); ?></small>
                         </div>
                     </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Business Name (Razón Social)', 'event-quote-cart'); ?></label>
+                        <input type="text" name="razon_social" id="eq-razon-social">
+                        <small class="eq-field-note"><?php esc_html_e('Optional. Legal business name for contracts.', 'event-quote-cart'); ?></small>
+                    </div>
                 </div>
                 
                 <!-- Client Info Tab -->

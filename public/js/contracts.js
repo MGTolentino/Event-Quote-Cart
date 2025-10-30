@@ -171,6 +171,7 @@
         // Logo upload functionality
         $(document).on('click', '.eq-logo-upload-btn', function(e) {
             e.preventDefault();
+            console.log('Logo upload button clicked');
             $('#eq-company-logo').click();
         });
         
@@ -1727,6 +1728,7 @@
      * Load vendor data from Vendor Dashboard Pro
      */
     function loadVendorData() {
+        console.log('Loading vendor data...');
         $.ajax({
             url: eqCartData.ajaxurl,
             type: 'POST',
@@ -1735,14 +1737,20 @@
                 nonce: eqCartData.nonce
             },
             success: function(response) {
+                console.log('Vendor data response:', response);
                 if (response.success && response.data) {
                     const data = response.data;
+                    console.log('Razon social from vendor:', data.razon_social);
                     
                     // Pre-populate razon social if available and field is empty
                     if (data.razon_social && !$('#eq-razon-social').val()) {
+                        console.log('Setting razon social to:', data.razon_social);
                         $('#eq-razon-social').val(data.razon_social);
                     }
                 }
+            },
+            error: function(xhr, status, error) {
+                console.log('Error loading vendor data:', error);
             }
         });
     }
