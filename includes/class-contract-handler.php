@@ -279,16 +279,18 @@ class Event_Quote_Cart_Contract_Handler {
                 
                 .fixed-footer .signature-container {
                     width: 100%;
-                    display: table;
-                    table-layout: fixed;
                 }
                 
                 .fixed-footer .signature-box {
-                    display: table-cell;
-                    width: 50%;
+                    width: 45%;
+                    float: left;
                     text-align: center;
                     vertical-align: top;
                     padding: 0 10px;
+                }
+                
+                .fixed-footer .signature-box:last-child {
+                    float: right;
                 }
                 
                 .fixed-footer .signature-line {
