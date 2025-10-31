@@ -251,7 +251,6 @@ class Event_Quote_Cart_Contract_Handler {
                     left: 0;
                     right: 0;
                     height: 80px;
-                    border-bottom: 2px solid #333;
                     padding: 10px 30px;
                 }
                 
@@ -270,11 +269,10 @@ class Event_Quote_Cart_Contract_Handler {
                 /* Footer fijo en cada página */
                 .fixed-footer {
                     position: fixed;
-                    bottom: -130px;
+                    bottom: -140px;
                     left: 0;
                     right: 0;
                     height: 100px;
-                    border-top: 2px solid #333;
                     padding: 20px 30px;
                     font-size: 10px;
                 }
@@ -287,35 +285,23 @@ class Event_Quote_Cart_Contract_Handler {
                 
                 .fixed-footer .signature-box {
                     display: table-cell;
-                    width: 45%;
+                    width: 50%;
                     text-align: center;
                     vertical-align: top;
                     padding: 0 10px;
-                }
-                
-                .fixed-footer .signature-box:first-child {
-                    text-align: left;
-                }
-                
-                .fixed-footer .signature-box:last-child {
-                    text-align: right;
                 }
                 
                 .fixed-footer .signature-line {
                     display: block;
                     width: 200px;
                     border-bottom: 1px solid #333;
-                    margin: 20px 0 5px 0;
+                    margin: 20px auto 5px auto;
                     height: 1px;
                 }
                 
-                .fixed-footer .signature-box:first-child .signature-line {
-                    margin-left: 0;
-                }
-                
-                .fixed-footer .signature-box:last-child .signature-line {
-                    margin-right: 0;
-                    margin-left: auto;
+                .fixed-footer .client-name {
+                    margin-bottom: 5px;
+                    font-weight: bold;
                 }
                 
                 /* Contenido principal */
@@ -466,14 +452,14 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="fixed-footer">
                 <div class="signature-container">
                     <div class="signature-box">
+                        <div class="client-name"><?php echo esc_html($client['name']); ?></div>
                         <div class="signature-line"></div>
-                        <strong>FIRMA DEL CONTRATANTE</strong><br>
-                        <?php echo esc_html($client['name']); ?>
+                        <strong>FIRMA DEL CONTRATANTE</strong>
                     </div>
                     <div class="signature-box">
+                        <br>
                         <div class="signature-line"></div>
-                        <strong>FIRMA DE LA EMPRESA</strong><br>
-                        <?php echo esc_html($company['name']); ?>
+                        <strong>FIRMA DE LA EMPRESA</strong>
                     </div>
                 </div>
             </div>
