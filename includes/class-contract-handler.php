@@ -23,12 +23,12 @@ class Event_Quote_Cart_Contract_Handler {
         global $wpdb;
         
         try {
-            // Use static logo from assets folder
-            $logo_url = EQ_CART_PLUGIN_URL . 'assets/contract-logo.png';
+            // Default logo URL (will be used as fallback)
+            $default_logo_url = EQ_CART_PLUGIN_URL . 'assets/contract-logo.png';
             
             // Obtener datos del formulario
             $contract_data = $this->sanitize_contract_data($_POST);
-            $contract_data['logo_url'] = $logo_url;
+            $contract_data['default_logo_url'] = $default_logo_url;
             
             // Obtener items del carrito con detalles completos
             $cart_items = $this->get_detailed_cart_items();
@@ -434,11 +434,17 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="fixed-header">
                 <div class="logo-container">
                     <?php 
-                    // Use uploaded logo first, then vendor dashboard logo as fallback
-                    $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
+                    // Priority order: 1) Vendor Dashboard logo, 2) Default contract logo
+                    $logo_url = '';
+                    if (!empty($vendor_data['logo_url'])) {
+                        $logo_url = $vendor_data['logo_url'];
+                    } elseif (!empty($contract_data['default_logo_url'])) {
+                        $logo_url = $contract_data['default_logo_url'];
+                    }
+                    
                     if (!empty($logo_url)): 
                     ?>
-                        <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px;">
+                        <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
                     <?php endif; ?>
                 </div>
                 <div class="date-container">
