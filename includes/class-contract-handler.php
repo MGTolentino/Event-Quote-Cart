@@ -434,17 +434,21 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="fixed-header">
                 <div class="logo-container">
                     <?php 
-                    // Priority order: 1) Vendor Dashboard logo, 2) Default contract logo
-                    $logo_url = '';
-                    if (!empty($vendor_data['logo_url'])) {
-                        $logo_url = $vendor_data['logo_url'];
+                    // Priority order: 1) Vendor Dashboard logo (Base64), 2) Default contract logo
+                    $logo_src = '';
+                    
+                    if (!empty($vendor_data['logo_base64'])) {
+                        // Use Base64 encoded vendor logo
+                        $logo_src = $vendor_data['logo_base64'];
                     } elseif (!empty($contract_data['default_logo_url'])) {
-                        $logo_url = $contract_data['default_logo_url'];
+                        // Convert default logo to Base64 as fallback
+                        $default_logo_base64 = $this->convert_image_to_base64($contract_data['default_logo_url']);
+                        $logo_src = !empty($default_logo_base64) ? $default_logo_base64 : $contract_data['default_logo_url'];
                     }
                     
-                    if (!empty($logo_url)): 
+                    if (!empty($logo_src)): 
                     ?>
-                        <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
+                        <img src="<?php echo $logo_src; ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px; object-fit: contain;">
                     <?php endif; ?>
                 </div>
                 <div class="date-container">
@@ -781,12 +785,96 @@ class Event_Quote_Cart_Contract_Handler {
         }
         
         // Extract logo and razon social
+        $logo_url = $contract_settings['company_data']['logo_url'] ?? '';
+        $logo_base64 = '';
+        
+        // Convert logo to Base64 if it exists
+        if (!empty($logo_url)) {
+            $logo_base64 = $this->convert_image_to_base64($logo_url);
+        }
+        
         return array(
-            'logo_url' => $contract_settings['company_data']['logo_url'] ?? '',
+            'logo_url' => $logo_url,
+            'logo_base64' => $logo_base64,
             'razon_social' => $contract_settings['company_data']['razon_social'] ?? ''
         );
     }
 
+    /**
+     * Convert image URL to Base64 data URI
+     */
+    private function convert_image_to_base64($image_url) {
+        if (empty($image_url)) {
+            return '';
+        }
+        
+        try {
+            // Handle both local paths and URLs
+            if (strpos($image_url, 'http') === 0) {
+                // It's a full URL, try to get the local path
+                $upload_dir = wp_upload_dir();
+                $base_url = $upload_dir['baseurl'];
+                
+                if (strpos($image_url, $base_url) === 0) {
+                    // It's a local upload URL, convert to local path
+                    $local_path = str_replace($base_url, $upload_dir['basedir'], $image_url);
+                } else {
+                    // External URL or assets folder
+                    if (strpos($image_url, site_url()) === 0) {
+                        // Local site URL, convert to filesystem path
+                        $local_path = str_replace(site_url(), ABSPATH, $image_url);
+                    } else {
+                        // External URL, use file_get_contents with URL
+                        $local_path = $image_url;
+                    }
+                }
+            } else {
+                // Assume it's already a local path
+                $local_path = $image_url;
+            }
+            
+            // Read the file
+            if (strpos($local_path, 'http') === 0) {
+                // External URL or if local conversion failed
+                $image_data = file_get_contents($local_path);
+            } else {
+                // Local file
+                if (!file_exists($local_path)) {
+                    return '';
+                }
+                $image_data = file_get_contents($local_path);
+            }
+            
+            if ($image_data === false) {
+                return '';
+            }
+            
+            // Get MIME type
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            if (strpos($local_path, 'http') === 0) {
+                // For URLs, try to determine from extension
+                $extension = strtolower(pathinfo(parse_url($image_url, PHP_URL_PATH), PATHINFO_EXTENSION));
+                $mime_types = array(
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'gif' => 'image/gif'
+                );
+                $mime_type = $mime_types[$extension] ?? 'image/jpeg';
+            } else {
+                $mime_type = $finfo->buffer($image_data);
+            }
+            
+            // Create Base64 data URI
+            $base64 = base64_encode($image_data);
+            return 'data:' . $mime_type . ';base64,' . $base64;
+            
+        } catch (Exception $e) {
+            error_log('Error converting image to Base64: ' . $e->getMessage());
+            return '';
+        }
+    }
+    
     /**
      * Convert number to words (Spanish)
      */
