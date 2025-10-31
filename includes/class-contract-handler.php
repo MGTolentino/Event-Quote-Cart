@@ -65,6 +65,15 @@ class Event_Quote_Cart_Contract_Handler {
             // Obtener datos del vendor si está disponible
             $vendor_data = $this->get_vendor_contract_data();
             
+            // Debug logging for vendor data
+            error_log('CONTRACT DEBUG - Vendor data: ' . print_r($vendor_data, true));
+            if ($vendor_data) {
+                error_log('CONTRACT DEBUG - Logo URL: ' . ($vendor_data['logo_url'] ?? 'NOT SET'));
+                error_log('CONTRACT DEBUG - Logo Base64 length: ' . strlen($vendor_data['logo_base64'] ?? ''));
+            } else {
+                error_log('CONTRACT DEBUG - Vendor data is NULL');
+            }
+            
             // Generar HTML del contrato
             $html = $this->generate_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data);
             
@@ -437,13 +446,22 @@ class Event_Quote_Cart_Contract_Handler {
                     // Priority order: 1) Vendor Dashboard logo (Base64), 2) Default contract logo
                     $logo_src = '';
                     
+                    error_log('CONTRACT DEBUG - In HTML generation');
+                    error_log('CONTRACT DEBUG - Vendor data available: ' . (empty($vendor_data) ? 'NO' : 'YES'));
+                    error_log('CONTRACT DEBUG - Vendor logo_base64 length: ' . strlen($vendor_data['logo_base64'] ?? ''));
+                    error_log('CONTRACT DEBUG - Default logo URL: ' . ($contract_data['default_logo_url'] ?? 'NOT SET'));
+                    
                     if (!empty($vendor_data['logo_base64'])) {
                         // Use Base64 encoded vendor logo
                         $logo_src = $vendor_data['logo_base64'];
+                        error_log('CONTRACT DEBUG - Using vendor Base64 logo');
                     } elseif (!empty($contract_data['default_logo_url'])) {
                         // Convert default logo to Base64 as fallback
                         $default_logo_base64 = $this->convert_image_to_base64($contract_data['default_logo_url']);
                         $logo_src = !empty($default_logo_base64) ? $default_logo_base64 : $contract_data['default_logo_url'];
+                        error_log('CONTRACT DEBUG - Using default logo (Base64 length: ' . strlen($default_logo_base64) . ')');
+                    } else {
+                        error_log('CONTRACT DEBUG - No logo available');
                     }
                     
                     if (!empty($logo_src)): 
@@ -780,7 +798,11 @@ class Event_Quote_Cart_Contract_Handler {
         $contracts_module = VDP_Contracts::get_instance();
         $contract_settings = $contracts_module->get_contract_settings($vendor_id);
         
+        error_log('CONTRACT DEBUG - Vendor ID: ' . $vendor_id);
+        error_log('CONTRACT DEBUG - Contract settings: ' . print_r($contract_settings, true));
+        
         if (empty($contract_settings)) {
+            error_log('CONTRACT DEBUG - Contract settings are empty');
             return null;
         }
         
@@ -788,9 +810,15 @@ class Event_Quote_Cart_Contract_Handler {
         $logo_url = $contract_settings['company_data']['logo_url'] ?? '';
         $logo_base64 = '';
         
+        error_log('CONTRACT DEBUG - Extracted logo URL: ' . $logo_url);
+        
         // Convert logo to Base64 if it exists
         if (!empty($logo_url)) {
+            error_log('CONTRACT DEBUG - Converting logo to Base64...');
             $logo_base64 = $this->convert_image_to_base64($logo_url);
+            error_log('CONTRACT DEBUG - Base64 conversion result length: ' . strlen($logo_base64));
+        } else {
+            error_log('CONTRACT DEBUG - Logo URL is empty');
         }
         
         return array(
