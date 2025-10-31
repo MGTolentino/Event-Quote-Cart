@@ -231,31 +231,113 @@ class Event_Quote_Cart_Contract_Handler {
             <meta charset="UTF-8">
             <title>Contrato de Servicios</title>
             <style>
+                @page {
+                    margin: 120px 30px 150px 30px; /* top right bottom left - Espacio para header y footer */
+                }
+                
                 body {
                     font-family: Arial, sans-serif;
                     font-size: 12px;
                     line-height: 1.4;
                     color: #333;
                     margin: 0;
+                    padding: 0;
+                }
+                
+                /* Header fijo en cada página */
+                .fixed-header {
+                    position: fixed;
+                    top: -100px;
+                    left: 0;
+                    right: 0;
+                    height: 80px;
+                    border-bottom: 2px solid #333;
+                    padding: 10px 30px;
+                }
+                
+                .fixed-header .logo-container {
+                    float: left;
+                    max-width: 50%;
+                }
+                
+                .fixed-header .date-container {
+                    float: right;
+                    text-align: right;
+                    font-weight: bold;
+                    margin-top: 15px;
+                }
+                
+                /* Footer fijo en cada página */
+                .fixed-footer {
+                    position: fixed;
+                    bottom: -130px;
+                    left: 0;
+                    right: 0;
+                    height: 100px;
+                    border-top: 2px solid #333;
+                    padding: 20px 30px;
+                    font-size: 10px;
+                }
+                
+                .fixed-footer .signature-container {
+                    width: 100%;
+                    display: table;
+                    table-layout: fixed;
+                }
+                
+                .fixed-footer .signature-box {
+                    display: table-cell;
+                    width: 45%;
+                    text-align: center;
+                    vertical-align: top;
+                    padding: 0 10px;
+                }
+                
+                .fixed-footer .signature-box:first-child {
+                    text-align: left;
+                }
+                
+                .fixed-footer .signature-box:last-child {
+                    text-align: right;
+                }
+                
+                .fixed-footer .signature-line {
+                    display: block;
+                    width: 200px;
+                    border-bottom: 1px solid #333;
+                    margin: 20px 0 5px 0;
+                    height: 1px;
+                }
+                
+                .fixed-footer .signature-box:first-child .signature-line {
+                    margin-left: 0;
+                }
+                
+                .fixed-footer .signature-box:last-child .signature-line {
+                    margin-right: 0;
+                    margin-left: auto;
+                }
+                
+                /* Contenido principal */
+                .main-content {
+                    margin: 0;
                     padding: 20px;
                 }
+                
+                /* Ocultar header y footer antiguos */
                 .header {
-                    text-align: left;
-                    border-bottom: 2px solid #333;
-                    padding-bottom: 20px;
-                    margin-bottom: 30px;
+                    display: none;
                 }
-                .logo {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #2c3e50;
-                    margin-bottom: 10px;
-                }
+                
                 .contract-date {
-                    text-align: right;
-                    margin-bottom: 20px;
-                    font-weight: bold;
+                    display: none;
                 }
+                
+                .contract-footer {
+                    display: none;
+                }
+                
+                /* Estilos del contenido */
                 .section {
                     margin-bottom: 20px;
                     page-break-inside: auto;
@@ -349,55 +431,6 @@ class Event_Quote_Cart_Contract_Handler {
                     line-height: 1.3;
                     text-align: justify;
                 }
-                @page {
-                    margin: 20px; /* Normal margins without extra bottom space */
-                }
-                
-                .contract-footer {
-                    margin-top: 50px;
-                    width: 100%;
-                    font-size: 10px;
-                    border-top: 2px solid #333;
-                    padding-top: 20px;
-                    page-break-inside: avoid;
-                    text-align: center;
-                }
-                
-                .footer-signature {
-                    display: inline-block;
-                    width: 45%;
-                    text-align: center;
-                    vertical-align: top;
-                    margin: 0 2%;
-                }
-                
-                .signature-line {
-                    display: block;
-                    width: 200px;
-                    border-bottom: 1px solid #333;
-                    margin: 20px auto 5px auto;
-                    height: 1px;
-                }
-                
-                .signatures {
-                    display: none; /* Hide old signatures div */
-                }
-                .signature-block {
-                    width: 45%;
-                    float: left;
-                    text-align: center;
-                    padding: 10px;
-                    box-sizing: border-box;
-                }
-                .signature-block:last-child {
-                    float: right;
-                }
-                .signature-line {
-                    border-top: 1px solid #333;
-                    margin-top: 40px;
-                    padding-top: 5px;
-                    font-weight: bold;
-                }
                 .amount-in-words {
                     font-style: italic;
                     margin: 10px 0;
@@ -412,22 +445,42 @@ class Event_Quote_Cart_Contract_Handler {
             </style>
         </head>
         <body>
-            <!-- Header -->
-            <div class="header">
-                <?php 
-                // Use uploaded logo first, then vendor dashboard logo as fallback
-                $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
-                if (!empty($logo_url)): 
-                ?>
-                    <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px;">
-                <?php endif; ?>
+            <!-- Header Fijo (aparecerá en cada página) -->
+            <div class="fixed-header">
+                <div class="logo-container">
+                    <?php 
+                    // Use uploaded logo first, then vendor dashboard logo as fallback
+                    $logo_url = !empty($contract_data['logo_url']) ? $contract_data['logo_url'] : (!empty($vendor_data['logo_url']) ? $vendor_data['logo_url'] : '');
+                    if (!empty($logo_url)): 
+                    ?>
+                        <img src="<?php echo esc_url($logo_url); ?>" alt="Company Logo" style="max-height: 50px; max-width: 150px;">
+                    <?php endif; ?>
+                </div>
+                <div class="date-container">
+                    <?php echo date_i18n('j \d\e F Y'); ?>
+                </div>
+                <div style="clear: both;"></div>
             </div>
             
-            <!-- Fecha -->
-            <div class="contract-date">
-                <?php echo date_i18n('j \d\e F Y'); ?>
+            <!-- Footer Fijo (aparecerá en cada página) -->
+            <div class="fixed-footer">
+                <div class="signature-container">
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <strong>FIRMA DEL CONTRATANTE</strong><br>
+                        <?php echo esc_html($client['name']); ?>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <strong>FIRMA DE LA EMPRESA</strong><br>
+                        <?php echo esc_html($company['name']); ?>
+                    </div>
+                </div>
             </div>
             
+            <!-- Contenido Principal -->
+            <div class="main-content">
+                
             <!-- Datos de la Empresa y Contratante -->
             <div class="section">
                 <table class="info-table">
@@ -690,16 +743,7 @@ class Event_Quote_Cart_Contract_Handler {
                 </div>
             <?php endif; ?>
             
-            <!-- Footer CSS Fixed para todas las páginas -->
-            <div class="contract-footer">
-                <div class="footer-signature">
-                    <?php echo esc_html($client['name']); ?><br>
-                    <div class="signature-line">FIRMA DEL CONTRATANTE</div>
-                </div>
-                <div class="footer-signature">
-                    <div class="signature-line">FIRMA DE LA EMPRESA</div>
-                </div>
-            </div>
+            </div> <!-- Cierre de main-content -->
             
         </body>
         </html>
