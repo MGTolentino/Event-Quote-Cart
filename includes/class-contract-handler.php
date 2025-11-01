@@ -1050,21 +1050,29 @@ class Event_Quote_Cart_Contract_Handler {
             <h1>CONTRATO DE SERVICIOS</h1>
             
             <div class="section">
-                <h2>Datos de la Empresa</h2>
-                <p><strong>' . esc_html($company['name']) . '</strong><br>
-                ' . esc_html($company['address']) . '<br>
-                Tel: ' . esc_html($company['phone']) . '<br>
-                Email: ' . esc_html($company['email']) . '</p>
-            </div>
-            
-            <div class="section">
-                <h2>Datos del Cliente</h2>
-                <p><strong>' . esc_html($client['name']) . '</strong><br>'
-                . (!empty($client['business_name']) ? '<strong>' . esc_html($client['business_name']) . '</strong><br>' : '')
-                . (!empty($client['business_address']) ? esc_html($client['business_address']) . '<br>' : '')
-                . (!empty($client['address']) ? esc_html($client['address']) . '<br>' : '')
-                . 'Tel: ' . esc_html($client['phone']) . '<br>
-                Email: ' . esc_html($client['email']) . '</p>
+                <table>
+                    <tr>
+                        <th style="background-color: #f0f0f0; text-align: center;">Datos de la Empresa</th>
+                        <th style="background-color: #f0f0f0; text-align: center;">Datos del Contratante</th>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; vertical-align: top;">
+                            <strong>' . esc_html($company['name']) . '</strong><br>
+                            <strong>Dirección:</strong> ' . esc_html($company['address']) . '<br>
+                            <strong>Teléfono:</strong> ' . esc_html($company['phone']) . '<br>
+                            <strong>E-mail:</strong> ' . esc_html($company['email']) . '
+                            ' . (!empty($company['rfc']) ? '<br><strong>RFC:</strong> ' . esc_html($company['rfc']) : '') . '
+                        </td>
+                        <td style="width: 50%; vertical-align: top;">'
+                        . (!empty($client['business_name']) ? '<strong>' . esc_html($client['business_name']) . '</strong><br>' : '')
+                        . '<strong>' . esc_html($client['name']) . '</strong>'
+                        . (!empty($client['email']) ? '<br>' . esc_html($client['email']) : '')
+                        . (!empty($client['phone']) ? '<br>' . esc_html($client['phone']) : '')
+                        . (!empty($client['business_address']) ? '<br>' . esc_html($client['business_address']) : '')
+                        . (!empty($client['address']) ? '<br>' . esc_html($client['address']) : '') . '
+                        </td>
+                    </tr>
+                </table>
             </div>
             
             <div class="section">
