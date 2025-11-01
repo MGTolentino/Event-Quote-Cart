@@ -497,6 +497,11 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                 <div class="eq-contract-tab-content active" data-tab="client">
                     <h3><?php esc_html_e('Client Information', 'event-quote-cart'); ?></h3>
                     <div class="eq-form-group">
+                        <label><?php esc_html_e('Business Name', 'event-quote-cart'); ?></label>
+                        <input type="text" name="client_business_name" id="eq-client-business-name">
+                        <small class="eq-field-note"><?php esc_html_e('Optional. If the client is a company.', 'event-quote-cart'); ?></small>
+                    </div>
+                    <div class="eq-form-group">
                         <label><?php esc_html_e('Client Name', 'event-quote-cart'); ?></label>
                         <input type="text" name="client_name" id="eq-client-name" required>
                     </div>
@@ -509,11 +514,6 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                             <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
                             <input type="email" name="client_email" id="eq-client-email">
                         </div>
-                    </div>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Business Name', 'event-quote-cart'); ?></label>
-                        <input type="text" name="client_business_name" id="eq-client-business-name">
-                        <small class="eq-field-note"><?php esc_html_e('Optional. If the client is a company.', 'event-quote-cart'); ?></small>
                     </div>
                     <div class="eq-form-group">
                         <label><?php esc_html_e('Business Address', 'event-quote-cart'); ?></label>

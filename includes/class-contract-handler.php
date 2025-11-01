@@ -508,26 +508,26 @@ class Event_Quote_Cart_Contract_Handler {
                     <tr>
                         <td>
                             <strong><?php echo esc_html($company['name']); ?></strong><br>
-                            <?php echo nl2br(esc_html($company['address'])); ?><br>
-                            Teléfonos: <?php echo esc_html($company['phone']); ?><br>
-                            E-mail: <?php echo esc_html($company['email']); ?>
+                            <strong>Dirección:</strong> <?php echo nl2br(esc_html($company['address'])); ?><br>
+                            <strong>Teléfono:</strong> <?php echo esc_html($company['phone']); ?><br>
+                            <strong>E-mail:</strong> <?php echo esc_html($company['email']); ?>
                             <?php if ($company['rfc']): ?>
-                                <br>RFC: <?php echo esc_html($company['rfc']); ?>
+                                <br><strong>RFC:</strong> <?php echo esc_html($company['rfc']); ?>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <strong><?php echo esc_html($client['name']); ?></strong>
                             <?php if (!empty($client['business_name'])): ?>
-                                <br><strong><?php echo esc_html($client['business_name']); ?></strong>
+                                <strong><?php echo esc_html($client['business_name']); ?></strong><br>
                             <?php endif; ?>
-                            <?php if (!empty($client['business_address'])): ?>
-                                <br><?php echo nl2br(esc_html($client['business_address'])); ?>
-                            <?php endif; ?>
+                            <strong><?php echo esc_html($client['name']); ?></strong>
                             <?php if ($client['email']): ?>
-                                <br><?php echo esc_html($client['email']); ?>
+                                <br><strong>E-mail:</strong> <?php echo esc_html($client['email']); ?>
                             <?php endif; ?>
                             <?php if ($client['phone']): ?>
-                                <br>Cel. <?php echo esc_html($client['phone']); ?>
+                                <br><strong>Cel.:</strong> <?php echo esc_html($client['phone']); ?>
+                            <?php endif; ?>
+                            <?php if (!empty($client['business_address'])): ?>
+                                <br><strong>Dirección:</strong> <?php echo nl2br(esc_html($client['business_address'])); ?>
                             <?php endif; ?>
                         </td>
                     </tr>
