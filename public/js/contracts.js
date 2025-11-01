@@ -217,12 +217,12 @@
      * Populate contract form with data
      */
     function populateContractForm() {
-        // Company data
+        // Company data - now stored in hidden fields (data comes from VDP)
         if (contractData.company_data) {
-            $('#eq-company-name').val(contractData.company_data.name || '').attr('required', true);
-            $('#eq-company-address').val(contractData.company_data.address || '').attr('required', true);
-            $('#eq-company-phone').val(contractData.company_data.phone || '').attr('required', true);
-            $('#eq-company-email').val(contractData.company_data.email || '').attr('required', true);
+            $('#eq-company-name').val(contractData.company_data.name || '');
+            $('#eq-company-address').val(contractData.company_data.address || '');
+            $('#eq-company-phone').val(contractData.company_data.phone || '');
+            $('#eq-company-email').val(contractData.company_data.email || '');
             $('#eq-company-rfc').val(contractData.company_data.rfc || '');
             $('#eq-razon-social').val(contractData.company_data.razon_social || '');
         }
@@ -232,6 +232,9 @@
             $('#eq-client-name').val(contractData.client_data.name || '').attr('required', true);
             $('#eq-client-phone').val(contractData.client_data.phone || '').attr('required', true);
             $('#eq-client-email').val(contractData.client_data.email || '').attr('required', true);
+            // New client business fields
+            $('#eq-client-business-name').val(contractData.client_data.business_name || '');
+            $('#eq-client-business-address').val(contractData.client_data.business_address || '');
         }
 
         // Event data
@@ -244,9 +247,14 @@
             $('#eq-event-end-time').attr('required', true);
         }
 
-        // Contract terms
+        // Contract terms from VDP (hidden field)
         if (contractData.contract_terms) {
             $('#eq-contract-terms').val(contractData.contract_terms);
+        }
+        
+        // Additional terms (editable field)
+        if (contractData.additional_terms) {
+            $('#eq-additional-terms').val(contractData.additional_terms);
         }
 
         // Bank data
@@ -661,6 +669,10 @@
      * Switch contract tab
      */
     function switchContractTab(tabName) {
+        // Skip company tab since it no longer exists
+        if (tabName === 'company') {
+            tabName = 'client';
+        }
         
         // Update nav
         $('.eq-contract-tab-nav li').removeClass('active');
@@ -679,7 +691,7 @@
      */
     function goToNextTab() {
         const currentTab = $('.eq-contract-tab-nav li.active').data('tab');
-        const tabs = ['company', 'client', 'event', 'payment', 'terms'];
+        const tabs = ['client', 'event', 'payment', 'terms']; // Removed 'company'
         const currentIndex = tabs.indexOf(currentTab);
         
         if (currentIndex < tabs.length - 1) {
@@ -692,7 +704,7 @@
      */
     function goToPrevTab() {
         const currentTab = $('.eq-contract-tab-nav li.active').data('tab');
-        const tabs = ['company', 'client', 'event', 'payment', 'terms'];
+        const tabs = ['client', 'event', 'payment', 'terms']; // Removed 'company'
         const currentIndex = tabs.indexOf(currentTab);
         
         if (currentIndex > 0) {
@@ -737,6 +749,8 @@
             client_name: $('#eq-client-name').val(),
             client_phone: $('#eq-client-phone').val(),
             client_email: $('#eq-client-email').val(),
+            client_business_name: $('#eq-client-business-name').val(),
+            client_business_address: $('#eq-client-business-address').val(),
             
             // Event data
             event_date: $('#eq-event-date').val(),
@@ -749,7 +763,8 @@
             payment_schedule: JSON.stringify(paymentSchedule),
             
             // Terms and bank
-            contract_terms: $('#eq-contract-terms').val(),
+            contract_terms: $('#eq-contract-terms').val(), // Standard terms from VDP
+            additional_terms: $('#eq-additional-terms').val(), // Additional terms from form
             bank_name: $('#eq-bank-name').val(),
             bank_account: $('#eq-bank-account').val(),
             bank_clabe: $('#eq-bank-clabe').val(),
@@ -822,7 +837,7 @@
      * Update tab validation status
      */
     function updateTabValidationStatus() {
-        const tabs = ['company', 'client', 'event', 'payment', 'terms'];
+        const tabs = ['client', 'event', 'payment', 'terms']; // Removed 'company'
         
         tabs.forEach(tab => {
             const $tabNav = $(`.eq-contract-tab-nav li[data-tab="${tab}"]`);
@@ -887,10 +902,7 @@
         let tabsWithErrors = new Set();
         
         const requiredFields = [
-            { selector: '#eq-company-name', label: 'Company Name', tab: 'company' },
-            { selector: '#eq-company-address', label: 'Company Address', tab: 'company' },
-            { selector: '#eq-company-phone', label: 'Company Phone', tab: 'company' },
-            { selector: '#eq-company-email', label: 'Company Email', tab: 'company' },
+            // Company fields are now automatically filled from VDP, not validated here
             { selector: '#eq-client-name', label: 'Client Name', tab: 'client' },
             { selector: '#eq-client-phone', label: 'Client Phone', tab: 'client' },
             { selector: '#eq-client-email', label: 'Client Email', tab: 'client' },
@@ -1121,7 +1133,7 @@
             showContractForm();
             
             // Reset tab to first one for clean editing experience
-            switchContractTab('company');
+            switchContractTab('client'); // Start with client tab since company is removed
             
             showNotification('info', 'You can now edit the contract details and regenerate');
         } catch (error) {
@@ -1165,7 +1177,7 @@
             
             // Show form and go to first tab
             showContractForm();
-            switchContractTab('company');
+            switchContractTab('client'); // Start with client tab since company is removed
             
             // Re-populate the form with fresh cart data
             setTimeout(() => {
@@ -1300,7 +1312,8 @@
                 <div style="margin-bottom: 25px;">
                     <h3 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px;">DATOS DEL CLIENTE</h3>
                     <p><strong>Nombre:</strong> ${formData.client_name || '[NOMBRE DEL CLIENTE]'}</p>
-                    <p><strong>Dirección:</strong> ${formData.client_address || '[DIRECCIÓN DEL CLIENTE]'}</p>
+                    ${formData.client_business_name ? `<p><strong>Empresa:</strong> ${formData.client_business_name}</p>` : ''}
+                    ${formData.client_business_address ? `<p><strong>Dirección:</strong> ${formData.client_business_address}</p>` : ''}
                     <p><strong>Teléfono:</strong> ${formData.client_phone || '[TELÉFONO DEL CLIENTE]'}</p>
                     <p><strong>Email:</strong> ${formData.client_email || '[EMAIL DEL CLIENTE]'}</p>
                 </div>
@@ -1521,9 +1534,10 @@
             company_phone: $('#eq-company-phone').val(),
             company_email: $('#eq-company-email').val(),
             client_name: $('#eq-client-name').val(),
-            client_address: $('#eq-client-address').val(),
             client_phone: $('#eq-client-phone').val(),
             client_email: $('#eq-client-email').val(),
+            client_business_name: $('#eq-client-business-name').val(),
+            client_business_address: $('#eq-client-business-address').val(),
             event_date: $('#eq-event-date').val(),
             event_start_time: $('#eq-event-start-time').val(),
             event_end_time: $('#eq-event-end-time').val(),

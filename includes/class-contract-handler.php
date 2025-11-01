@@ -188,7 +188,9 @@ class Event_Quote_Cart_Contract_Handler {
             'client_data' => array(
                 'name' => sanitize_text_field($post_data['client_name'] ?? ''),
                 'phone' => sanitize_text_field($post_data['client_phone'] ?? ''),
-                'email' => sanitize_email($post_data['client_email'] ?? '')
+                'email' => sanitize_email($post_data['client_email'] ?? ''),
+                'business_name' => sanitize_text_field($post_data['client_business_name'] ?? ''),
+                'business_address' => sanitize_textarea_field($post_data['client_business_address'] ?? '')
             ),
             'event_data' => array(
                 'date' => sanitize_text_field($post_data['event_date'] ?? ''),
@@ -198,7 +200,8 @@ class Event_Quote_Cart_Contract_Handler {
                 'guests' => intval($post_data['event_guests'] ?? 0)
             ),
             'payment_schedule' => json_decode(stripslashes($post_data['payment_schedule'] ?? '[]'), true),
-            'contract_terms' => wp_kses_post($post_data['contract_terms'] ?? ''),
+            'contract_terms' => wp_kses_post($post_data['contract_terms'] ?? ''), // Standard terms from VDP
+            'additional_terms' => wp_kses_post($post_data['additional_terms'] ?? ''), // Additional terms from form
             'bank_data' => array(
                 'bank_name' => sanitize_text_field($post_data['bank_name'] ?? ''),
                 'account_number' => sanitize_text_field($post_data['bank_account'] ?? ''),
@@ -217,7 +220,8 @@ class Event_Quote_Cart_Contract_Handler {
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];
         $payment_schedule = $contract_data['payment_schedule'];
-        $terms = $contract_data['contract_terms'];
+        $terms = $contract_data['contract_terms']; // Standard terms from VDP
+        $additional_terms = $contract_data['additional_terms'] ?? ''; // Additional terms from form
         $bank = $contract_data['bank_data'];
         
         // Formatear fecha del evento
@@ -513,6 +517,12 @@ class Event_Quote_Cart_Contract_Handler {
                         </td>
                         <td>
                             <strong><?php echo esc_html($client['name']); ?></strong>
+                            <?php if (!empty($client['business_name'])): ?>
+                                <br><strong><?php echo esc_html($client['business_name']); ?></strong>
+                            <?php endif; ?>
+                            <?php if (!empty($client['business_address'])): ?>
+                                <br><?php echo nl2br(esc_html($client['business_address'])); ?>
+                            <?php endif; ?>
                             <?php if ($client['email']): ?>
                                 <br><?php echo esc_html($client['email']); ?>
                             <?php endif; ?>
@@ -729,6 +739,13 @@ class Event_Quote_Cart_Contract_Handler {
                 <div class="terms">
                     <?php echo nl2br(esc_html($terms)); ?>
                 </div>
+                
+                <?php if (!empty($additional_terms)): ?>
+                    <div class="section-title" style="margin-top: 20px;">Cláusulas Adicionales</div>
+                    <div class="terms">
+                        <?php echo nl2br(esc_html($additional_terms)); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             
             <!-- Datos Bancarios -->
@@ -1008,7 +1025,8 @@ class Event_Quote_Cart_Contract_Handler {
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];
         $payment_schedule = $contract_data['payment_schedule'] ?? [];
-        $contract_terms = $contract_data['contract_terms'];
+        $contract_terms = $contract_data['contract_terms']; // Standard terms from VDP
+        $additional_terms = $contract_data['additional_terms'] ?? ''; // Additional terms from form
         $bank = $contract_data['bank_data'];
         
         // Simple HTML without complex CSS
@@ -1040,9 +1058,11 @@ class Event_Quote_Cart_Contract_Handler {
             
             <div class="section">
                 <h2>Datos del Cliente</h2>
-                <p><strong>' . esc_html($client['name']) . '</strong><br>
-                ' . esc_html($client['address']) . '<br>
-                Tel: ' . esc_html($client['phone']) . '<br>
+                <p><strong>' . esc_html($client['name']) . '</strong><br>'
+                . (!empty($client['business_name']) ? '<strong>' . esc_html($client['business_name']) . '</strong><br>' : '')
+                . (!empty($client['business_address']) ? esc_html($client['business_address']) . '<br>' : '')
+                . (!empty($client['address']) ? esc_html($client['address']) . '<br>' : '')
+                . 'Tel: ' . esc_html($client['phone']) . '<br>
                 Email: ' . esc_html($client['email']) . '</p>
             </div>
             
@@ -1069,8 +1089,9 @@ class Event_Quote_Cart_Contract_Handler {
             
             <div class="section">
                 <h2>Términos y Condiciones</h2>
-                <p>' . nl2br(esc_html($contract_terms)) . '</p>
-            </div>
+                <p>' . nl2br(esc_html($contract_terms)) . '</p>'
+                . (!empty($additional_terms) ? '<h3>Cláusulas Adicionales</h3><p>' . nl2br(esc_html($additional_terms)) . '</p>' : '') .
+            '</div>
             
             <div class="signature">
                 <p>_____________________<br>Firma del Cliente</p>

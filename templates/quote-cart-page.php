@@ -479,43 +479,22 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
         <form id="eq-contract-form">
             <div class="eq-contract-tabs">
                 <ul class="eq-contract-tab-nav">
-                    <li class="active" data-tab="company"><?php esc_html_e('Company Info', 'event-quote-cart'); ?></li>
-                    <li data-tab="client"><?php esc_html_e('Client Info', 'event-quote-cart'); ?></li>
+                    <li class="active" data-tab="client"><?php esc_html_e('Client Info', 'event-quote-cart'); ?></li>
                     <li data-tab="event"><?php esc_html_e('Event Details', 'event-quote-cart'); ?></li>
                     <li data-tab="payment"><?php esc_html_e('Payment Schedule', 'event-quote-cart'); ?></li>
                     <li data-tab="terms"><?php esc_html_e('Terms & Bank', 'event-quote-cart'); ?></li>
                 </ul>
                 
-                <!-- Company Info Tab -->
-                <div class="eq-contract-tab-content active" data-tab="company">
-                    <h3><?php esc_html_e('Company Information', 'event-quote-cart'); ?></h3>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Company Name', 'event-quote-cart'); ?></label>
-                        <input type="text" name="company_name" id="eq-company-name" required>
-                    </div>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Company Address', 'event-quote-cart'); ?></label>
-                        <textarea name="company_address" id="eq-company-address" rows="3" required></textarea>
-                    </div>
-                    <div class="eq-form-row">
-                        <div class="eq-form-group">
-                            <label><?php esc_html_e('Phone', 'event-quote-cart'); ?></label>
-                            <input type="tel" name="company_phone" id="eq-company-phone" required>
-                        </div>
-                        <div class="eq-form-group">
-                            <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
-                            <input type="email" name="company_email" id="eq-company-email" required>
-                        </div>
-                    </div>
-                    <div class="eq-form-group">
-                        <label><?php esc_html_e('Business Name (Razón Social)', 'event-quote-cart'); ?></label>
-                        <input type="text" name="razon_social" id="eq-razon-social">
-                        <small class="eq-field-note"><?php esc_html_e('Optional. Legal business name for contracts.', 'event-quote-cart'); ?></small>
-                    </div>
-                </div>
+                <!-- Hidden fields for Company Info (from VDP) -->
+                <input type="hidden" name="company_name" id="eq-company-name">
+                <input type="hidden" name="company_address" id="eq-company-address">
+                <input type="hidden" name="company_phone" id="eq-company-phone">
+                <input type="hidden" name="company_email" id="eq-company-email">
+                <input type="hidden" name="razon_social" id="eq-razon-social">
+                <input type="hidden" name="company_rfc" id="eq-company-rfc">
                 
                 <!-- Client Info Tab -->
-                <div class="eq-contract-tab-content" data-tab="client">
+                <div class="eq-contract-tab-content active" data-tab="client">
                     <h3><?php esc_html_e('Client Information', 'event-quote-cart'); ?></h3>
                     <div class="eq-form-group">
                         <label><?php esc_html_e('Client Name', 'event-quote-cart'); ?></label>
@@ -530,6 +509,16 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                             <label><?php esc_html_e('Email', 'event-quote-cart'); ?></label>
                             <input type="email" name="client_email" id="eq-client-email">
                         </div>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Business Name', 'event-quote-cart'); ?></label>
+                        <input type="text" name="client_business_name" id="eq-client-business-name">
+                        <small class="eq-field-note"><?php esc_html_e('Optional. If the client is a company.', 'event-quote-cart'); ?></small>
+                    </div>
+                    <div class="eq-form-group">
+                        <label><?php esc_html_e('Business Address', 'event-quote-cart'); ?></label>
+                        <textarea name="client_business_address" id="eq-client-business-address" rows="3"></textarea>
+                        <small class="eq-field-note"><?php esc_html_e('Optional. Business address if different from event location.', 'event-quote-cart'); ?></small>
                     </div>
                 </div>
                 
@@ -610,9 +599,13 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                     
                     
                     <div class="eq-form-group">
-                        <label><?php esc_html_e('Contract Terms', 'event-quote-cart'); ?></label>
-                        <textarea name="contract_terms" id="eq-contract-terms" rows="8"></textarea>
+                        <label><?php esc_html_e('Additional Terms', 'event-quote-cart'); ?></label>
+                        <textarea name="additional_terms" id="eq-additional-terms" rows="8"></textarea>
+                        <small class="eq-field-note"><?php esc_html_e('Optional. Additional clauses specific to this contract. These will appear after the standard terms.', 'event-quote-cart'); ?></small>
                     </div>
+                    
+                    <!-- Hidden field for standard contract terms from VDP -->
+                    <input type="hidden" name="contract_terms" id="eq-contract-terms">
                     
                     <h4><?php esc_html_e('Bank Information', 'event-quote-cart'); ?></h4>
                     <div class="eq-form-row">
@@ -629,10 +622,6 @@ endif; // if !empty($cart_items) && !(admin || ejecutivo)
                         <div class="eq-form-group">
                             <label><?php esc_html_e('CLABE', 'event-quote-cart'); ?></label>
                             <input type="text" name="bank_clabe" id="eq-bank-clabe">
-                        </div>
-                        <div class="eq-form-group">
-                            <label><?php esc_html_e('Company Tax ID', 'event-quote-cart'); ?></label>
-                            <input type="text" name="company_rfc" id="eq-company-rfc">
                         </div>
                     </div>
                 </div>
