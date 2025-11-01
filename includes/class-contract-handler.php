@@ -499,7 +499,7 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="main-content">
                 
             <!-- Datos de la Empresa y Contratante -->
-            <div class="section">
+            <div class="section" style="margin-top: 40px;">
                 <table class="info-table">
                     <tr>
                         <td class="header">Datos de la Empresa</td>
@@ -521,13 +521,13 @@ class Event_Quote_Cart_Contract_Handler {
                             <?php endif; ?>
                             <strong><?php echo esc_html($client['name']); ?></strong>
                             <?php if ($client['email']): ?>
-                                <br><strong>E-mail:</strong> <?php echo esc_html($client['email']); ?>
+                                <br><?php echo esc_html($client['email']); ?>
                             <?php endif; ?>
                             <?php if ($client['phone']): ?>
-                                <br><strong>Cel.:</strong> <?php echo esc_html($client['phone']); ?>
+                                <br><?php echo esc_html($client['phone']); ?>
                             <?php endif; ?>
                             <?php if (!empty($client['business_address'])): ?>
-                                <br><strong>Dirección:</strong> <?php echo nl2br(esc_html($client['business_address'])); ?>
+                                <br><?php echo nl2br(esc_html($client['business_address'])); ?>
                             <?php endif; ?>
                         </td>
                     </tr>
