@@ -368,6 +368,7 @@ class Event_Quote_Cart_Contract_Handler {
                     font-weight: bold;
                     text-align: center;
                     min-height: 40px;
+                    padding: 15px;
                 }
                 .services-table {
                     width: 100%;
