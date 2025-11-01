@@ -500,7 +500,7 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="main-content">
                 
             <!-- Datos de la Empresa y Contratante -->
-            <div class="section" style="margin-top: 40px;">
+            <div class="section">
                 <table class="info-table">
                     <tr>
                         <td style="background-color: #ecf0f1; font-weight: bold; text-align: center; padding: 15px; border: 1px solid #bdc3c7;">Datos de la Empresa</td>
