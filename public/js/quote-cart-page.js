@@ -1047,7 +1047,8 @@ handleShareByWhatsApp() {
     // Inicializar cuando el documento esté listo
     $(document).ready(() => {
         if ($('.eq-cart-page').length) {
-            new QuoteCartPage();
+            // Hacer la instancia globalmente accesible
+            window.quoteCartManager = new QuoteCartPage();
         }
     });
 

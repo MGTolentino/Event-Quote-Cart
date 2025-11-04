@@ -269,9 +269,40 @@
             validationRules = contractData.validation_rules;
         }
 
-        // Contract total
+        // Contract total with discounts
         if (contractData.cart_total) {
-            $('.eq-contract-total').text(decodeHtmlEntities(contractData.cart_total));
+            // Get discount data if available
+            let discountData = {};
+            if (window.quoteCartManager && window.quoteCartManager.discountData) {
+                discountData = window.quoteCartManager.discountData;
+            } else if (window.eqDiscountData) {
+                discountData = window.eqDiscountData;
+            }
+            
+            const itemDiscounts = discountData.totalItemDiscounts || 0;
+            const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
+            
+            // If there are discounts, recalculate total
+            if (itemDiscounts > 0 || globalDiscount > 0) {
+                // Parse the raw total
+                const decodedTotal = decodeHtmlEntities(contractData.cart_total);
+                const cleanTotal = decodedTotal.replace(/[$,]/g, '');
+                const originalTotal = parseFloat(cleanTotal) || 0;
+                
+                // Calculate with discounts
+                const subtotalRaw = originalTotal / 1.16; // Assuming 16% tax
+                const totalDiscounts = itemDiscounts + globalDiscount;
+                const subtotalAfterDiscounts = Math.max(0, subtotalRaw - totalDiscounts);
+                const taxRate = contractData.tax_rate || 16;
+                const newTax = subtotalAfterDiscounts * (taxRate / 100);
+                const newTotal = subtotalAfterDiscounts + newTax;
+                
+                // Update display
+                $('.eq-contract-total').text(formatCurrency(newTotal));
+                contractData.cart_total_raw = newTotal;
+            } else {
+                $('.eq-contract-total').text(decodeHtmlEntities(contractData.cart_total));
+            }
         }
         
         // Ensure cart_total_raw is available
@@ -498,7 +529,34 @@
         paymentSchedule = [];
         let totalScheduled = 0;
 
+        // Calculate total with discounts if available
+        let contractTotalWithDiscounts = contractData.cart_total_raw || 0;
+        
+        // Get discount data if available
+        let discountData = {};
+        if (window.quoteCartManager && window.quoteCartManager.discountData) {
+            discountData = window.quoteCartManager.discountData;
+        } else if (window.eqDiscountData) {
+            discountData = window.eqDiscountData;
+        }
+        
+        // Apply discounts to get the real total
+        if (discountData) {
+            const itemDiscounts = discountData.totalItemDiscounts || 0;
+            const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
+            
+            if (itemDiscounts > 0 || globalDiscount > 0) {
+                const subtotalRaw = contractData.cart_total_raw / 1.16; // Assuming 16% tax
+                const totalDiscounts = itemDiscounts + globalDiscount;
+                const subtotalAfterDiscounts = Math.max(0, subtotalRaw - totalDiscounts);
+                const taxRate = contractData.tax_rate || 16;
+                const newTax = subtotalAfterDiscounts * (taxRate / 100);
+                contractTotalWithDiscounts = subtotalAfterDiscounts + newTax;
+            }
+        }
+
         console.log('UpdatePaymentSchedule - contractData.cart_total_raw:', contractData.cart_total_raw);
+        console.log('UpdatePaymentSchedule - contractTotalWithDiscounts:', contractTotalWithDiscounts);
 
         $('#eq-payment-schedule-items .eq-payment-item').each(function() {
             const $item = $(this);
@@ -510,7 +568,7 @@
             console.log('Payment item:', { amount, percentage, date, description });
 
             // Sync amount and percentage
-            const totalAmount = contractData.cart_total_raw || 0;
+            const totalAmount = contractTotalWithDiscounts || 0;
             if (totalAmount > 0) {
                 if ($item.find('.eq-payment-amount').is(':focus')) {
                     // Amount changed, update percentage
@@ -537,18 +595,18 @@
         // Update summary
         console.log('Final totals:', {
             totalScheduled: totalScheduled,
-            contractTotal: contractData.cart_total_raw,
-            difference: Math.abs((contractData.cart_total_raw || 0) - totalScheduled)
+            contractTotal: contractTotalWithDiscounts,
+            difference: Math.abs(contractTotalWithDiscounts - totalScheduled)
         });
         
-        $('.eq-scheduled-total').text('$' + totalScheduled.toFixed(2));
+        $('.eq-scheduled-total').text(formatCurrency(totalScheduled));
         
-        const contractTotal = contractData.cart_total_raw || 0;
+        const contractTotal = contractTotalWithDiscounts;
         const difference = Math.abs(contractTotal - totalScheduled);
         
         if (difference > 0.01) {
             $('.eq-difference').show();
-            $('.eq-payment-difference').text((contractTotal - totalScheduled >= 0 ? '+' : '-') + '$' + difference.toFixed(2));
+            $('.eq-payment-difference').text((contractTotal - totalScheduled >= 0 ? '+' : '-') + formatCurrency(difference));
         } else {
             $('.eq-difference').hide();
         }
@@ -719,6 +777,11 @@
         // Validate form
         if (!validateContractForm()) {
             return;
+        }
+
+        // Calculate discounts before generating (same as PDF)
+        if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+            window.quoteCartManager.calculateDiscounts();
         }
 
         // Show loading with progress
@@ -1212,6 +1275,11 @@
      */
     function previewContract() {
         try {
+            // Calculate discounts before preview (same as PDF)
+            if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+                window.quoteCartManager.calculateDiscounts();
+            }
+            
             // Don't validate for preview - show with whatever data is available
             // Collect form data
             const formData = collectFormData();
@@ -1487,10 +1555,48 @@
         html += '</tbody></table>';
         
         if (contractData.cart_totals) {
+            // Get discount data if available
+            let discountData = {};
+            if (window.quoteCartManager && window.quoteCartManager.discountData) {
+                discountData = window.quoteCartManager.discountData;
+            } else if (window.eqDiscountData) {
+                discountData = window.eqDiscountData;
+            }
+            
+            const itemDiscounts = discountData.totalItemDiscounts || 0;
+            const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
+            
             html += '<div style="text-align: right; margin-top: 15px;">';
             html += `<p><strong>Subtotal: ${decodeHtmlEntities(contractData.cart_totals.subtotal) || '$0.00'}</strong></p>`;
-            html += `<p><strong>IVA (${contractData.tax_rate || 16}%): ${decodeHtmlEntities(contractData.cart_totals.tax) || '$0.00'}</strong></p>`;
-            html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${decodeHtmlEntities(contractData.cart_totals.total) || '$0.00'}</strong></p>`;
+            
+            // Show item discounts if any
+            if (itemDiscounts > 0) {
+                html += `<p><strong>Descuentos por Item: -${formatCurrency(itemDiscounts)}</strong></p>`;
+            }
+            
+            // Show global discount if any
+            if (globalDiscount > 0) {
+                html += `<p><strong>Descuento Global: -${formatCurrency(globalDiscount)}</strong></p>`;
+            }
+            
+            // Recalculate if there are discounts
+            if (itemDiscounts > 0 || globalDiscount > 0) {
+                // Parse the subtotal to calculate new totals
+                const subtotalText = decodeHtmlEntities(contractData.cart_totals.subtotal) || '$0.00';
+                const subtotalRaw = parseFloat(subtotalText.replace(/[^0-9.-]+/g, ''));
+                const totalDiscounts = itemDiscounts + globalDiscount;
+                const subtotalAfterDiscounts = Math.max(0, subtotalRaw - totalDiscounts);
+                const taxRate = contractData.tax_rate || 16;
+                const newTax = subtotalAfterDiscounts * (taxRate / 100);
+                const newTotal = subtotalAfterDiscounts + newTax;
+                
+                html += `<p><strong>IVA (${taxRate}%): ${formatCurrency(newTax)}</strong></p>`;
+                html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${formatCurrency(newTotal)}</strong></p>`;
+            } else {
+                html += `<p><strong>IVA (${contractData.tax_rate || 16}%): ${decodeHtmlEntities(contractData.cart_totals.tax) || '$0.00'}</strong></p>`;
+                html += `<p style="font-size: 1.2em; color: #2c3e50;"><strong>Total: ${decodeHtmlEntities(contractData.cart_totals.total) || '$0.00'}</strong></p>`;
+            }
+            
             html += '</div>';
         }
         

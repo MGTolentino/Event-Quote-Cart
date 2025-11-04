@@ -498,7 +498,6 @@ class Event_Quote_Cart_Contract_Handler {
                         <div><?php echo esc_html($client['name']); ?></div>
                     </div>
                     <div class="signature-box">
-                        <br>
                         <div class="signature-line"></div>
                         <strong>FIRMA DE LA EMPRESA</strong>
                     </div>
