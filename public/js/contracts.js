@@ -271,8 +271,8 @@
 
         // Contract total with discounts
         if (contractData.cart_total) {
-            // Get discount data from contract data received from server
-            const discountData = contractData.current_discounts || {};
+            // Get discount data from the global window variable (same as Generate Quote)
+            const discountData = window.eqDiscountData || {};
             
             const itemDiscounts = discountData.totalItemDiscounts || 0;
             const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
@@ -527,8 +527,8 @@
         // Calculate total with discounts if available
         let contractTotalWithDiscounts = contractData.cart_total_raw || 0;
         
-        // Get discount data from contract data received from server
-        const discountData = contractData.current_discounts || {};
+        // Get discount data from the global window variable (same as Generate Quote)
+        const discountData = window.eqDiscountData || {};
         
         // Apply discounts to get the real total
         if (discountData) {
@@ -769,9 +769,9 @@
             return;
         }
 
-        // Get discount data from contract data received from server
-        const discountData = contractData.current_discounts || {};
-        console.log('CONTRACT DEBUG: Using discount data from server:', discountData);
+        // Get discount data from the global window variable (same as Generate Quote)
+        const discountData = window.eqDiscountData || {};
+        console.log('CONTRACT DEBUG: Using discount data from window.eqDiscountData:', discountData);
 
         // Show loading with progress
         showContractLoading();
@@ -1258,9 +1258,9 @@
      */
     function previewContract() {
         try {
-            // Get discount data from contract data received from server
-            const discountData = contractData.current_discounts || {};
-            console.log('PREVIEW DEBUG: Using discount data from server:', discountData);
+            // Get discount data from the global window variable (same as Generate Quote)
+            const discountData = window.eqDiscountData || {};
+            console.log('PREVIEW DEBUG: Using discount data from window.eqDiscountData:', discountData);
             
             // Don't validate for preview - show with whatever data is available
             // Collect form data
@@ -1537,9 +1537,9 @@
         html += '</tbody></table>';
         
         if (contractData.cart_totals) {
-            // Get discount data from contract data received from server
-            const discountData = contractData.current_discounts || {};
-            console.log('PREVIEW TOTALS DEBUG: Using discount data from server:', discountData);
+            // Get discount data from the global window variable (same as Generate Quote)
+            const discountData = window.eqDiscountData || {};
+            console.log('PREVIEW TOTALS DEBUG: Using discount data from window.eqDiscountData:', discountData);
             
             const itemDiscounts = discountData.totalItemDiscounts || 0;
             const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
