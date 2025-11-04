@@ -271,13 +271,8 @@
 
         // Contract total with discounts
         if (contractData.cart_total) {
-            // Get discount data if available
-            let discountData = {};
-            if (window.quoteCartManager && window.quoteCartManager.discountData) {
-                discountData = window.quoteCartManager.discountData;
-            } else if (window.eqDiscountData) {
-                discountData = window.eqDiscountData;
-            }
+            // Get discount data directly from DOM
+            const discountData = calculateDiscountsFromDOM();
             
             const itemDiscounts = discountData.totalItemDiscounts || 0;
             const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
@@ -532,13 +527,8 @@
         // Calculate total with discounts if available
         let contractTotalWithDiscounts = contractData.cart_total_raw || 0;
         
-        // Get discount data if available
-        let discountData = {};
-        if (window.quoteCartManager && window.quoteCartManager.discountData) {
-            discountData = window.quoteCartManager.discountData;
-        } else if (window.eqDiscountData) {
-            discountData = window.eqDiscountData;
-        }
+        // Get discount data directly from DOM
+        const discountData = calculateDiscountsFromDOM();
         
         // Apply discounts to get the real total
         if (discountData) {
@@ -779,14 +769,9 @@
             return;
         }
 
-        // Calculate discounts before generating (same as PDF)
-        if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
-            console.log('CONTRACT DEBUG: Calling calculateDiscounts()');
-            window.quoteCartManager.calculateDiscounts();
-            console.log('CONTRACT DEBUG: Discount data after calculation:', window.quoteCartManager.discountData);
-        } else {
-            console.log('CONTRACT DEBUG: quoteCartManager not available');
-        }
+        // Calculate discounts directly from DOM (independent of quoteCartManager)
+        const discountData = calculateDiscountsFromDOM();
+        console.log('CONTRACT DEBUG: Calculated discount data from DOM:', discountData);
 
         // Show loading with progress
         showContractLoading();
@@ -800,18 +785,8 @@
             }
         }, 200);
 
-        // Get discount data from quote cart page if available
-        let discountData = {};
-        if (window.quoteCartManager && typeof window.quoteCartManager.discountData !== 'undefined') {
-            discountData = window.quoteCartManager.discountData;
-            console.log('CONTRACT DEBUG: Using quoteCartManager discount data:', discountData);
-        } else if (window.eqDiscountData) {
-            // Alternative: check if discount data was stored globally
-            discountData = window.eqDiscountData;
-            console.log('CONTRACT DEBUG: Using global discount data:', discountData);
-        } else {
-            console.log('CONTRACT DEBUG: No discount data found');
-        }
+        // Use the discount data calculated from DOM
+        console.log('CONTRACT DEBUG: Sending discount data to server:', JSON.stringify(discountData));
 
         // Prepare form data
         const formData = {
@@ -1283,14 +1258,9 @@
      */
     function previewContract() {
         try {
-            // Calculate discounts before preview (same as PDF)
-            if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
-                console.log('PREVIEW DEBUG: Calling calculateDiscounts()');
-                window.quoteCartManager.calculateDiscounts();
-                console.log('PREVIEW DEBUG: Discount data after calculation:', window.quoteCartManager.discountData);
-            } else {
-                console.log('PREVIEW DEBUG: quoteCartManager not available');
-            }
+            // Calculate discounts directly from DOM for preview
+            const discountData = calculateDiscountsFromDOM();
+            console.log('PREVIEW DEBUG: Calculated discount data from DOM:', discountData);
             
             // Don't validate for preview - show with whatever data is available
             // Collect form data
@@ -1567,17 +1537,9 @@
         html += '</tbody></table>';
         
         if (contractData.cart_totals) {
-            // Get discount data if available
-            let discountData = {};
-            if (window.quoteCartManager && window.quoteCartManager.discountData) {
-                discountData = window.quoteCartManager.discountData;
-                console.log('PREVIEW TOTALS DEBUG: Using quoteCartManager discount data:', discountData);
-            } else if (window.eqDiscountData) {
-                discountData = window.eqDiscountData;
-                console.log('PREVIEW TOTALS DEBUG: Using global discount data:', discountData);
-            } else {
-                console.log('PREVIEW TOTALS DEBUG: No discount data available');
-            }
+            // Get discount data directly from DOM
+            const discountData = calculateDiscountsFromDOM();
+            console.log('PREVIEW TOTALS DEBUG: Calculated discount data from DOM:', discountData);
             
             const itemDiscounts = discountData.totalItemDiscounts || 0;
             const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
@@ -1648,6 +1610,110 @@
         return html;
     }
     
+    /**
+     * Calculate discounts directly from DOM (replicated from quote-cart-page.js)
+     */
+    function calculateDiscountsFromDOM() {
+        console.log('CALCULATING DISCOUNTS FROM DOM...');
+        
+        let totalWithTax = 0;
+        let subtotalWithoutTax = 0;
+        let totalItemDiscounts = 0;
+        let globalDiscountAmount = 0;
+        const taxRate = 16; // Default tax rate
+        const taxMultiplier = 1 + (taxRate / 100);
+        
+        // Get global discount values
+        const globalDiscountValue = parseFloat($('#eq-global-discount-value').val()) || 0;
+        const globalDiscountType = $('#eq-global-discount-type').val() || 'fixed';
+        
+        console.log('Global discount:', globalDiscountValue, globalDiscountType);
+        
+        // Calculate item totals and discounts
+        $('.eq-cart-item').each(function() {
+            const $item = $(this);
+            const itemId = $item.data('item-id');
+            
+            // Get item price
+            const priceText = $item.find('.eq-original-price').text();
+            const itemPriceWithTax = parseFloat(priceText.replace(/[^0-9.-]+/g, '')) || 0;
+            const itemPriceWithoutTax = itemPriceWithTax / taxMultiplier;
+            
+            console.log('Item', itemId, 'price with tax:', itemPriceWithTax, 'without tax:', itemPriceWithoutTax);
+            
+            totalWithTax += itemPriceWithTax;
+            subtotalWithoutTax += itemPriceWithoutTax;
+            
+            // Get item discount
+            const discountValue = parseFloat($item.find('.eq-item-discount-value').val()) || 0;
+            const discountType = $item.find('.eq-item-discount-type').val() || 'fixed';
+            
+            if (discountValue > 0) {
+                let itemDiscountAmount = 0;
+                if (discountType === 'percentage') {
+                    itemDiscountAmount = itemPriceWithoutTax * (discountValue / 100);
+                } else {
+                    itemDiscountAmount = Math.min(discountValue, itemPriceWithoutTax);
+                }
+                totalItemDiscounts += itemDiscountAmount;
+                
+                console.log('Item', itemId, 'discount:', discountValue, discountType, 'amount:', itemDiscountAmount);
+            }
+        });
+        
+        // Calculate global discount
+        if (globalDiscountValue > 0) {
+            const availableForGlobalDiscount = Math.max(0, subtotalWithoutTax - totalItemDiscounts);
+            if (globalDiscountType === 'percentage') {
+                globalDiscountAmount = availableForGlobalDiscount * (globalDiscountValue / 100);
+            } else {
+                globalDiscountAmount = Math.min(globalDiscountValue, availableForGlobalDiscount);
+            }
+        }
+        
+        const result = {
+            itemDiscounts: {},
+            globalDiscount: {
+                value: globalDiscountValue,
+                type: globalDiscountType,
+                amount: globalDiscountAmount
+            },
+            totalItemDiscounts: totalItemDiscounts,
+            subtotalWithoutTax: subtotalWithoutTax,
+            taxRate: taxRate
+        };
+        
+        // Add individual item discounts
+        $('.eq-cart-item').each(function() {
+            const $item = $(this);
+            const itemId = $item.data('item-id');
+            const discountValue = parseFloat($item.find('.eq-item-discount-value').val()) || 0;
+            const discountType = $item.find('.eq-item-discount-type').val() || 'fixed';
+            
+            if (discountValue > 0) {
+                const priceText = $item.find('.eq-original-price').text();
+                const itemPriceWithTax = parseFloat(priceText.replace(/[^0-9.-]+/g, ''));
+                const itemPriceWithoutTax = itemPriceWithTax / taxMultiplier;
+                
+                let itemDiscountAmount = 0;
+                if (discountType === 'percentage') {
+                    itemDiscountAmount = itemPriceWithoutTax * (discountValue / 100);
+                } else {
+                    itemDiscountAmount = Math.min(discountValue, itemPriceWithoutTax);
+                }
+                
+                result.itemDiscounts[itemId] = {
+                    value: discountValue,
+                    type: discountType,
+                    amount: itemDiscountAmount
+                };
+            }
+        });
+        
+        console.log('FINAL DISCOUNT CALCULATION:', result);
+        return result;
+    }
+
     /**
      * Format currency
      */
