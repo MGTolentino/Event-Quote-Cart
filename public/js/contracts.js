@@ -733,10 +733,22 @@
             }
         }, 200);
 
+        // Get discount data from quote cart page if available
+        let discountData = {};
+        if (window.quoteCartManager && typeof window.quoteCartManager.discountData !== 'undefined') {
+            discountData = window.quoteCartManager.discountData;
+        } else if (window.eqDiscountData) {
+            // Alternative: check if discount data was stored globally
+            discountData = window.eqDiscountData;
+        }
+
         // Prepare form data
         const formData = {
             action: 'eq_generate_contract_pdf',
             nonce: eqCartData.nonce,
+            
+            // Include discounts data (same as quote PDF)
+            discounts: JSON.stringify(discountData),
             
             // Company data
             company_name: $('#eq-company-name').val(),

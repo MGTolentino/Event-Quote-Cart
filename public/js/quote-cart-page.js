@@ -672,6 +672,9 @@ formatPrice(amount) {
                 taxRate: taxRate
             };
             
+            // Hacer disponible globalmente para el contrato
+            window.eqDiscountData = this.discountData;
+            
             // Guardar descuentos individuales con sus montos calculados
             $('.eq-cart-item').each((index, element) => {
                 const $item = $(element);

@@ -26,6 +26,17 @@ class Event_Quote_Cart_Contract_Handler {
             // Default logo URL (will be used as fallback)
             $default_logo_url = EQ_CART_PLUGIN_URL . 'assets/contract-logo.png';
             
+            // Obtener descuentos del POST (igual que en generate_quote_pdf)
+            $discounts_json = isset($_POST['discounts']) ? stripslashes($_POST['discounts']) : '{}';
+            $discounts = json_decode($discounts_json, true);
+            if (!$discounts) {
+                $discounts = array(
+                    'itemDiscounts' => array(),
+                    'globalDiscount' => array('value' => 0, 'type' => 'fixed', 'amount' => 0),
+                    'totalItemDiscounts' => 0
+                );
+            }
+            
             // Obtener datos del formulario
             $contract_data = $this->sanitize_contract_data($_POST);
             $contract_data['default_logo_url'] = $default_logo_url;
@@ -74,8 +85,8 @@ class Event_Quote_Cart_Contract_Handler {
                 error_log('CONTRACT DEBUG - Vendor data is NULL');
             }
             
-            // Generar HTML del contrato
-            $html = $this->generate_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data);
+            // Generar HTML del contrato con descuentos
+            $html = $this->generate_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data, $discounts);
             
             // Crear directorio si no existe
             $user_id = get_current_user_id();
@@ -115,7 +126,7 @@ class Event_Quote_Cart_Contract_Handler {
                 $dompdf->render();
             } catch (Exception $e) {
                 // Si falla, intentar con HTML simplificado
-                $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data);
+                $html = $this->generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data, $discounts);
                 $dompdf = new Dompdf\Dompdf($options);
                 $dompdf->loadHtml($html);
                 $dompdf->setPaper('A4', 'portrait');
@@ -215,7 +226,7 @@ class Event_Quote_Cart_Contract_Handler {
     /**
      * Generate contract HTML
      */
-    private function generate_contract_html($contract_data, $cart_items, $totals, $context = null, $vendor_data = null) {
+    private function generate_contract_html($contract_data, $cart_items, $totals, $context = null, $vendor_data = null, $discounts = null) {
         $company = $contract_data['company_data'];
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];
@@ -309,11 +320,6 @@ class Event_Quote_Cart_Contract_Handler {
                     border-bottom: 1px solid #333;
                     margin: 20px auto 5px auto;
                     height: 1px;
-                }
-                
-                .fixed-footer .client-name {
-                    margin-bottom: 5px;
-                    font-weight: bold;
                 }
                 
                 /* Contenido principal */
@@ -484,9 +490,12 @@ class Event_Quote_Cart_Contract_Handler {
             <div class="fixed-footer">
                 <div class="signature-container">
                     <div class="signature-box">
-                        <div class="client-name"><?php echo esc_html($client['name']); ?></div>
                         <div class="signature-line"></div>
                         <strong>FIRMA DEL CONTRATANTE</strong>
+                        <?php if (!empty($client['business_name'])): ?>
+                            <div style="margin-top: 5px;"><?php echo esc_html($client['business_name']); ?></div>
+                        <?php endif; ?>
+                        <div><?php echo esc_html($client['name']); ?></div>
                     </div>
                     <div class="signature-box">
                         <br>
@@ -694,12 +703,55 @@ class Event_Quote_Cart_Contract_Handler {
                 
                 <!-- Totales -->
                 <div class="totals-section">
+                    <?php 
+                    // Calcular descuentos totales (igual que en el PDF de cotización)
+                    $total_discounts = 0;
+                    $item_discounts = 0;
+                    $global_discount = 0;
+                    
+                    if ($discounts) {
+                        if (isset($discounts['totalItemDiscounts'])) {
+                            $item_discounts = $discounts['totalItemDiscounts'];
+                        }
+                        if (isset($discounts['globalDiscount']['amount'])) {
+                            $global_discount = $discounts['globalDiscount']['amount'];
+                        }
+                    }
+                    
+                    // Usar el valor raw del subtotal
+                    $subtotal_raw = $totals['subtotal_raw'];
+                    
+                    // Limitar descuentos al subtotal disponible
+                    $total_discounts = $item_discounts + $global_discount;
+                    if ($total_discounts > $subtotal_raw) {
+                        $global_discount = max(0, $subtotal_raw - $item_discounts);
+                        $total_discounts = $subtotal_raw;
+                    }
+                    
+                    // Calcular subtotal después de descuentos
+                    $subtotal_after_discounts = max(0, $subtotal_raw - $total_discounts);
+                    
+                    // Recalcular IVA sobre el subtotal con descuentos
+                    $tax_rate = eq_get_woocommerce_tax_rate() ?: 16;
+                    $new_tax = $subtotal_after_discounts * ($tax_rate / 100);
+                    $new_total = $subtotal_after_discounts + $new_tax;
+                    ?>
+                    
                     <div class="total-row">Sub Total: <?php echo esc_html($totals['subtotal']); ?></div>
-                    <div class="total-row">IVA: <?php echo esc_html($totals['tax']); ?></div>
-                    <div class="total-row final">Total: <?php echo esc_html($totals['total']); ?></div>
+                    
+                    <?php if ($item_discounts > 0): ?>
+                    <div class="total-row">Descuentos por Item: -<?php echo hivepress()->woocommerce->format_price($item_discounts); ?></div>
+                    <?php endif; ?>
+                    
+                    <?php if ($global_discount > 0): ?>
+                    <div class="total-row">Descuento Global: -<?php echo hivepress()->woocommerce->format_price($global_discount); ?></div>
+                    <?php endif; ?>
+                    
+                    <div class="total-row">IVA (<?php echo number_format($tax_rate, 2); ?>%): <?php echo hivepress()->woocommerce->format_price($new_tax); ?></div>
+                    <div class="total-row final">Total: <?php echo hivepress()->woocommerce->format_price($new_total); ?></div>
                     
                     <div class="amount-in-words">
-                        Valor del contrato, Importe Con Letra: (<?php echo esc_html($this->number_to_words($totals['total_raw'])); ?>)
+                        Valor del contrato, Importe Con Letra: (<?php echo esc_html($this->number_to_words($new_total)); ?>)
                     </div>
                 </div>
             </div>
@@ -1021,7 +1073,7 @@ class Event_Quote_Cart_Contract_Handler {
     /**
      * Generate simplified contract HTML for fallback
      */
-    private function generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data = null) {
+    private function generate_simplified_contract_html($contract_data, $cart_items, $totals, $context, $vendor_data = null, $discounts = null) {
         $company = $contract_data['company_data'];
         $client = $contract_data['client_data'];
         $event = $contract_data['event_data'];
