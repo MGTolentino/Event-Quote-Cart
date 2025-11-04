@@ -675,6 +675,9 @@ formatPrice(amount) {
             // Hacer disponible globalmente para el contrato
             window.eqDiscountData = this.discountData;
             
+            // Guardar descuentos en el servidor para el contrato
+            this.saveDiscountsToSession();
+            
             // Guardar descuentos individuales con sus montos calculados
             $('.eq-cart-item').each((index, element) => {
                 const $item = $(element);
@@ -699,6 +702,25 @@ formatPrice(amount) {
                         type: discountType,
                         amount: itemDiscountAmount
                     };
+                }
+            });
+        }
+        
+        saveDiscountsToSession() {
+            // Guardar los descuentos actuales en el servidor para que el contrato los pueda usar
+            $.ajax({
+                url: eqCartData.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'eq_save_current_discounts',
+                    nonce: eqCartData.nonce,
+                    discounts: JSON.stringify(this.discountData || {})
+                },
+                success: (response) => {
+                    console.log('Discounts saved to session:', response);
+                },
+                error: (xhr, status, error) => {
+                    console.log('Error saving discounts to session:', error);
                 }
             });
         }

@@ -65,6 +65,7 @@ class Event_Quote_Cart_Ajax_Handler {
 		add_action('wp_ajax_eq_validate_payment_schedule', array($this, 'validate_payment_schedule'));
 		add_action('wp_ajax_eq_save_contract_memory', array($this, 'save_contract_memory'));
 		add_action('wp_ajax_eq_load_contract_memory', array($this, 'load_contract_memory'));
+		add_action('wp_ajax_eq_save_current_discounts', array($this, 'save_current_discounts'));
 }
 
     public function get_listing_data() {
@@ -3479,6 +3480,12 @@ public function validate_all_cart_items() {
         }
         
         try {
+            // Get current discounts from session/memory if available
+            $discounts = array();
+            if (isset($_SESSION['eq_current_discounts'])) {
+                $discounts = $_SESSION['eq_current_discounts'];
+            }
+            
             $context = eq_get_active_context();
             $data = array();
             
@@ -3537,11 +3544,47 @@ public function validate_all_cart_items() {
             if (!empty($cart_items)) {
                 $totals = eq_calculate_cart_totals($cart_items);
                 $data['cart_total'] = $totals['total'];
+                $data['cart_totals'] = $totals; // Include all totals for preview
+                
                 // First decode HTML entities, then clean
                 $decoded_total = html_entity_decode($totals['total'], ENT_QUOTES, 'UTF-8');
                 $clean_total = str_replace(['$', ',', ' '], '', $decoded_total);
                 $clean_total = preg_replace('/[^0-9.]/', '', $clean_total); // Remove any non-numeric chars except dots
                 $data['cart_total_raw'] = floatval($clean_total);
+                
+                // Include current discounts in contract data
+                $data['current_discounts'] = $discounts;
+                
+                // Calculate totals with discounts if they exist
+                if (!empty($discounts)) {
+                    $item_discounts = isset($discounts['totalItemDiscounts']) ? $discounts['totalItemDiscounts'] : 0;
+                    $global_discount = isset($discounts['globalDiscount']['amount']) ? $discounts['globalDiscount']['amount'] : 0;
+                    
+                    if ($item_discounts > 0 || $global_discount > 0) {
+                        // Get subtotal without tax
+                        $subtotal_text = html_entity_decode($totals['subtotal'], ENT_QUOTES, 'UTF-8');
+                        $subtotal_raw = floatval(str_replace(['$', ',', ' '], '', $subtotal_text));
+                        
+                        // Apply discounts
+                        $total_discounts = $item_discounts + $global_discount;
+                        $subtotal_after_discounts = max(0, $subtotal_raw - $total_discounts);
+                        
+                        // Recalculate tax and total
+                        $tax_rate = eq_get_woocommerce_tax_rate() ?: 16;
+                        $new_tax = $subtotal_after_discounts * ($tax_rate / 100);
+                        $new_total = $subtotal_after_discounts + $new_tax;
+                        
+                        // Update totals with discounts
+                        $data['cart_total_with_discounts'] = $new_total;
+                        $data['discount_breakdown'] = array(
+                            'item_discounts' => $item_discounts,
+                            'global_discount' => $global_discount,
+                            'total_discounts' => $total_discounts,
+                            'subtotal_after_discounts' => $subtotal_after_discounts,
+                            'tax_after_discounts' => $new_tax
+                        );
+                    }
+                }
                 
                 // Debug: Add raw total calculation details
                 $data['debug_total_calculation'] = array(
@@ -3557,6 +3600,42 @@ public function validate_all_cart_items() {
             
         } catch (Exception $e) {
             wp_send_json_error('Error getting contract data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Save current discounts to session for contract use
+     */
+    public function save_current_discounts() {
+        check_ajax_referer('eq_cart_public_nonce', 'nonce');
+        
+        if (!eq_can_view_quote_button()) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        try {
+            $discounts_json = isset($_POST['discounts']) ? stripslashes($_POST['discounts']) : '{}';
+            $discounts = json_decode($discounts_json, true);
+            
+            if ($discounts) {
+                // Start session if not already started
+                if (session_status() !== PHP_SESSION_ACTIVE) {
+                    session_start();
+                }
+                
+                // Save to session
+                $_SESSION['eq_current_discounts'] = $discounts;
+                
+                wp_send_json_success(array(
+                    'message' => 'Discounts saved successfully',
+                    'discounts' => $discounts
+                ));
+            } else {
+                wp_send_json_error('Invalid discount data');
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Error saving discounts: ' . $e->getMessage());
         }
     }
     
