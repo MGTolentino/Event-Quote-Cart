@@ -769,9 +769,14 @@
             return;
         }
 
-        // Get discount data from the global window variable (same as Generate Quote)
+        // Call calculateDiscounts BEFORE generating (exactly like Generate Quote)
+        if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+            window.quoteCartManager.calculateDiscounts();
+        }
+        
+        // Get discount data (now it should be fresh)
         const discountData = window.eqDiscountData || {};
-        console.log('CONTRACT DEBUG: Using discount data from window.eqDiscountData:', discountData);
+        console.log('CONTRACT DEBUG: Using discount data after calculateDiscounts:', discountData);
 
         // Show loading with progress
         showContractLoading();
