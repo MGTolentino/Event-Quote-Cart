@@ -781,7 +781,11 @@
 
         // Calculate discounts before generating (same as PDF)
         if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+            console.log('CONTRACT DEBUG: Calling calculateDiscounts()');
             window.quoteCartManager.calculateDiscounts();
+            console.log('CONTRACT DEBUG: Discount data after calculation:', window.quoteCartManager.discountData);
+        } else {
+            console.log('CONTRACT DEBUG: quoteCartManager not available');
         }
 
         // Show loading with progress
@@ -800,9 +804,13 @@
         let discountData = {};
         if (window.quoteCartManager && typeof window.quoteCartManager.discountData !== 'undefined') {
             discountData = window.quoteCartManager.discountData;
+            console.log('CONTRACT DEBUG: Using quoteCartManager discount data:', discountData);
         } else if (window.eqDiscountData) {
             // Alternative: check if discount data was stored globally
             discountData = window.eqDiscountData;
+            console.log('CONTRACT DEBUG: Using global discount data:', discountData);
+        } else {
+            console.log('CONTRACT DEBUG: No discount data found');
         }
 
         // Prepare form data
@@ -1277,7 +1285,11 @@
         try {
             // Calculate discounts before preview (same as PDF)
             if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+                console.log('PREVIEW DEBUG: Calling calculateDiscounts()');
                 window.quoteCartManager.calculateDiscounts();
+                console.log('PREVIEW DEBUG: Discount data after calculation:', window.quoteCartManager.discountData);
+            } else {
+                console.log('PREVIEW DEBUG: quoteCartManager not available');
             }
             
             // Don't validate for preview - show with whatever data is available
@@ -1559,12 +1571,18 @@
             let discountData = {};
             if (window.quoteCartManager && window.quoteCartManager.discountData) {
                 discountData = window.quoteCartManager.discountData;
+                console.log('PREVIEW TOTALS DEBUG: Using quoteCartManager discount data:', discountData);
             } else if (window.eqDiscountData) {
                 discountData = window.eqDiscountData;
+                console.log('PREVIEW TOTALS DEBUG: Using global discount data:', discountData);
+            } else {
+                console.log('PREVIEW TOTALS DEBUG: No discount data available');
             }
             
             const itemDiscounts = discountData.totalItemDiscounts || 0;
             const globalDiscount = (discountData.globalDiscount && discountData.globalDiscount.amount) || 0;
+            
+            console.log('PREVIEW TOTALS DEBUG: Item discounts:', itemDiscounts, 'Global discount:', globalDiscount);
             
             html += '<div style="text-align: right; margin-top: 15px;">';
             html += `<p><strong>Subtotal: ${decodeHtmlEntities(contractData.cart_totals.subtotal) || '$0.00'}</strong></p>`;
