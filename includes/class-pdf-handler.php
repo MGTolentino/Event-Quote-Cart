@@ -770,7 +770,7 @@ foreach ($extras_without_desc as $extra):
         if ($item_discounts > 0): 
         ?>
         <tr>
-            <td>DESCUENTOS POR ITEM:</td>
+            <td>BONIFICACIONES:</td>
             <td>-<?php echo hivepress()->woocommerce->format_price($item_discounts); ?></td>
         </tr>
         <?php endif; ?>
@@ -781,6 +781,15 @@ foreach ($extras_without_desc as $extra):
         <tr>
             <td>DESCUENTO GLOBAL:</td>
             <td>-<?php echo hivepress()->woocommerce->format_price($global_discount); ?></td>
+        </tr>
+        <?php endif; ?>
+        
+        <?php 
+        if ($total_discounts > 0): 
+        ?>
+        <tr>
+            <td>SUBTOTAL DESPUÉS DE BONIFICACIONES:</td>
+            <td><?php echo hivepress()->woocommerce->format_price($subtotal_after_discounts); ?></td>
         </tr>
         <?php endif; ?>
         
