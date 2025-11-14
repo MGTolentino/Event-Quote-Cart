@@ -766,21 +766,12 @@ foreach ($extras_without_desc as $extra):
         </tr>
         
         <?php 
-        // Mostrar descuentos si existen
-        if ($item_discounts > 0): 
+        // Mostrar bonificaciones totales si existen
+        if ($total_discounts > 0): 
         ?>
         <tr>
             <td>BONIFICACIONES:</td>
-            <td>-<?php echo hivepress()->woocommerce->format_price($item_discounts); ?></td>
-        </tr>
-        <?php endif; ?>
-        
-        <?php 
-        if ($global_discount > 0): 
-        ?>
-        <tr>
-            <td>DESCUENTO GLOBAL:</td>
-            <td>-<?php echo hivepress()->woocommerce->format_price($global_discount); ?></td>
+            <td>-<?php echo hivepress()->woocommerce->format_price($total_discounts); ?></td>
         </tr>
         <?php endif; ?>
         

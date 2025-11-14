@@ -738,12 +738,8 @@ class Event_Quote_Cart_Contract_Handler {
                     
                     <div class="total-row">Sub Total: <?php echo esc_html($totals['subtotal']); ?></div>
                     
-                    <?php if ($item_discounts > 0): ?>
-                    <div class="total-row">Bonificaciones: -<?php echo hivepress()->woocommerce->format_price($item_discounts); ?></div>
-                    <?php endif; ?>
-                    
-                    <?php if ($global_discount > 0): ?>
-                    <div class="total-row">Descuento Global: -<?php echo hivepress()->woocommerce->format_price($global_discount); ?></div>
+                    <?php if ($total_discounts > 0): ?>
+                    <div class="total-row">Bonificaciones: -<?php echo hivepress()->woocommerce->format_price($total_discounts); ?></div>
                     <?php endif; ?>
                     
                     <?php if ($total_discounts > 0): ?>
