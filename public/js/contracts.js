@@ -412,7 +412,7 @@
         const html = `
             <div class="eq-payment-item" data-payment-id="${paymentId}">
                 <div class="eq-payment-item-header">
-                    <span class="eq-payment-number">Payment ${index + 1}</span>
+                    <span class="eq-payment-number">Pago ${index + 1}</span>
                     <button type="button" class="eq-remove-payment">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -462,7 +462,7 @@
         const html = `
             <div class="eq-payment-item" data-payment-id="${paymentId}">
                 <div class="eq-payment-item-header">
-                    <span class="eq-payment-number">Payment ${paymentIndex + 1}</span>
+                    <span class="eq-payment-number">Pago ${paymentIndex + 1}</span>
                     <button type="button" class="eq-remove-payment">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -513,7 +513,7 @@
      */
     function updatePaymentNumbers() {
         $('#eq-payment-schedule-items .eq-payment-item').each(function(index) {
-            $(this).find('.eq-payment-number').text('Payment ' + (index + 1));
+            $(this).find('.eq-payment-number').text('Pago ' + (index + 1));
         });
     }
 
@@ -638,7 +638,7 @@
         } else if (daysUntilEvent <= 7) {
             showValidationNotice('warning', `Event is only ${daysUntilEvent} days away. Full payment is recommended.`);
         } else if (daysUntilEvent <= 30) {
-            showValidationNotice('info', `Event is ${daysUntilEvent} days away. Consider using fewer payment installments.`);
+            showValidationNotice('info', `El evento es en ${daysUntilEvent} días. Considera usar menos cuotas de pago.`);
         } else {
             hideValidationNotice();
         }
@@ -1445,7 +1445,7 @@
         
         paymentSchedule.forEach((payment, index) => {
             html += `<tr>
-                <td>Payment ${index + 1}</td>
+                <td>Pago ${index + 1}</td>
                 <td>${formatCurrency(payment.amount)}</td>
                 <td>${payment.date || 'Not set'}</td>
                 <td>${payment.description || ''}</td>
