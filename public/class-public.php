@@ -130,6 +130,27 @@ class Event_Quote_Cart_Public {
         true
     );
 
+    // Localize contracts script with translations
+    wp_localize_script(
+        $this->plugin_name . '-contracts',
+        'eqCartData',
+        array(
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('eq_cart_public_nonce'),
+            'i18n' => array(
+                'amountLabel' => __('Amount ($)', 'event-quote-cart'),
+                'percentageLabel' => __('Percentage (%)', 'event-quote-cart'),
+                'paymentDateLabel' => __('Payment Date', 'event-quote-cart'),
+                'descriptionLabel' => __('Description', 'event-quote-cart'),
+                'paymentLabel' => __('Payment', 'event-quote-cart'),
+                'dateLabel' => __('Date', 'event-quote-cart'),
+                'notEnoughTimeWarning' => __('days - may not be enough time', 'event-quote-cart'),
+                'loadingContractData' => __('Loading contract data...', 'event-quote-cart'),
+                'errorLoadingContractData' => __('Error loading contract data', 'event-quote-cart')
+            )
+        )
+    );
+
         wp_localize_script(
             $this->plugin_name,
             'eqCartData',

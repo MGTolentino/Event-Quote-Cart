@@ -174,7 +174,7 @@
      * Open contract modal and load data
      */
     function openContractModal() {
-        showLoading('Loading contract data...');
+        showLoading(eqCartData.i18n.loadingContractData);
         
         $.ajax({
             url: eqCartData.ajaxurl,
@@ -203,7 +203,7 @@
                         
                     }, 100);
                 } else {
-                    showNotification('error', response.data || 'Error loading contract data');
+                    showNotification('error', response.data || eqCartData.i18n.errorLoadingContractData);
                 }
             },
             error: function() {

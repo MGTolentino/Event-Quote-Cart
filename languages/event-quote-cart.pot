@@ -777,3 +777,11 @@ msgstr ""
 #: public/class-public.php:166
 msgid "days - may not be enough time"
 msgstr ""
+
+#: public/class-public.php:148
+msgid "Loading contract data..."
+msgstr ""
+
+#: public/class-public.php:149
+msgid "Error loading contract data"
+msgstr ""

@@ -779,3 +779,11 @@ msgstr "Fecha"
 #: public/class-public.php:166
 msgid "days - may not be enough time"
 msgstr "días - puede no ser suficiente tiempo"
+
+#: public/class-public.php:148
+msgid "Loading contract data..."
+msgstr "Cargando datos del contrato..."
+
+#: public/class-public.php:149
+msgid "Error loading contract data"
+msgstr "Error al cargar datos del contrato"
