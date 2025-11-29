@@ -155,7 +155,15 @@ class Event_Quote_Cart_Public {
                     'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
                     'errorLoadingHistory' => __('Error loading cart history', 'event-quote-cart'),
                     'restoring' => __('Restoring...', 'event-quote-cart'),
-                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart')
+                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart'),
+                    // Contract form translations
+                    'amountLabel' => __('Amount ($)', 'event-quote-cart'),
+                    'percentageLabel' => __('Percentage (%)', 'event-quote-cart'),
+                    'paymentDateLabel' => __('Payment Date', 'event-quote-cart'),
+                    'descriptionLabel' => __('Description', 'event-quote-cart'),
+                    'paymentLabel' => __('Payment', 'event-quote-cart'),
+                    'dateLabel' => __('Date', 'event-quote-cart'),
+                    'notEnoughTimeWarning' => __('days - may not be enough time', 'event-quote-cart')
                 ),
                 'texts' => array(
                     'showContextPanel' => __('Show context panel', 'event-quote-cart'),

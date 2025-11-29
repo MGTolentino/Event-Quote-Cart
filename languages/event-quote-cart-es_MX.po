@@ -751,3 +751,31 @@ msgstr "Generar Nuevo Contrato"
 #: includes/class-ajax-handler.php:3630
 msgid "Discounts saved successfully"
 msgstr "Descuentos guardados exitosamente"
+
+#: public/class-public.php:160
+msgid "Amount ($)"
+msgstr "Monto ($)"
+
+#: public/class-public.php:161
+msgid "Percentage (%)"
+msgstr "Porcentaje (%)"
+
+#: public/class-public.php:162
+msgid "Payment Date"
+msgstr "Fecha de Pago"
+
+#: public/class-public.php:163
+msgid "Description"
+msgstr "Descripción"
+
+#: public/class-public.php:164
+msgid "Payment"
+msgstr "Pago"
+
+#: public/class-public.php:165
+msgid "Date"
+msgstr "Fecha"
+
+#: public/class-public.php:166
+msgid "days - may not be enough time"
+msgstr "días - puede no ser suficiente tiempo"

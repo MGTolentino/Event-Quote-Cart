@@ -749,3 +749,31 @@ msgstr ""
 #: includes/class-ajax-handler.php:3630
 msgid "Discounts saved successfully"
 msgstr ""
+
+#: public/class-public.php:160
+msgid "Amount ($)"
+msgstr ""
+
+#: public/class-public.php:161
+msgid "Percentage (%)"
+msgstr ""
+
+#: public/class-public.php:162
+msgid "Payment Date"
+msgstr ""
+
+#: public/class-public.php:163
+msgid "Description"
+msgstr ""
+
+#: public/class-public.php:164
+msgid "Payment"
+msgstr ""
+
+#: public/class-public.php:165
+msgid "Date"
+msgstr ""
+
+#: public/class-public.php:166
+msgid "days - may not be enough time"
+msgstr ""
