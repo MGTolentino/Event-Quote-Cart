@@ -4,748 +4,750 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Event Quote Cart 1.0.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/event-quote-cart\n"
-"Last-Translator: Miguel Tolentino <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Last-Translator: Miguel Tolentino <miguel@reservas.events>\n"
+"Language-Team: Español de México\n"
+"Language: es_MX\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "POT-Creation-Date: 2024-03-26T10:00:00+00:00\n"
-"PO-Revision-Date: 2025-03-26\n"
-"X-Generator: WP-CLI 2.8.1\n"
+"PO-Revision-Date: 2025-11-28 23:30:00+0000\n"
+"X-Generator: Manual Translation\n"
 "X-Domain: event-quote-cart\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: event-quote-cart.php:84
 msgid "Event Quote Cart requires the following plugins: %s. Please install and activate them first."
-msgstr ""
+msgstr "Event Quote Cart requiere los siguientes plugins: %s. Por favor instálalos y actívalos primero."
 
 #: event-quote-cart.php:123
 msgid "Added to quote cart"
-msgstr ""
+msgstr "Agregado al carrito de cotización"
 
 #: event-quote-cart.php:124
 msgid "Error adding to quote cart"
-msgstr ""
+msgstr "Error al agregar al carrito de cotización"
 
 #: event-quote-cart.php:125
 msgid "Removed from quote cart"
-msgstr ""
+msgstr "Eliminado del carrito de cotización"
 
 #: event-quote-cart.php:126
 msgid "Error removing from quote cart"
-msgstr ""
+msgstr "Error al eliminar del carrito de cotización"
 
 #: event-quote-cart.php:127
 msgid "Please select a date"
-msgstr ""
+msgstr "Por favor selecciona una fecha"
 
 #: event-quote-cart.php:128
 msgid "Selected date is not available"
-msgstr ""
+msgstr "La fecha seleccionada no está disponible"
 
 #: event-quote-cart.php:129
 msgid "Date is available"
-msgstr ""
+msgstr "La fecha está disponible"
 
 #: event-quote-cart.php:130
 msgid "Error validating date"
-msgstr ""
+msgstr "Error al validar la fecha"
 
 #: event-quote-cart.php:131
 msgid "Adding..."
-msgstr ""
+msgstr "Agregando..."
 
 #: event-quote-cart.php:132
 msgid "Updating..."
-msgstr ""
+msgstr "Actualizando..."
 
 #: event-quote-cart.php:133
 msgid "Checking availability..."
-msgstr ""
+msgstr "Verificando disponibilidad..."
 
 #: event-quote-cart.php:134
 msgid "Select date"
-msgstr ""
+msgstr "Seleccionar fecha"
 
 #: event-quote-cart.php:135
 msgid "Edit date"
-msgstr ""
+msgstr "Editar fecha"
 
 #: event-quote-cart.php:136
 msgid "Are you sure you want to remove this item?"
-msgstr ""
+msgstr "¿Estás seguro de que deseas eliminar este artículo?"
 
 #: event-quote-cart.php:137
 msgid "This date conflicts with another booking"
-msgstr ""
+msgstr "Esta fecha tiene conflicto con otra reserva"
 
 #: event-quote-cart.php:138
 msgid "Please enter a valid quantity"
-msgstr ""
+msgstr "Por favor ingresa una cantidad válida"
 
 #: event-quote-cart.php:139
 msgid "Quantity must be between %d and %d"
-msgstr ""
+msgstr "La cantidad debe estar entre %d y %d"
 
 #: event-quote-cart.php:140
 msgid "Selected date is outside the allowed booking window"
-msgstr ""
+msgstr "La fecha seleccionada está fuera del período de reserva permitido"
 
 #: event-quote-cart.php:141
 msgid "Error loading data"
-msgstr ""
+msgstr "Error al cargar los datos"
 
 #: event-quote-cart.php:156
 msgid "Checking availability..."
-msgstr ""
+msgstr "Verificando disponibilidad..."
 
 #: event-quote-cart.php:157
 msgid "This date is available"
-msgstr ""
+msgstr "Esta fecha está disponible"
 
 #: event-quote-cart.php:158
 msgid "This date is not available"
-msgstr ""
+msgstr "Esta fecha no está disponible"
 
 #: event-quote-cart.php:159
 msgid "Error checking availability"
-msgstr ""
+msgstr "Error al verificar disponibilidad"
 
 #: event-quote-cart.php:244
 msgid "+ Quote"
-msgstr ""
+msgstr "+ Cotización"
 
 #: class-public.php:94
 msgid "View Quotes"
-msgstr ""
+msgstr "Ver Cotizaciones"
 
 #: class-public.php:95
 msgid "View Quote"
-msgstr ""
+msgstr "Ver Cotización"
 
 #: class-public.php:107
 msgid "Lead:"
-msgstr ""
+msgstr "Prospecto:"
 
 #: class-public.php:108
 msgid "Event:"
-msgstr ""
+msgstr "Evento:"
 
 #: class-public.php:109
 msgid "Not selected"
-msgstr ""
+msgstr "No seleccionado"
 
 #: class-public.php:110
 msgid "Select Lead"
-msgstr ""
+msgstr "Seleccionar Prospecto"
 
 #: class-public.php:111
 msgid "Select Event"
-msgstr ""
+msgstr "Seleccionar Evento"
 
 #: class-public.php:112
 msgid "End Session"
-msgstr ""
+msgstr "Finalizar Sesión"
 
 #: class-public.php:190
 msgid "Unauthorized"
-msgstr ""
+msgstr "No autorizado"
 
 #: class-public.php:528
 msgid "Name and last name are required"
-msgstr ""
+msgstr "El nombre y apellido son requeridos"
 
 #: class-public.php:555
 msgid "Error creating lead: "
-msgstr ""
+msgstr "Error al crear prospecto: "
 
 #: class-public.php:561
 msgid "Lead created successfully"
-msgstr ""
+msgstr "Prospecto creado exitosamente"
 
 #: class-public.php:587
 msgid "Invalid lead ID"
-msgstr ""
+msgstr "ID de prospecto inválido"
 
 #: class-public.php:651
 msgid "Missing required data"
-msgstr ""
+msgstr "Faltan datos requeridos"
 
 #: class-public.php:656
 msgid "Error creating event: "
-msgstr ""
+msgstr "Error al crear evento: "
 
 #: class-public.php:697
 msgid "Event created successfully"
-msgstr ""
+msgstr "Evento creado exitosamente"
 
 #: templates/quote-button.php:20
 msgid "Quote"
-msgstr ""
+msgstr "Cotización"
 
 #: templates/cart-sidebar.php:19
 msgid "Quote Cart"
-msgstr ""
+msgstr "Carrito de Cotización"
 
 #: templates/cart-sidebar.php:20
 msgid "Close"
-msgstr ""
+msgstr "Cerrar"
 
 #: templates/cart-sidebar.php:33
 msgid "Date"
-msgstr ""
+msgstr "Fecha"
 
 #: templates/cart-sidebar.php:42
 msgid "Select a date"
-msgstr ""
+msgstr "Selecciona una fecha"
 
 #: templates/cart-sidebar.php:50
 msgid "Checking availability..."
-msgstr ""
+msgstr "Verificando disponibilidad..."
 
 #: templates/cart-sidebar.php:60
 msgid "Quantity"
-msgstr ""
+msgstr "Cantidad"
 
 #: templates/cart-sidebar.php:72
 msgid "Extras"
-msgstr ""
+msgstr "Extras"
 
 #: templates/cart-sidebar.php:79
 msgid "Base Price:"
-msgstr ""
+msgstr "Precio Base:"
 
 #: templates/cart-sidebar.php:83
 msgid "Total:"
-msgstr ""
+msgstr "Total:"
 
 #: templates/cart-sidebar.php:89
 msgid "Add to Quote"
-msgstr ""
+msgstr "Agregar a Cotización"
 
 #: templates/cart-sidebar.php:86
 msgid "Total (incl. taxes)"
-msgstr ""
+msgstr "Total (incl. impuestos)"
 
 #: templates/cart-sidebar.php:93
 msgid "View Complete Quote"
-msgstr ""
+msgstr "Ver Cotización Completa"
 
 #: templates/cart-sidebar.php:100
 msgid "items in quote"
-msgstr ""
+msgstr "artículos en cotización"
 
 #: templates/cart-sidebar.php:116
 msgid "Edit"
-msgstr ""
+msgstr "Editar"
 
 #: templates/cart-sidebar.php:119
 msgid "Remove"
-msgstr ""
+msgstr "Eliminar"
 
 #: templates/context-panel.php:10
 msgid "Lead:"
-msgstr ""
+msgstr "Prospecto:"
 
 #: templates/context-panel.php:27
 msgid "Event #%d"
-msgstr ""
+msgstr "Evento #%d"
 
 #: templates/context-panel.php:36
 msgid "Change Lead"
-msgstr ""
+msgstr "Cambiar Prospecto"
 
 #: templates/context-panel.php:39
 msgid "Change Event"
-msgstr ""
+msgstr "Cambiar Evento"
 
 #: templates/context-panel.php:42
 msgid "End Session"
-msgstr ""
+msgstr "Finalizar Sesión"
 
 #: templates/header-cart.php:17
 msgid "View Quotes"
-msgstr ""
+msgstr "Ver Cotizaciones"
 
 #: templates/quote-cart-page.php:12
 msgid "Please log in to view your quote cart"
-msgstr ""
+msgstr "Por favor inicia sesión para ver tu carrito de cotización"
 
 #: templates/quote-cart-page.php:14
 msgid "Log In"
-msgstr ""
+msgstr "Iniciar Sesión"
 
 #: templates/quote-cart-page.php:41
 msgid "Quoting for:"
-msgstr ""
+msgstr "Cotizando para:"
 
 #: templates/quote-cart-page.php:59
 msgid "Your Quote Cart"
-msgstr ""
+msgstr "Tu Carrito de Cotización"
 
 #: templates/quote-cart-page.php:61
 msgid "Continue Shopping"
-msgstr ""
+msgstr "Continuar Comprando"
 
 #: templates/quote-cart-page.php:105
 msgid "Select Event for this Quote"
-msgstr ""
+msgstr "Seleccionar Evento para esta Cotización"
 
 #: templates/quote-cart-page.php:118
 msgid "Create New Event"
-msgstr ""
+msgstr "Crear Nuevo Evento"
 
 #: templates/quote-cart-page.php:122
 msgid "Update Event"
-msgstr ""
+msgstr "Actualizar Evento"
 
 #: templates/quote-cart-page.php:128
 msgid "Event Type"
-msgstr ""
+msgstr "Tipo de Evento"
 
 #: templates/quote-cart-page.php:133
 msgid "Event Date"
-msgstr ""
+msgstr "Fecha del Evento"
 
 #: templates/quote-cart-page.php:139
 msgid "Number of Guests"
-msgstr ""
+msgstr "Número de Invitados"
 
 #: templates/quote-cart-page.php:161
 msgid "Event Date:"
-msgstr ""
+msgstr "Fecha del Evento:"
 
 #: templates/quote-cart-page.php:165
 msgid "Quantity:"
-msgstr ""
+msgstr "Cantidad:"
 
 #: templates/quote-cart-page.php:172
 msgid "Extras:"
-msgstr ""
+msgstr "Extras:"
 
 #: templates/quote-cart-page.php:192
 msgid "Edit"
-msgstr ""
+msgstr "Editar"
 
 #: templates/quote-cart-page.php:195
 msgid "Remove"
-msgstr ""
+msgstr "Eliminar"
 
 #: templates/quote-cart-page.php:211
 msgid "Subtotal:"
-msgstr ""
+msgstr "Subtotal:"
 
 #: templates/quote-cart-page.php:215
 msgid "Tax:"
-msgstr ""
+msgstr "Impuesto:"
 
 #: templates/quote-cart-page.php:219
 msgid "Total:"
-msgstr ""
+msgstr "Total:"
 
 #: templates/quote-cart-page.php:226
 msgid "Generate Quote"
-msgstr ""
+msgstr "Generar Cotización"
 
 #: templates/quote-cart-page.php:229
 msgid "Share Quote"
-msgstr ""
+msgstr "Compartir Cotización"
 
 #: templates/quote-cart-page.php:238
 msgid "Your quote cart is empty."
-msgstr ""
+msgstr "Tu carrito de cotización está vacío."
 
 #: templates/quote-cart-page.php:240
 msgid "Start Shopping"
-msgstr ""
+msgstr "Comenzar a Comprar"
 
 #: quote-cart.js:204
 msgid "This date affects %s item(s) in your cart that are not available on this date: %s. Would you like to remove these items and update the date for the rest?"
-msgstr ""
+msgstr "Esta fecha afecta %s artículo(s) en tu carrito que no están disponibles en esta fecha: %s. ¿Deseas eliminar estos artículos y actualizar la fecha para el resto?"
 
 #: quote-cart.js:218
 msgid "Error updating cart date"
-msgstr ""
+msgstr "Error al actualizar la fecha del carrito"
 
 #: quote-cart.js:232
 msgid "You already have %s item(s) in your cart with a different date. Would you like to update all to the date %s?"
-msgstr ""
+msgstr "Ya tienes %s artículo(s) en tu carrito con una fecha diferente. ¿Deseas actualizar todos a la fecha %s?"
 
 #: quote-cart.js:247
 msgid "Error updating cart date"
-msgstr ""
+msgstr "Error al actualizar la fecha del carrito"
 
 #: quote-cart.js:332
 msgid "Item updated successfully"
-msgstr ""
+msgstr "Artículo actualizado exitosamente"
 
 #: quote-cart.js:332
 msgid "Item added to quote successfully"
-msgstr ""
+msgstr "Artículo agregado a la cotización exitosamente"
 
 #: quote-cart.js:433
 msgid "Select date"
-msgstr ""
+msgstr "Seleccionar fecha"
 
 #: quote-cart.js:457
 msgid "Editing existing reservation"
-msgstr ""
+msgstr "Editando reserva existente"
 
 #: quote-cart.js:466
 msgid "Date"
-msgstr ""
+msgstr "Fecha"
 
 #: quote-cart.js:473
 msgid "Select a date"
-msgstr ""
+msgstr "Selecciona una fecha"
 
 #: quote-cart.js:495
 msgid "Quantity"
-msgstr ""
+msgstr "Cantidad"
 
 #: quote-cart.js:508
 msgid "Extras"
-msgstr ""
+msgstr "Extras"
 
 #: quote-cart.js:730
 msgid "See Details"
-msgstr ""
+msgstr "Ver Detalles"
 
 #: quote-cart.js:737
 msgid "Base Price:"
-msgstr ""
+msgstr "Precio Base:"
 
 #: quote-cart.js:741
 msgid "Total (incl. taxes):"
-msgstr ""
+msgstr "Total (incl. impuestos):"
 
 #: quote-cart.js:746
 msgid "Update Quote"
-msgstr ""
+msgstr "Actualizar Cotización"
 
 #: quote-cart.js:746
 msgid "Include in Quote"
-msgstr ""
+msgstr "Incluir en Cotización"
 
 #: quote-cart.js:828
 msgid "Hide Details"
-msgstr ""
+msgstr "Ocultar Detalles"
 
 #: quote-cart.js:830
 msgid "See Details"
-msgstr ""
+msgstr "Ver Detalles"
 
 #: quote-cart.js:925
 msgid "No items in quote cart"
-msgstr ""
+msgstr "No hay artículos en el carrito de cotización"
 
 #: quote-cart.js:968
 msgid "Extras:"
-msgstr ""
+msgstr "Extras:"
 
 #: quote-cart.js:1008
 msgid "Not available for selected date"
-msgstr ""
+msgstr "No disponible para la fecha seleccionada"
 
 #: templates/quote-cart-page.php:68
 msgid "Cart History"
-msgstr ""
+msgstr "Historial del Carrito"
 
 #: templates/quote-cart-page.php:238
 msgid "Discount:"
-msgstr ""
+msgstr "Descuento:"
 
 #: templates/quote-cart-page.php:273
 msgid "Global Discount:"
-msgstr ""
+msgstr "Descuento Global:"
 
 #: templates/quote-cart-page.php:286
 msgid "Item Discounts:"
-msgstr ""
+msgstr "Descuentos de Artículos:"
 
 #: templates/quote-cart-page.php:292
 msgid "Subtotal after Discounts:"
-msgstr ""
+msgstr "Subtotal después de Descuentos:"
 
 #: templates/quote-cart-page.php:308
 msgid "Generate Contract"
-msgstr ""
+msgstr "Generar Contrato"
 
 #: templates/quote-cart-page.php:327
 msgid "Generate Payment Link"
-msgstr ""
+msgstr "Generar Enlace de Pago"
 
 #: templates/quote-cart-page.php:332
 msgid "Pay Now"
-msgstr ""
+msgstr "Pagar Ahora"
 
 #: templates/quote-cart-page.php:355
 msgid "Complete Payment"
-msgstr ""
+msgstr "Completar Pago"
 
 #: templates/quote-cart-page.php:359
 msgid "Total Amount:"
-msgstr ""
+msgstr "Monto Total:"
 
 #: templates/quote-cart-page.php:364
 msgid "Full Name"
-msgstr ""
+msgstr "Nombre Completo"
 
 #: templates/quote-cart-page.php:369
 msgid "Email"
-msgstr ""
+msgstr "Correo Electrónico"
 
 #: templates/quote-cart-page.php:374
 msgid "Phone"
-msgstr ""
+msgstr "Teléfono"
 
 #: templates/quote-cart-page.php:379
 msgid "Card Information"
-msgstr ""
+msgstr "Información de Tarjeta"
 
 #: templates/quote-cart-page.php:395
 msgid "Payment Successful!"
-msgstr ""
+msgstr "¡Pago Exitoso!"
 
 #: templates/quote-cart-page.php:396
 msgid "Your payment has been processed successfully."
-msgstr ""
+msgstr "Tu pago ha sido procesado exitosamente."
 
 #: templates/quote-cart-page.php:397
 msgid "Order Number:"
-msgstr ""
+msgstr "Número de Orden:"
 
 #: templates/quote-cart-page.php:398
 msgid "A confirmation email has been sent to your email address."
-msgstr ""
+msgstr "Se ha enviado un correo de confirmación a tu dirección de email."
 
 #: templates/quote-cart-page.php:399
 msgid "Done"
-msgstr ""
+msgstr "Hecho"
 
 #: templates/quote-cart-page.php:404
 msgid "Payment Failed"
-msgstr ""
+msgstr "Pago Fallido"
 
 #: templates/quote-cart-page.php:406
 msgid "Try Again"
-msgstr ""
+msgstr "Intentar de Nuevo"
 
 #: templates/quote-cart-page.php:415
 msgid "Payment Link Generated"
-msgstr ""
+msgstr "Enlace de Pago Generado"
 
 #: templates/quote-cart-page.php:418
 msgid "Share this link with your client to complete the payment:"
-msgstr ""
+msgstr "Comparte este enlace con tu cliente para completar el pago:"
 
 #: templates/quote-cart-page.php:422
 msgid "Copy"
-msgstr ""
+msgstr "Copiar"
 
 #: templates/quote-cart-page.php:427
 msgid "Send via Email"
-msgstr ""
+msgstr "Enviar por Correo"
 
 #: templates/quote-cart-page.php:431
 msgid "Share via WhatsApp"
-msgstr ""
+msgstr "Compartir vía WhatsApp"
 
 #: templates/quote-cart-page.php:436
 msgid "Note: This link is valid for 24 hours and can only be used once."
-msgstr ""
+msgstr "Nota: Este enlace es válido por 24 horas y solo puede usarse una vez."
 
 #: templates/quote-cart-page.php:448
 msgid "Cart History"
-msgstr ""
+msgstr "Historial del Carrito"
 
 #: templates/quote-cart-page.php:451
 msgid "Loading cart history..."
-msgstr ""
+msgstr "Cargando historial del carrito..."
 
 #: templates/quote-cart-page.php:461
 msgid "Restore Selected Version"
-msgstr ""
+msgstr "Restaurar Versión Seleccionada"
 
 #: templates/quote-cart-page.php:467
 msgid "No cart history found."
-msgstr ""
+msgstr "No se encontró historial del carrito."
 
 #: templates/quote-cart-page.php:482
 msgid "Client Info"
-msgstr ""
+msgstr "Información del Cliente"
 
 #: templates/quote-cart-page.php:483
 msgid "Event Details"
-msgstr ""
+msgstr "Detalles del Evento"
 
 #: templates/quote-cart-page.php:484
 msgid "Payment Schedule"
-msgstr ""
+msgstr "Calendario de Pagos"
 
 #: templates/quote-cart-page.php:485
 msgid "Terms & Bank"
-msgstr ""
+msgstr "Términos y Banco"
 
 #: templates/quote-cart-page.php:498
 msgid "Client Information"
-msgstr ""
+msgstr "Información del Cliente"
 
 #: templates/quote-cart-page.php:500
 msgid "Business Name"
-msgstr ""
+msgstr "Nombre del Negocio"
 
 #: templates/quote-cart-page.php:502
 msgid "Optional. If the client is a company."
-msgstr ""
+msgstr "Opcional. Si el cliente es una empresa."
 
 #: templates/quote-cart-page.php:505
 msgid "Client Name"
-msgstr ""
+msgstr "Nombre del Cliente"
 
 #: templates/quote-cart-page.php:510
 msgid "Phone"
-msgstr ""
+msgstr "Teléfono"
 
 #: templates/quote-cart-page.php:514
 msgid "Email"
-msgstr ""
+msgstr "Correo Electrónico"
 
 #: templates/quote-cart-page.php:519
 msgid "Business Address"
-msgstr ""
+msgstr "Dirección del Negocio"
 
 #: templates/quote-cart-page.php:521
 msgid "Optional. Business address if different from event location."
-msgstr ""
+msgstr "Opcional. Dirección del negocio si es diferente a la ubicación del evento."
 
 #: templates/quote-cart-page.php:527
 msgid "Event Information"
-msgstr ""
+msgstr "Información del Evento"
 
 #: templates/quote-cart-page.php:529
 msgid "Event Date"
-msgstr ""
+msgstr "Fecha del Evento"
 
 #: templates/quote-cart-page.php:533
 msgid "Event Time"
-msgstr ""
+msgstr "Hora del Evento"
 
 #: templates/quote-cart-page.php:536
 msgid "to"
-msgstr ""
+msgstr "a"
 
 #: templates/quote-cart-page.php:541
 msgid "Event Address"
-msgstr ""
+msgstr "Dirección del Evento"
 
 #: templates/quote-cart-page.php:545
 msgid "Number of Guests"
-msgstr ""
+msgstr "Número de Invitados"
 
 #: templates/quote-cart-page.php:552
 msgid "Payment Schedule"
-msgstr ""
+msgstr "Calendario de Pagos"
 
 #: templates/quote-cart-page.php:555
 msgid "Select Template"
-msgstr ""
+msgstr "Seleccionar Plantilla"
 
 #: templates/quote-cart-page.php:557
 msgid "Full Payment (100%)"
-msgstr ""
+msgstr "Pago Completo (100%)"
 
 #: templates/quote-cart-page.php:558
 msgid "50% - 50%"
-msgstr ""
+msgstr "50% - 50%"
 
 #: templates/quote-cart-page.php:559
 msgid "3 Monthly Payments"
-msgstr ""
+msgstr "3 Pagos Mensuales"
 
 #: templates/quote-cart-page.php:560
 msgid "6 Monthly Payments"
-msgstr ""
+msgstr "6 Pagos Mensuales"
 
 #: templates/quote-cart-page.php:561
 msgid "Custom"
-msgstr ""
+msgstr "Personalizado"
 
 #: templates/quote-cart-page.php:576
 msgid "Add Payment"
-msgstr ""
+msgstr "Agregar Pago"
 
 #: templates/quote-cart-page.php:581
 msgid "Contract Total:"
-msgstr ""
+msgstr "Total del Contrato:"
 
 #: templates/quote-cart-page.php:585
 msgid "Scheduled Payments:"
-msgstr ""
+msgstr "Pagos Programados:"
 
 #: templates/quote-cart-page.php:589
 msgid "Difference:"
-msgstr ""
+msgstr "Diferencia:"
 
 #: templates/quote-cart-page.php:598
 msgid "Terms and Bank Information"
-msgstr ""
+msgstr "Términos e Información Bancaria"
 
 #: templates/quote-cart-page.php:602
 msgid "Additional Terms"
-msgstr ""
+msgstr "Términos Adicionales"
 
 #: templates/quote-cart-page.php:604
 msgid "Optional. Additional clauses specific to this contract. These will appear after the standard terms."
-msgstr ""
+msgstr "Opcional. Cláusulas adicionales específicas para este contrato. Estas aparecerán después de los términos estándar."
 
 #: templates/quote-cart-page.php:610
 msgid "Bank Information"
-msgstr ""
+msgstr "Información Bancaria"
 
 #: templates/quote-cart-page.php:613
 msgid "Bank Name"
-msgstr ""
+msgstr "Nombre del Banco"
 
 #: templates/quote-cart-page.php:617
 msgid "Account Number"
-msgstr ""
+msgstr "Número de Cuenta"
 
 #: templates/quote-cart-page.php:623
 msgid "CLABE"
-msgstr ""
+msgstr "CLABE"
 
 #: templates/quote-cart-page.php:632
 msgid "Preview"
-msgstr ""
+msgstr "Vista Previa"
 
 #: templates/quote-cart-page.php:642
 msgid "Generating contract..."
-msgstr ""
+msgstr "Generando contrato..."
 
 #: templates/quote-cart-page.php:647
 msgid "Contract Generated Successfully!"
-msgstr ""
+msgstr "¡Contrato Generado Exitosamente!"
 
 #: templates/quote-cart-page.php:648
 msgid "The contract has been generated and saved."
-msgstr ""
+msgstr "El contrato ha sido generado y guardado."
 
 #: templates/quote-cart-page.php:651
 msgid "Download Contract"
-msgstr ""
+msgstr "Descargar Contrato"
 
 #: templates/quote-cart-page.php:654
 msgid "Send to Client"
-msgstr ""
+msgstr "Enviar al Cliente"
 
 #: templates/quote-cart-page.php:659
 msgid "Edit Contract"
-msgstr ""
+msgstr "Editar Contrato"
 
 #: templates/quote-cart-page.php:662
 msgid "Generate New Contract"
-msgstr ""
+msgstr "Generar Nuevo Contrato"
 
 #: includes/class-ajax-handler.php:3630
 msgid "Discounts saved successfully"
-msgstr ""
+msgstr "Descuentos guardados exitosamente"
