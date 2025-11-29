@@ -174,7 +174,7 @@
      * Open contract modal and load data
      */
     function openContractModal() {
-        showLoading(eqCartData.i18n.loadingContractData);
+        showLoading('Cargando datos del contrato...');
         
         $.ajax({
             url: eqCartData.ajaxurl,
@@ -203,7 +203,7 @@
                         
                     }, 100);
                 } else {
-                    showNotification('error', response.data || eqCartData.i18n.errorLoadingContractData);
+                    showNotification('error', response.data || 'Error al cargar datos del contrato');
                 }
             },
             error: function() {
@@ -419,19 +419,19 @@
                 </div>
                 <div class="eq-payment-item-fields">
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.amountLabel}</label>
+                        <label>Monto ($)</label>
                         <input type="number" class="eq-payment-amount" value="${amount}" step="0.01" min="0">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.percentageLabel}</label>
+                        <label>Porcentaje (%)</label>
                         <input type="number" class="eq-payment-percentage" value="${payment.percentage}" step="0.01" min="0" max="100">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.paymentDateLabel}</label>
+                        <label>Fecha de Pago</label>
                         <input type="date" class="eq-payment-date" value="${paymentDate}">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.descriptionLabel}</label>
+                        <label>Descripción</label>
                         <input type="text" class="eq-payment-description" value="${payment.description || ''}" placeholder="Payment description">
                     </div>
                 </div>
@@ -469,19 +469,19 @@
                 </div>
                 <div class="eq-payment-item-fields">
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.amountLabel}</label>
+                        <label>Monto ($)</label>
                         <input type="number" class="eq-payment-amount" value="${defaultAmount}" step="0.01" min="0" placeholder="0.00">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.percentageLabel}</label>
+                        <label>Porcentaje (%)</label>
                         <input type="number" class="eq-payment-percentage" value="${defaultPercentage}" step="0.01" min="0" max="100" placeholder="0.00">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.paymentDateLabel}</label>
+                        <label>Fecha de Pago</label>
                         <input type="date" class="eq-payment-date" value="">
                     </div>
                     <div class="eq-field-group">
-                        <label>${eqCartData.i18n.descriptionLabel}</label>
+                        <label>Descripción</label>
                         <input type="text" class="eq-payment-description" value="" placeholder="Payment description">
                     </div>
                 </div>
@@ -620,7 +620,7 @@
                 
                 if (template && template.min_days_required && daysUntilEvent > 0 && template.min_days_required > daysUntilEvent) {
                     // Add warning but don't disable
-                    $option.text(template.name + ' (⚠️ ' + Math.abs(daysUntilEvent) + ' ' + eqCartData.i18n.notEnoughTimeWarning + ')');
+                    $option.text(template.name + ' (⚠️ ' + Math.abs(daysUntilEvent) + ' días - puede no ser suficiente tiempo)');
                 } else if (template) {
                     $option.text(template.name);
                 }
@@ -1440,7 +1440,7 @@
         }
         
         let html = '<table class="eq-payment-schedule-preview"><thead><tr>';
-        html += `<th>${eqCartData.i18n.paymentLabel}</th><th>${eqCartData.i18n.amountLabel}</th><th>${eqCartData.i18n.dateLabel}</th><th>${eqCartData.i18n.descriptionLabel}</th>`;
+        html += '<th>Pago</th><th>Monto</th><th>Fecha</th><th>Descripción</th>';
         html += '</tr></thead><tbody>';
         
         paymentSchedule.forEach((payment, index) => {

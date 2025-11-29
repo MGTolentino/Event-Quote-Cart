@@ -130,26 +130,6 @@ class Event_Quote_Cart_Public {
         true
     );
 
-    // Localize contracts script with translations
-    wp_localize_script(
-        $this->plugin_name . '-contracts',
-        'eqCartData',
-        array(
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('eq_cart_public_nonce'),
-            'i18n' => array(
-                'amountLabel' => __('Amount ($)', 'event-quote-cart'),
-                'percentageLabel' => __('Percentage (%)', 'event-quote-cart'),
-                'paymentDateLabel' => __('Payment Date', 'event-quote-cart'),
-                'descriptionLabel' => __('Description', 'event-quote-cart'),
-                'paymentLabel' => __('Payment', 'event-quote-cart'),
-                'dateLabel' => __('Date', 'event-quote-cart'),
-                'notEnoughTimeWarning' => __('days - may not be enough time', 'event-quote-cart'),
-                'loadingContractData' => __('Loading contract data...', 'event-quote-cart'),
-                'errorLoadingContractData' => __('Error loading contract data', 'event-quote-cart')
-            )
-        )
-    );
 
         wp_localize_script(
             $this->plugin_name,
@@ -176,15 +156,7 @@ class Event_Quote_Cart_Public {
                     'errorRestoringCart' => __('Error restoring cart', 'event-quote-cart'),
                     'errorLoadingHistory' => __('Error loading cart history', 'event-quote-cart'),
                     'restoring' => __('Restoring...', 'event-quote-cart'),
-                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart'),
-                    // Contract form translations
-                    'amountLabel' => __('Amount ($)', 'event-quote-cart'),
-                    'percentageLabel' => __('Percentage (%)', 'event-quote-cart'),
-                    'paymentDateLabel' => __('Payment Date', 'event-quote-cart'),
-                    'descriptionLabel' => __('Description', 'event-quote-cart'),
-                    'paymentLabel' => __('Payment', 'event-quote-cart'),
-                    'dateLabel' => __('Date', 'event-quote-cart'),
-                    'notEnoughTimeWarning' => __('days - may not be enough time', 'event-quote-cart')
+                    'restoreSelectedVersion' => __('Restore Selected Version', 'event-quote-cart')
                 ),
                 'texts' => array(
                     'showContextPanel' => __('Show context panel', 'event-quote-cart'),
