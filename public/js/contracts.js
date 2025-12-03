@@ -208,7 +208,7 @@
             },
             error: function() {
                 hideLoading();
-                showNotification('error', 'Network error. Please try again.');
+                showNotification('error', 'Error de conexión. Intenta de nuevo.');
             }
         });
     }
@@ -849,7 +849,7 @@
                     if (response.success) {
                         showContractSuccess(response.data);
                     } else {
-                        showNotification('error', response.data || 'Error generating contract');
+                        showNotification('error', response.data || 'Error generando el contrato');
                         showContractForm();
                     }
                 }, 500);
@@ -857,7 +857,7 @@
             error: function() {
                 clearInterval(progressInterval);
                 hideContractLoading();
-                showNotification('error', 'Network error or timeout. Please try again.');
+                showNotification('error', 'Error de conexión o tiempo agotado. Intenta de nuevo.');
                 showContractForm();
             }
         });
@@ -875,7 +875,7 @@
             $field.addClass('error');
             $formGroup.addClass('error');
             if (!$formGroup.find('.field-error-message').length) {
-                $formGroup.append('<span class="field-error-message">This field is required</span>');
+                $formGroup.append('<span class="field-error-message">Este campo es requerido</span>');
             }
             return false;
         }
@@ -887,7 +887,7 @@
                 $field.addClass('error');
                 $formGroup.addClass('error');
                 if (!$formGroup.find('.field-error-message').length) {
-                    $formGroup.append('<span class="field-error-message">Please enter a valid email address</span>');
+                    $formGroup.append('<span class="field-error-message">Ingresa una dirección de email válida</span>');
                 }
                 return false;
             }
@@ -1259,24 +1259,379 @@
     }
 
     /**
-     * Preview contract
+     * Preview contract with real PDF-like print preview
      */
     function previewContract() {
         try {
-            // Get discount data from the global window variable (same as Generate Quote)
+            // Call calculateDiscounts BEFORE preview (same as generation)
+            if (window.quoteCartManager && typeof window.quoteCartManager.calculateDiscounts === 'function') {
+                window.quoteCartManager.calculateDiscounts();
+            }
+            
+            // Get fresh discount data from the global window variable
             const discountData = window.eqDiscountData || {};
             console.log('PREVIEW DEBUG: Using discount data from window.eqDiscountData:', discountData);
             
-            // Don't validate for preview - show with whatever data is available
             // Collect form data
             const formData = collectFormData();
             
-            // Directly show inline preview (simpler approach)
-            showInlinePreview(formData);
+            // Show loading
+            showLoading('Generando vista previa...');
+            
+            // Prepare form data for server preview generation
+            const previewData = {
+                action: 'eq_generate_contract_preview',
+                nonce: eqCartData.nonce,
+                
+                // Include discounts data (same as actual generation)
+                discounts: JSON.stringify(discountData),
+                
+                // Form data
+                ...formData
+            };
+            
+            // Generate preview on server
+            $.ajax({
+                url: eqCartData.ajaxurl,
+                type: 'POST',
+                data: previewData,
+                success: function(response) {
+                    hideLoading();
+                    
+                    if (response.success) {
+                        showPrintPreview(response.data.preview_html, formData);
+                    } else {
+                        // Fallback to client-side preview
+                        showModalPreview(formData);
+                    }
+                },
+                error: function() {
+                    hideLoading();
+                    // Fallback to client-side preview
+                    showModalPreview(formData);
+                }
+            });
             
         } catch (error) {
-            showNotification('error', 'Error generating preview: ' + error.message);
+            hideLoading();
+            showNotification('error', 'Error generando vista previa: ' + error.message);
+            // Fallback to client-side preview
+            showModalPreview(collectFormData());
         }
+    }
+    
+    /**
+     * Show SAP-style print preview
+     */
+    function showPrintPreview(htmlContent, formData) {
+        // Create preview modal if it doesn't exist
+        if ($('#eq-print-preview-modal').length === 0) {
+            $('body').append(`
+                <div id="eq-print-preview-modal" class="eq-preview-modal">
+                    <div class="eq-preview-modal-content">
+                        <div class="eq-preview-header">
+                            <h3>Vista Previa del Contrato</h3>
+                            <div class="eq-preview-controls">
+                                <button class="eq-btn eq-btn-sm eq-btn-secondary" id="eq-preview-zoom-out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span id="eq-preview-zoom-level">100%</span>
+                                <button class="eq-btn eq-btn-sm eq-btn-secondary" id="eq-preview-zoom-in">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button class="eq-btn eq-btn-sm eq-btn-primary" id="eq-preview-print">
+                                    <i class="fas fa-print"></i> Imprimir
+                                </button>
+                                <button class="eq-btn eq-btn-sm eq-btn-secondary eq-close-preview">
+                                    <i class="fas fa-times"></i> Cerrar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="eq-preview-body">
+                            <div class="eq-preview-paper" id="eq-preview-content">
+                                <!-- Content will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Add CSS for print preview
+            $('head').append(`
+                <style>
+                .eq-preview-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    z-index: 10000;
+                    display: none;
+                }
+                
+                .eq-preview-modal-content {
+                    width: 95%;
+                    height: 95%;
+                    margin: 2.5%;
+                    background: #f5f5f5;
+                    border-radius: 8px;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .eq-preview-header {
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #ddd;
+                    background: #fff;
+                    border-radius: 8px 8px 0 0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .eq-preview-header h3 {
+                    margin: 0;
+                    color: #333;
+                }
+                
+                .eq-preview-controls {
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
+                
+                .eq-preview-body {
+                    flex: 1;
+                    padding: 20px;
+                    overflow: auto;
+                    display: flex;
+                    justify-content: center;
+                }
+                
+                .eq-preview-paper {
+                    background: white;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    min-height: 11in;
+                    width: 8.5in;
+                    padding: 0.75in;
+                    transform-origin: top center;
+                    transition: transform 0.3s ease;
+                }
+                
+                #eq-preview-zoom-level {
+                    min-width: 50px;
+                    text-align: center;
+                    font-weight: bold;
+                }
+                
+                @media print {
+                    .eq-preview-modal {
+                        background: white !important;
+                    }
+                    
+                    .eq-preview-header {
+                        display: none !important;
+                    }
+                    
+                    .eq-preview-body {
+                        padding: 0 !important;
+                    }
+                    
+                    .eq-preview-paper {
+                        box-shadow: none !important;
+                        transform: none !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        padding: 0.5in !important;
+                    }
+                }
+                </style>
+            `);
+            
+            // Bind events
+            let currentZoom = 100;
+            
+            $('#eq-preview-zoom-in').on('click', function() {
+                if (currentZoom < 150) {
+                    currentZoom += 25;
+                    updateZoom();
+                }
+            });
+            
+            $('#eq-preview-zoom-out').on('click', function() {
+                if (currentZoom > 50) {
+                    currentZoom -= 25;
+                    updateZoom();
+                }
+            });
+            
+            $('#eq-preview-print').on('click', function() {
+                window.print();
+            });
+            
+            $('#eq-print-preview-modal .eq-close-preview').on('click', function() {
+                $('#eq-print-preview-modal').hide();
+            });
+            
+            // Close on escape
+            $(document).on('keyup.preview', function(e) {
+                if (e.keyCode === 27) { // Escape key
+                    $('#eq-print-preview-modal').hide();
+                    $(document).off('keyup.preview');
+                }
+            });
+            
+            function updateZoom() {
+                $('#eq-preview-zoom-level').text(currentZoom + '%');
+                $('#eq-preview-content').css('transform', 'scale(' + (currentZoom / 100) + ')');
+            }
+        }
+        
+        // Insert content
+        if (htmlContent) {
+            // Use server-generated HTML
+            $('#eq-preview-content').html(htmlContent);
+        } else {
+            // Fallback to client-generated content
+            $('#eq-preview-content').html(generateContractPreviewHTML(formData));
+        }
+        
+        // Show modal
+        $('#eq-print-preview-modal').show();
+    }
+    
+    /**
+     * Generate contract preview HTML (fallback)
+     */
+    function generateContractPreviewHTML(formData) {
+        const contractNumber = 'CONT-' + Date.now().toString().substr(-6);
+        const currentDate = new Date().toLocaleDateString('es-ES');
+        
+        return `
+            <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #333;">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+                    <h1 style="margin: 0 0 10px 0; font-size: 20px; color: #2c3e50;">CONTRATO DE PRESTACIÓN DE SERVICIOS</h1>
+                    <p style="margin: 0; font-weight: bold;">No. ${contractNumber}</p>
+                    <p style="margin: 5px 0 0 0;">Fecha: ${currentDate}</p>
+                </div>
+
+                <!-- Company Information -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">PRESTADOR DE SERVICIOS</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 25%; font-weight: bold; padding: 3px 0;">Nombre/Razón Social:</td>
+                            <td style="padding: 3px 0;">${formData.company_name || '[NOMBRE DE LA EMPRESA]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Dirección:</td>
+                            <td style="padding: 3px 0;">${formData.company_address || '[DIRECCIÓN DE LA EMPRESA]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Teléfono:</td>
+                            <td style="padding: 3px 0;">${formData.company_phone || '[TELÉFONO]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Email:</td>
+                            <td style="padding: 3px 0;">${formData.company_email || '[EMAIL]'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Client Information -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">CONTRATANTE</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 25%; font-weight: bold; padding: 3px 0;">Nombre:</td>
+                            <td style="padding: 3px 0;">${formData.client_name || '[NOMBRE DEL CLIENTE]'}</td>
+                        </tr>
+                        ${formData.client_business_name ? `
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Empresa:</td>
+                            <td style="padding: 3px 0;">${formData.client_business_name}</td>
+                        </tr>` : ''}
+                        ${formData.client_business_address ? `
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Dirección:</td>
+                            <td style="padding: 3px 0;">${formData.client_business_address}</td>
+                        </tr>` : ''}
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Teléfono:</td>
+                            <td style="padding: 3px 0;">${formData.client_phone || '[TELÉFONO DEL CLIENTE]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Email:</td>
+                            <td style="padding: 3px 0;">${formData.client_email || '[EMAIL DEL CLIENTE]'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Event Details -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">DETALLES DEL EVENTO</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 25%; font-weight: bold; padding: 3px 0;">Fecha:</td>
+                            <td style="padding: 3px 0;">${formData.event_date || '[FECHA DEL EVENTO]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Horario:</td>
+                            <td style="padding: 3px 0;">${(formData.event_start_time || '[HORA INICIO]') + ' - ' + (formData.event_end_time || '[HORA FIN]')}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">Lugar:</td>
+                            <td style="padding: 3px 0;">${formData.event_address || '[LUGAR DEL EVENTO]'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; padding: 3px 0;">No. de Invitados:</td>
+                            <td style="padding: 3px 0;">${formData.event_guests || '[NÚMERO DE INVITADOS]'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Services -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">SERVICIOS CONTRATADOS</h3>
+                    ${generateServicesPreview()}
+                </div>
+
+                <!-- Payment Schedule -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">PROGRAMACIÓN DE PAGOS</h3>
+                    ${generatePaymentSchedulePreviewForContract()}
+                </div>
+
+                <!-- Terms and Conditions -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 15px;">TÉRMINOS Y CONDICIONES</h3>
+                    <div style="text-align: justify; line-height: 1.8;">
+                        ${(formData.contract_terms || 'Se aplicarán los términos y condiciones estándar de la empresa prestadora de servicios.').replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+
+                <!-- Signatures -->
+                <div style="margin-top: 50px; page-break-inside: avoid;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 45%; text-align: center; vertical-align: top;">
+                                <div style="border-bottom: 1px solid #000; height: 60px; margin-bottom: 10px;"></div>
+                                <p style="margin: 5px 0; font-weight: bold;">FIRMA DEL CONTRATANTE</p>
+                                <p style="margin: 0; font-size: 11px;">${formData.client_name || '[NOMBRE DEL CLIENTE]'}</p>
+                            </td>
+                            <td style="width: 10%;"></td>
+                            <td style="width: 45%; text-align: center; vertical-align: top;">
+                                <div style="border-bottom: 1px solid #000; height: 60px; margin-bottom: 10px;"></div>
+                                <p style="margin: 5px 0; font-weight: bold;">FIRMA DEL PRESTADOR</p>
+                                <p style="margin: 0; font-size: 11px;">${formData.company_name || '[NOMBRE DE LA EMPRESA]'}</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
     }
     
     /**
