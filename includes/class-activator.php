@@ -414,5 +414,56 @@ private static function create_cart_history_table() {
     // Crear tabla
     dbDelta($sql_cart_history);
 }
+
+/**
+ * Actualizar estructura de la tabla de contexto de sesiones
+ */
+private static function update_context_sessions_table() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'eq_context_sessions';
+    
+    // Verificar si la tabla existe
+    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        // Si no existe, crearla
+        self::create_context_sessions_table();
+        return;
+    }
+    
+    // Verificar si existe la columna status (versión anterior)
+    $status_exists = $wpdb->get_var("SHOW COLUMNS FROM $table_name LIKE 'status'");
+    if ($status_exists) {
+        // Limpiar registros inactivos
+        $wpdb->query("DELETE FROM $table_name WHERE status = 'inactive'");
+        
+        // Mantener solo el registro más reciente por usuario
+        $wpdb->query("
+            CREATE TEMPORARY TABLE temp_sessions AS
+            SELECT MAX(id) as max_id, user_id
+            FROM $table_name
+            GROUP BY user_id
+        ");
+        
+        $wpdb->query("
+            DELETE s FROM $table_name s
+            LEFT JOIN temp_sessions t ON s.id = t.max_id
+            WHERE t.max_id IS NULL
+        ");
+        
+        $wpdb->query("DROP TEMPORARY TABLE IF EXISTS temp_sessions");
+        
+        // Eliminar la columna status
+        $wpdb->query("ALTER TABLE $table_name DROP COLUMN status");
+    }
+    
+    // Verificar si existe el índice único
+    $unique_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'user_id' AND Non_unique = 0");
+    if (empty($unique_exists)) {
+        try {
+            $wpdb->query("ALTER TABLE $table_name ADD UNIQUE INDEX user_id (user_id)");
+        } catch (Exception $e) {
+            error_log('Error adding UNIQUE constraint: ' . $e->getMessage());
+        }
+    }
+}
 	
 }
